@@ -62,6 +62,12 @@
     <Compile Include="CARunner.fs" />
     <None Include="Script.fsx" />
     <Content Include="packages.config" />
+    <None Include="Testing\TestCA3D.fsx" />
+    <None Include="Testing\TestDomain.fsx" />
+    <None Include="Testing\TestHistorical.fsx" />
+    <None Include="Testing\TestNormative.fsx" />
+    <None Include="Testing\TestParms.fsx" />
+    <None Include="Testing\TestSituational.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Collections.ParallelSeq">
