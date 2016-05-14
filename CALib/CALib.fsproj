@@ -58,6 +58,8 @@
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="KnowledgeDistribution\KDBase.fs" />
+    <Compile Include="KnowledgeDistribution\KDGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
     <None Include="Script.fsx" />
