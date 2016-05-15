@@ -51,11 +51,12 @@ let influence beliefSpace pop =
 
 ///single step CA
 let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
-    let pop         = evaluate ca.Fitness ca.Population
-    let topInds     = ca.Acceptance ca.BeliefSpace pop
-    let beliefSpace = ca.Update ca.BeliefSpace topInds
-    let pop         = ca.KnowlegeDistribution pop ca.Network
-    let pop         = ca.Influence beliefSpace pop
+    let pop             = evaluate ca.Fitness ca.Population
+    let topInds         = ca.Acceptance ca.BeliefSpace pop
+    let blSpc           = ca.Update ca.BeliefSpace topInds
+    let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k
+    let pop,blSpc,kdist = fkdist (pop,blSpc) ca.Network
+    let pop             = ca.Influence blSpc pop
     let newBest = 
         match best,topInds with
         | _ ,[||]   -> best
@@ -65,8 +66,9 @@ let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     {
         CA =
             {ca with
-                Population  = pop
-                BeliefSpace = beliefSpace
+                Population           = pop
+                BeliefSpace          = blSpc
+                KnowlegeDistribution = kdist
             }
         Best = newBest
         Progress = newBest.[0].Fitness::p |> List.truncate 100

@@ -20,7 +20,7 @@ and BeliefSpace = KnowledgeSource Tree
 and Acceptance  = BeliefSpace -> Population -> Individual array
 and Influence   = BeliefSpace -> Population -> Population
 and Update      = BeliefSpace -> Individual array -> BeliefSpace
-and KnowledgeDistribution = Population -> Network -> Population
+and KnowledgeDist   = KD of ((Population*BeliefSpace) -> Network -> (Population*BeliefSpace*KnowledgeDist))
 
 and KnowledgeSource = 
     {
@@ -33,7 +33,7 @@ type CA =
     {
         Population              : Population
         Network                 : Network
-        KnowlegeDistribution    : KnowledgeDistribution
+        KnowlegeDistribution    : KnowledgeDist
         BeliefSpace             : BeliefSpace
         Acceptance              : Acceptance
         Influence               : Influence

@@ -35,9 +35,10 @@ let weightedMajority (ind,friends:Individual array) =
     }
 
 ///generic knowledge distribution
-let knowledgeDistribution distributionType pop network =
-    pop
-    |> PSeq.map (fun ind -> ind,network pop ind.Id)
-    |> PSeq.map distributionType
-    |> PSeq.toArray
-
+let rec knowledgeDistribution distributionType (pop,b) network =
+    let pop =
+        pop
+        |> PSeq.map (fun ind -> ind,network pop ind.Id)
+        |> PSeq.map distributionType
+        |> PSeq.toArray
+    pop,b,KD(knowledgeDistribution distributionType)

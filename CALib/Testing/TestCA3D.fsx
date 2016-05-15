@@ -6,6 +6,7 @@
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS.fs"
 #load "../KnowledgeDistribution/KDBase.fs"
+#load "../KnowledgeDistribution/KDGame.fs"
 #load "../CARunner.fs"
 open CA
 
@@ -40,7 +41,9 @@ let ca =
     {
         Population           = pop
         Network              = CAUtils.l4BestNetwork
-        KnowlegeDistribution = KDBase.knowledgeDistribution KDBase.majority
+        KnowlegeDistribution = KDGame.gtKnowledgeDist
+        // KD(KDBase.knowledgeDistribution KDBase.majority)
+                              
         BeliefSpace          = beliefSpace
         Acceptance           = CARunner.acceptance 5 comparator
         Influence            = CARunner.influence
