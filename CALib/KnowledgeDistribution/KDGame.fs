@@ -31,8 +31,18 @@ let individualStrategies game pop  : TypeStrategy[] =
     let strategies = solve game
     pop |> Array.map (fun i -> strategies.[CAUtils.rnd.Value.Next(2)])
 
-let playAction (strategy:(Action*float)[]) = Hawk
-
+let playAction strategy = 
+    //probability dist so it accumluates to 1.
+    let rnd = CAUtils.rnd.Value.NextDouble()
+    let rec sel (strategy:(Action*float)[]) rnd cumP i =
+        let (a,p) = strategy.[i]
+        let cumP = cumP + p
+        if rnd >= cumP then
+            sel strategy rnd cumP (i+1)
+        else
+            a
+    sel strategy rnd 0. 0
+        
 let playGame game (strategies:TypeStrategy[]) i (opponents:Opponents) =
     let p1 = opponents.[0]
     let p2 = opponents.[1]
@@ -53,15 +63,41 @@ let playAllGames opponents game strategies =
     |> PSeq.map snd
     |> PSeq.toArray
 
-let rec fixedStrategyKD opponents game strategies (pop:Individual[],beliefSpace) (network:Network) =
+let scaler (sMin,sMax) (vMin,vMax) (v:float) =
+    if v < vMin then failwith "out of min range for scaling"
+    if v > vMax then failwith "out of max range for scaling"
+    (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
+    (*
+    scaler (0.1, 0.9) (10., 500.) 223.
+    scaler (0.1, 0.9) (10., 500.) 10.
+    scaler (0.1, 0.9) (10., 500.) 500.
+    scaler (0.1, 0.9) (-200., -100.) -110.
+    *)
+
+let fitness (i:Individual) = i.Fitness
+
+let rec fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefSpace) (network:Network) =
+    let targetRange = (0.1,0.9)
+    //payoff
     let payoffs = playAllGames opponents game strategies
-    let minFit = pop|>Array.minBy (fun p->p.Fitness)
-    let maxFit = pop|>Array.maxBy (fun p->p.Fitness)
-    let range = maxFit.Fitness - minFit.Fitness
-
-    let fitnessPayoffs = pop |> Array.mapi (fun i p -> payoffs.[i] * p.Fitness)
-
-    pop,beliefSpace,KD(fixedStrategyKD opponents game strategies)
+    let minP = Array.min payoffs
+    let maxP = Array.max payoffs
+    let scaledPayoffs = payoffs |> Array.map (scaler targetRange (minP,maxP))
+    //fitness
+    let minFit = pop|>Array.minBy (fun p->p.Fitness) |> fitness
+    let maxFit = pop|>Array.maxBy (fun p->p.Fitness) |> fitness
+    let sourceRange = if sign = 1. then (minFit,maxFit) else (-maxFit,-minFit)
+    let sf f = scaler targetRange sourceRange (sign * f)
+    let scaledFitness = pop |> Array.mapi (fun i p -> scaledPayoffs.[i] * sf p.Fitness)
+    let pop =
+        pop
+        |> PSeq.map (fun p ->
+            let friends = network pop p.Id
+            let maxP = Seq.append friends [p] |> Seq.maxBy (fun p->scaledFitness.[p.Id])
+            {p with KS=maxP.KS}
+        )
+        |> PSeq.toArray
+    pop,beliefSpace,KD(fixedStrategyKD sign opponents game strategies)
 
 let hawkDovePayoff = function
     | Hawk,Hawk -> 0.2, 0.2
@@ -71,8 +107,9 @@ let hawkDovePayoff = function
 
 let hawkDoveGame = {Player1={Name="Hawk"}; Player2={Name="Dove"};Payoff=hawkDovePayoff}
 
-let gtKnowledgeDist game pop network =
+let gtKnowledgeDist minmax game pop network =
+    let sign = if minmax 2. 1. then +1. else -1.
     let opponents = opponents pop network 
     let strategies = individualStrategies game pop
-    KD(fixedStrategyKD opponents game strategies)
+    KD(fixedStrategyKD sign opponents game strategies)
     

@@ -36,14 +36,15 @@ let comparator  = CAUtils.Maximize
 let beliefSpace = CARunner.defaultBeliefSpace parms comparator fitness
 //let beliefSpace = Leaf (SituationalKS.create comparator 5)
 let pop         = CAUtils.createPop parms 1000 beliefSpace true
-
+let kdist       = KDGame.gtKnowledgeDist comparator KDGame.hawkDoveGame pop CAUtils.l4BestNetwork
+                  //KD(KDBase.knowledgeDistribution KDBase.majority)
+                  //best game 7.071035596; [(Normative, 1000)]
+                  //best majority 7.070912972 seq [(Normative, 1000)]
 let ca =
     {
         Population           = pop
         Network              = CAUtils.l4BestNetwork
-        KnowlegeDistribution = KDGame.gtKnowledgeDist
-        // KD(KDBase.knowledgeDistribution KDBase.majority)
-                              
+        KnowlegeDistribution = kdist
         BeliefSpace          = beliefSpace
         Acceptance           = CARunner.acceptance 5 comparator
         Influence            = CARunner.influence
