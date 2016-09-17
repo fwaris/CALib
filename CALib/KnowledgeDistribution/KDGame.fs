@@ -21,7 +21,7 @@ type Game =
 
 let inline yourself x = x
 
-let solve (g:Game)  =  [g.Player1,[| Hawk, 0.2 ; Dove, 0.8 |]; g.Player1,[| Hawk, 0.8 ; Dove, 0.2 |]]
+let solve (g:Game)  =  [g.Player1,[| Hawk, 0.2 ; Dove, 0.8 |]; g.Player2,[| Hawk, 0.8 ; Dove, 0.2 |]]
 
 let opponents pop network =
     let opponents = pop |> PSeq.collect (fun p -> network pop p.Id |> Seq.map (fun p2 -> set[p.Id; p2.Id])) |> set
@@ -29,7 +29,10 @@ let opponents pop network =
 
 let individualStrategies game pop  : TypeStrategy[] = 
     let strategies = solve game
-    pop |> Array.map (fun i -> strategies.[CAUtils.rnd.Value.Next(2)])
+    let istrs = pop |> Array.map (fun i -> strategies.[if CAUtils.rnd.Value.NextDouble() >= 0.5 then 1 else 0])
+    let v = istrs |> Array.countBy fst
+    istrs
+
 
 let playAction strategy = 
     //probability dist so it accumluates to 1.
@@ -97,6 +100,11 @@ let rec fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefS
             {p with KS=maxP.KS}
         )
         |> PSeq.toArray
+    printfn "payoff %A, scaledFit %A" (minP,maxP) sourceRange
+    let gtScore = scaledFitness |> PSeq.mapi (fun i f -> fst strategies.[i],f ) |> PSeq.groupBy fst |> Seq.map (fun (x,y) -> x.Name,y|>Seq.map snd|>Seq.sum)
+    printfn "Winners: %A" gtScore
+    let counts = strategies |> Array.countBy fst
+    printfn "Types: %A" counts
     pop,beliefSpace,KD(fixedStrategyKD sign opponents game strategies)
 
 let hawkDovePayoff = function

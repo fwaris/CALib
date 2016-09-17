@@ -52,6 +52,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="DF1.fs" />
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="BeliefSpace\DomainKS.fs" />
