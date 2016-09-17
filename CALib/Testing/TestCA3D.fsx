@@ -41,14 +41,14 @@ let gameKdist           = KDGame.gtKnowledgeDist comparator KDGame.hawkDoveGame 
 let simpleMajorityKDist = KD(KDBase.knowledgeDistribution KDBase.majority)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
-let wtdMajority = KD(KDBase.knowledgeDistribution KDBase.weightedMajority)
+let wtdMajorityKdist = KD(KDBase.knowledgeDistribution KDBase.weightedMajority)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
 let ca =
     {
         Population           = pop
         Network              = CAUtils.l4BestNetwork
-        KnowlegeDistribution = wtdMajority
+        KnowlegeDistribution = simpleMajorityKDist
         BeliefSpace          = beliefSpace
         Acceptance           = CARunner.acceptance 5 comparator
         Influence            = CARunner.influence
@@ -72,8 +72,10 @@ let runCollect data maxBest ca =
     |> Seq.unfold (fun s -> let s = loop s in (data s,s)  |> Some ) 
 
 let tk s = s |> Seq.take 50 |> Seq.toList
-let kd1 = ca |> runCollect data 2 |> tk
-let kd2 = {ca with KnowlegeDistribution=gameKdist} |> runCollect data 2 |> tk
+
+let kdSimple        = ca |> runCollect data 2 |> tk
+let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect data 2 |> tk
+let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect data 2 |> tk
 
 #r @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\gs\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
@@ -115,8 +117,9 @@ let plotResults title kd =
     |> Chart.WithArea.AxisX(Title="Generation")
 //    |> Chart.Show
 
-plotResults "Simple Majority" kd1
-plotResults "Hawk-Dove" kd2
+plotResults "Simple Majority" kdSimple
+plotResults "Weigted Majority" kdWeigthed
+plotResults "Hawk-Dove" kdGame2Player
 
 
 (*
