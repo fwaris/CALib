@@ -52,12 +52,15 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="DF1.fs" />
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="BeliefSpace\DomainKS.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="KnowledgeDistribution\KDBase.fs" />
+    <Compile Include="KnowledgeDistribution\KDGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
     <None Include="Script.fsx" />

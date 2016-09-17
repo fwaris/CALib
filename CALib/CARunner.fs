@@ -48,52 +48,15 @@ let influence beliefSpace pop =
     |> PSeq.map (fun p -> ksMap.[p.KS].Influence p)
     |> PSeq.toArray
 
-///majority wheel KS distribution
-let majority (ind,friends:Individual array) = 
-    {ind with 
-        KS = 
-            let f = friends.[CAUtils.rnd.Value.Next(0,friends.Length-1)]
-            if f.Fitness > ind.Fitness then 
-                f.KS
-            else
-                ind.KS
-    }
-
-///weighted majority wheel KS distribution
-let weightedMajority (ind,friends:Individual array) = 
-    {ind with 
-        KS = 
-            let weighted = 
-                friends 
-                |> Seq.groupBy (fun i -> i.KS)                                        //group by KS
-                |> Seq.map (fun (ks,inds) -> ks,inds |> Seq.sumBy (fun i->i.Fitness)) //sum fitness of each group 
-                |> Seq.fold                                                           //calc low-high ranges for each group
-                    (fun acc (ks,f) -> 
-                        match acc with 
-                        | []            -> (ks,(0.,f))::acc
-                        | (_,(l,h))::_  -> (ks,(h,f+h))::acc
-                    )
-                    []
-            let sum = snd <| snd weighted.Head 
-            let  r = CAUtils.rnd.Value.NextDouble()  * sum
-            let chosen = weighted |> List.rev |> List.pick (fun (ks,(l,h)) -> if r < h then Some ks else None)
-            chosen
-    }
-
-///generic knowledge distribution
-let knowledgeDistribution distributionType pop network =
-    pop
-    |> PSeq.map (fun ind -> ind,network pop ind.Id)
-    |> PSeq.map distributionType
-    |> PSeq.toArray
 
 ///single step CA
 let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
-    let pop         = evaluate ca.Fitness ca.Population
-    let topInds     = ca.Acceptance ca.BeliefSpace pop
-    let beliefSpace = ca.Update ca.BeliefSpace topInds
-    let pop         = ca.KnowlegeDistribution pop ca.Network
-    let pop         = ca.Influence beliefSpace pop
+    let pop             = evaluate ca.Fitness ca.Population
+    let topInds         = ca.Acceptance ca.BeliefSpace pop
+    let blSpc           = ca.Update ca.BeliefSpace topInds
+    let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k
+    let pop,blSpc,kdist = fkdist (pop,blSpc) ca.Network
+    let pop             = ca.Influence blSpc pop
     let newBest = 
         match best,topInds with
         | _ ,[||]   -> best
@@ -103,8 +66,9 @@ let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     {
         CA =
             {ca with
-                Population  = pop
-                BeliefSpace = beliefSpace
+                Population           = pop
+                BeliefSpace          = blSpc
+                KnowlegeDistribution = kdist
             }
         Best = newBest
         Progress = newBest.[0].Fitness::p |> List.truncate 100
