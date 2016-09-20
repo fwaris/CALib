@@ -82,7 +82,7 @@ let tk s = s |> Seq.take 50 |> Seq.toList
 //let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect dataCollector 2 |> tk
 let kdHedonic       = {ca with KnowlegeDistribution=hedonicKdist} |> runCollect dataCollector 2 |> tk
 
-#r @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\gs\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
+#r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")
