@@ -42,16 +42,16 @@ let create isBetter fitness maxExemplars =
 
     let rec acceptance 
         fInfluence 
-        (prevExemplars:Individual list, pBestSlope) 
-        (inds:Individual array) =
-        match inds with
-        | [||] -> inds, create (prevExemplars,pBestSlope) acceptance fInfluence
+        (prevExemplars : Individual list, pBestSlope) 
+        (newBestInds : Individual array) =
+        match newBestInds with
+        | [||] -> newBestInds, create (prevExemplars,pBestSlope) acceptance fInfluence
         | inds ->
             let rBest = inds.[0] //assume best individual is first
             let nBest =
                 match prevExemplars with
                 | []                                                    -> Some rBest
-                | pBest::_ when isBetter rBest.Fitness pBest.Fitness  -> Some rBest
+                | pBest::_ when isBetter rBest.Fitness pBest.Fitness    -> Some rBest
                 | _                                                     -> None
             match nBest with
             | Some nBest ->

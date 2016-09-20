@@ -12,9 +12,9 @@ let create isBetter maxExemplars =
 
     let rec acceptance 
         fInfluence 
-        (prevExemplars:Individual list) 
-        (inds:Individual array) =
-        match inds with
+        (prevExemplars : Individual list) 
+        (newlyAcceptedInds : Individual array) =
+        match newlyAcceptedInds with
         | [||] -> failwith "SituationalKS.acceptance : accepted individual list empty"
         | inds ->
             let rBest = inds.[0] //assume best individual is first for the latest genertion

@@ -16,6 +16,22 @@ module Probability =
      
 let rnd = Probability.RNG
 
+let inline yourself x = x
+
+let scaler (sMin,sMax) (vMin,vMax) (v:float) =
+    if v < vMin then failwith "out of min range for scaling"
+    if v > vMax then failwith "out of max range for scaling"
+    (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
+    (*
+    scaler (0.1, 0.9) (10., 500.) 223.
+    scaler (0.1, 0.9) (10., 500.) 10.
+    scaler (0.1, 0.9) (10., 500.) 500.
+    scaler (0.1, 0.9) (-200., -100.) -110.
+    *)
+
+//function to turn minimzation problems into maximization for solving
+let maximization compartor =  if compartor 2. 1. then fun x -> x * -1. else fun x -> x
+
 let flatten tree =
     let rec loop acc = function
         | Roots roots       -> List.fold loop acc roots
@@ -149,7 +165,7 @@ let createPop parms size beliefSpace randomizeAll =
                     Id      = i-1
                     Parms   = parms
                     Fitness = System.Double.MinValue
-                    KS      = kss.[i % kss.Length].Type
+                    KS      = set [kss.[i % kss.Length].Type]
 
                 }
     |]
