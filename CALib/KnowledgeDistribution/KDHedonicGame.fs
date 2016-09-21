@@ -90,15 +90,12 @@ let joinCoalition coalitionSet (id,partner) =
     | Coalition c  ->  Set.add (c |> Set.add id) coalitionSet
     | Ind id2      ->  Set.add (set[id;id2]) coalitionSet
 
-let individualsInExistingCoaltions newCoalitions coalitions =
-       newCoalitions 
-       |> Seq.collect CAUtils.yourself
-       |> Seq.choose (fun id -> if coalitions |> Map.containsKey id then Some id else None)
-
-let findDominantKS frndsLookup dsMap id =
-   let extndFrnds = frndsLookup |> Map.find id 
-   let kss = extndFrnds |> Seq.collect (fun (i:Individual)->i.KS) |> Seq.countBy CAUtils.yourself |> Seq.maxBy snd
-   dsMap |> Map.add id (fst kss)
+let findDominantKS frndsLookup id =
+    frndsLookup
+    |> Map.find id
+    |> Seq.collect (fun (i:Individual)->i.KS) 
+    |> Seq.countBy CAUtils.yourself 
+    |> Seq.maxBy snd
 
 let validateUpdate pop (coalitions:Map<Id,Set<Id>>) =
     pop |> Array.iter (fun i -> 
@@ -118,36 +115,93 @@ let validateUpdate pop (coalitions:Map<Id,Set<Id>>) =
             printfn "*** member was found in multiple coaltions %A" s2
         )
 
-let removeFromCoalition (pop:Individual[]) dominantKsMap (coalitions,acc) id =
-    let ks = dominantKsMap |> Map.find id
-    let indv = {pop.[id] with KS=set[ks]}
-    let oldCoal = coalitions |> Map.find id
-    printfn "removing %d from coaliton %A" id oldCoal
-    let coalitions = (coalitions,oldCoal) ||> Set.fold (fun acc id -> acc |> Map.remove id) //remove all old coalition members
-    let coalSansId = oldCoal |> Set.remove id
-    let cs,acc =
-        match Set.count coalSansId with
-        | 0 -> printfn "*** unexpected emtpySet after removing coalition member"; coalitions, acc
-        | 1 -> //need to disolve the old coaltion completely
-            let pid = Seq.head coalSansId
-            let pindv = pop.[pid]
-            let pindv = {pindv with KS=pindv.KS |> Set.remove ks} 
-            if pindv.KS.Count = 0 then printfn "*** ks count was zero for %d" pid
-            coalitions,pindv::acc
-        | x -> 
-            let remanCoalMems = 
-                coalSansId 
-                |> Set.map (fun i->pop.[i]) 
-                |> Seq.map (fun ind -> {ind with KS=ind.KS |> Set.remove ks})
-                |> Seq.toList
-            let acc = List.append remanCoalMems acc
-            let cs = (coalitions,coalSansId) ||> Set.fold (fun acc id -> acc |> Map.add id coalSansId)
-            cs,acc
-    cs,indv::acc    
+let assignKSToLeavingIndvs coalKSset (curNormlzdFit:float[]) dominantKS newCoalition =
+    let leavingIndvs = newCoalition |> Set.filter (fun id -> dominantKS |> Map.containsKey id)
+    let fitstLeavIndv = leavingIndvs |> Seq.maxBy (fun i -> curNormlzdFit.[i])
+    let domKS = dominantKS |> Map.find fitstLeavIndv
+    let rmngLeavIndvs = leavingIndvs |> Set.remove fitstLeavIndv
+    let _,leavingKSs = 
+        ((coalKSset |> Set.remove domKS,Map.empty),rmngLeavIndvs) 
+        ||> Set.fold (fun (ksSet,acc) id -> 
+            let ks = Set.minElement ksSet
+            let ksSet = ksSet.Remove ks
+            ksSet,acc |> Map.add id ks
+        )
+    leavingKSs |> Map.add fitstLeavIndv domKS
 
+let breakCoalition 
+    (pop:Individual[])       //this will be mutated
+    (curNormlzdFit:float[]) 
+    frndsLookup 
+    coalitions
+    ((coalition:Set<Id>),(leavingIndvs:Set<Id>))
+   = 
+    let ftstIndv = leavingIndvs |> Seq.maxBy (fun id -> curNormlzdFit.[id]) //fittest leaving individual
+    let coalKSset = pop.[ftstIndv].KS
+    if coalKSset.Count <> coalition.Count then failwithf "KS count mismatch %A %A" coalition coalKSset
+    let dominantKS,_ = findDominantKS frndsLookup ftstIndv
+    let remainKS =  Set.remove dominantKS coalKSset
+    let remainLeavIndvs = Set.remove ftstIndv leavingIndvs
+
+    let remainKS, remainLeavKSAssignments = 
+        ((remainKS,Map.empty),remainLeavIndvs) 
+        ||> Set.fold (fun (accKS,accIndv) id ->
+            let ks = Set.minElement accKS
+            let accKS = Set.remove ks accKS
+            let accIndv = Map.add id ks accIndv
+            accKS,accIndv)
+
+    let leaveKSAssingments = remainLeavKSAssignments |> Map.add  ftstIndv dominantKS
+    let remainingCoalition = (coalition,leavingIndvs) ||> Set.fold (fun acc k -> Set.remove k acc)
+    let remainingMembers = remainingCoalition |> Seq.map (fun id -> {pop.[id] with KS=remainKS}) |> Seq.toList
+    let leavingMembers = leaveKSAssingments |> Map.toSeq |> Seq.map (fun (id,ks) -> {pop.[id] with KS=set[ks]}) |> Seq.toList
+
+    let coalitions = 
+        if remainingCoalition.Count > 1 then
+            (coalitions,remainingCoalition) ||> Set.fold (fun acc id -> acc |> Map.add id remainingCoalition)
+        else
+            coalitions
+
+    for indv in leavingMembers do
+        pop.[indv.Id] <- indv
+
+    for indv in remainingMembers do
+        pop.[indv.Id] <- indv
+
+    coalitions
+
+let processLeavingMembers 
+    (pop:Individual[])        //this will be mutated
+    (curNormlzdFit:float[]) 
+    frndsLookup 
+    coalitions
+    (newCoalition:Set<Id>) =
+
+    let leavingMembers = newCoalition |> Seq.filter (fun i -> frndsLookup |> Map.containsKey i)
+
+    let lvngMemByCoal = 
+        leavingMembers 
+        |> Seq.choose (fun id -> coalitions |> Map.tryFind id |> Option.map (fun cs -> cs,id))
+        |> Seq.groupBy fst
+        |> Seq.map (fun (cs,ids) -> cs,ids |> Seq.map snd |> set)
+
+    (coalitions,lvngMemByCoal) ||> Seq.fold (breakCoalition pop curNormlzdFit frndsLookup)
+   
+
+let processNewMembers 
+    (pop:Individual[])   //this will be mutated; assumes pop reflects changes do to breaking coalitions
+    coalitions 
+    newCoalition =
+    let coaltions = (coalitions,newCoalition) ||> Set.fold (fun acc id -> acc |> Map.add id newCoalition)
+    let coalKS = (Set.empty,newCoalition) ||> Set.fold (fun acc id -> acc |> Set.union pop.[id].KS)
+    if coalKS.Count <> newCoalition.Count then
+        failwithf "ks and coalition counts do not match for %A %A" coalKS newCoalition
+    newCoalition |> Seq.iter (fun i -> pop.[i] <- {pop.[i] with KS=coalKS})
+    coalitions
+        
 let isAlreadyPaired acc s = s |> Seq.exists (fun x -> acc |> Set.contains x)
 
-let formCoalitions network pop coalitions unsatisfied =
+let formCoalitions network pop coalitions curNormlzdFit unsatisfied =
 
     let extendedFriends = 
         unsatisfied 
@@ -180,29 +234,12 @@ let formCoalitions network pop coalitions unsatisfied =
         )
 
     let newCoalitions = (Set.empty,globalCoalitions) ||> Seq.fold joinCoalition
-    let indvsExstCoals = individualsInExistingCoaltions newCoalitions coalitions
     let frndsLookup = extendedFriends |> Map.ofSeq
-    let dominantKS = (Map.empty,indvsExstCoals) ||> Seq.fold (findDominantKS frndsLookup)
-
-    let (coalitions,indvUpdtsCoalRmvl) = 
-        ((coalitions,[]),indvsExstCoals) 
-        ||> Seq.fold (removeFromCoalition pop dominantKS)
 
     let pop = Array.copy pop            //make a copy for mutation
-    for indv in indvUpdtsCoalRmvl do    //indv updates due to removal from coaltions
-        pop.[indv.Id] <- indv           //first udpdate removed members to correctly updated added ones
 
-    let coalitions,invdUpdtsCoalAdd = ((coalitions,[]),newCoalitions) ||> Set.fold (fun (acc,indvs) idst -> 
-        let acc = (acc,idst) ||> Set.fold (fun acc id -> acc |> Map.add id idst)
-        let coalKS = (Set.empty,idst) ||> Set.fold (fun acc id -> acc |> Set.union pop.[id].KS)
-        if coalKS.Count <> idst.Count then
-            printfn "ks and coalition counts do not match for %A %A" coalKS idst
-        let updatedIndvs = idst |> Seq.map (fun i -> {pop.[i] with KS=coalKS}) |> Seq.toList
-        acc,List.append updatedIndvs indvs
-        )
-
-    for indv in invdUpdtsCoalAdd do     //indv updates due to additon to coaltions
-        pop.[indv.Id] <- indv
+    let coalitions = (coalitions,newCoalitions) ||> Seq.fold (processLeavingMembers pop curNormlzdFit frndsLookup)
+    let coalitions = (coalitions,newCoalitions) ||> Seq.fold (processNewMembers pop)
 
     validateUpdate pop coalitions
 
@@ -219,7 +256,7 @@ let rec hedonicStrategy ({Count=i;Coalitions=coalitions;PrevFit=prevNormlzdFit;S
     else
         let normlzdImprovements = normalizeImprovement target curNormlzdFit prevNormlzdFit
         let unsatisfied = calcUnsatisfied curNormlzdFit normlzdImprovements
-        let pop,coalitions = formCoalitions network pop coalitions unsatisfied
+        let pop,coalitions = formCoalitions network pop coalitions curNormlzdFit unsatisfied
         let ksState = {ksState with Count = i+1; PrevFit=curNormlzdFit; Coalitions=coalitions}
         pop,beliefSpace,KD(hedonicStrategy ksState)
 
