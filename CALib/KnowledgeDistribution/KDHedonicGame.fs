@@ -90,13 +90,12 @@ let joinCoalition pop coalitionSet (id,partner) =
     | Coalition c  ->  Set.add (c |> Set.add id) coalitionSet
     | Ind id2      ->  Set.add (set[id;id2]) coalitionSet
 
-let findDominantKS (coalKSset:Set<Knowledge>) frndsLookup id =
-    frndsLookup
-    |> Map.find id
-    |> Seq.collect (fun (i:Individual)->i.KS) 
-    |> Seq.filter coalKSset.Contains            //restrict to consider ks in the current coalition
-    |> Seq.countBy CAUtils.yourself
-    |> Seq.maxBy snd
+let findDominantKS (coalKSset:Set<Knowledge>) nhbrKSStrengths id =
+    let ordered = nhbrKSStrengths |> Map.find id
+    let filtered = ordered |> Array.filter (fun (ks,w) -> coalKSset.Contains ks)
+    if filtered.Length =  0 then
+        failwithf "empty ks set for indv %d, ordered %A" id ordered
+    fst filtered.[0]
 
 let validateUpdate pop (coalitions:Map<Id,Set<Id>>) =
     pop |> Array.iter (fun i -> 
@@ -133,14 +132,14 @@ let assignKSToLeavingIndvs coalKSset (curNormlzdFit:float[]) dominantKS newCoali
 let breakCoalition 
     (pop:Individual[])       //this will be mutated
     (curNormlzdFit:float[]) 
-    frndsLookup 
+    nhbrKSStrengths 
     coalitions
     ((coalition:Set<Id>),(leavingIndvs:Set<Id>))
    = 
     let ftstIndv = leavingIndvs |> Seq.maxBy (fun id -> curNormlzdFit.[id]) //fittest leaving individual
     let coalKSset = pop.[ftstIndv].KS
     if coalKSset.Count <> coalition.Count then failwithf "KS count mismatch %A %A" coalition coalKSset
-    let dominantKS,_ = findDominantKS coalKSset frndsLookup ftstIndv
+    let dominantKS = findDominantKS coalKSset nhbrKSStrengths ftstIndv
     let remainKS =  Set.remove dominantKS coalKSset
     let remainLeavIndvs = Set.remove ftstIndv leavingIndvs
 
@@ -179,6 +178,7 @@ let processLeavingMembers
     (pop:Individual[])        //this will be mutated
     (curNormlzdFit:float[]) 
     frndsLookup 
+    nhbrKSStrengths
     coalitions
     (newCoalition:Set<Id>) =
 
@@ -190,7 +190,7 @@ let processLeavingMembers
         |> Seq.groupBy fst
         |> Seq.map (fun (cs,ids) -> cs,ids |> Seq.map snd |> set)
 
-    (coalitions,lvngMemByCoal) ||> Seq.fold (breakCoalition pop curNormlzdFit frndsLookup)
+    (coalitions,lvngMemByCoal) ||> Seq.fold (breakCoalition pop curNormlzdFit nhbrKSStrengths)
    
 
 let processNewMembers 
@@ -251,11 +251,26 @@ let formCoalitions availableKS network pop coalitions curNormlzdFit unsatisfied 
         )
 
     let newCoalitions = (Set.empty,globalCoalitions) ||> Seq.fold (joinCoalition pop)
-    let frndsLookup = extendedFriends |> Map.ofSeq
+    let frndsLookup = Map.ofSeq extendedFriends
+
+    let nhbrKSStrengths = 
+        extendedFriends 
+        |> Seq.map (fun (id,indvs) -> 
+            id, 
+            indvs 
+            |> Seq.collect (fun i->i.KS |> Set.union pop.[id].KS)
+            |> Seq.countBy CAUtils.yourself
+            |> Seq.sortBy (fun (_,w) -> -w)
+            |> Seq.toArray
+            )
+        |> Map.ofSeq
 
     let pop = Array.copy pop            //make a copy for mutation
 
-    let coalitions = (coalitions,newCoalitions) ||> Seq.fold (processLeavingMembers pop curNormlzdFit frndsLookup)
+    let coalitions = 
+        (coalitions,newCoalitions) 
+        ||> Seq.fold (processLeavingMembers pop curNormlzdFit frndsLookup nhbrKSStrengths)
+
     let coalitions = (coalitions,newCoalitions) ||> Seq.fold (processNewMembers availableKS pop)
 
     validateUpdate pop coalitions
