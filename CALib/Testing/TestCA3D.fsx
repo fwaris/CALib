@@ -7,6 +7,7 @@
 #load "../BeliefSpace/DomainKS.fs"
 #load "../KnowledgeDistribution/KDBase.fs"
 #load "../KnowledgeDistribution/KDGame.fs"
+#load "../KnowledgeDistribution/KDHedonicGame.fs"
 #load "../CARunner.fs"
 open CA
 
@@ -44,6 +45,9 @@ let simpleMajorityKDist = KD(KDBase.knowledgeDistribution KDBase.majority)
 let wtdMajorityKdist = KD(KDBase.knowledgeDistribution KDBase.weightedMajority)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
+
+let hedonicKdist = KDHedonicGame.hedonicKDist comparator pop CAUtils.l4BestNetwork
+
 let ca =
     {
         Population           = pop
@@ -59,7 +63,7 @@ let ca =
 
 let termination step = step.Count > 1000
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
-let data s = best s, s.CA.Population |> Seq.countBy (fun x->x.KS) |> Seq.sortBy fst |> Seq.toList
+let dataCollector s = best s, s.CA.Population |> Seq.collect (fun p->p.KS) |> Seq.countBy CAUtils.yourself |> Seq.sortBy fst |> Seq.toList
 
 let runCollect data maxBest ca =
     let loop stp = 
@@ -73,11 +77,12 @@ let runCollect data maxBest ca =
 
 let tk s = s |> Seq.take 50 |> Seq.toList
 
-let kdSimple        = ca |> runCollect data 2 |> tk
-let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect data 2 |> tk
-let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect data 2 |> tk
-
-#r @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\gs\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
+//let kdSimple        = ca |> runCollect dataCollector 2 |> tk
+//let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect dataCollector 2 |> tk
+//let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect dataCollector 2 |> tk
+let kdHedonic       = {ca with KnowlegeDistribution=hedonicKdist} |> runCollect dataCollector 2 |> tk
+//
+#r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")
@@ -117,9 +122,10 @@ let plotResults title kd =
     |> Chart.WithArea.AxisX(Title="Generation")
 //    |> Chart.Show
 
-plotResults "Simple Majority" kdSimple
-plotResults "Weigted Majority" kdWeigthed
-plotResults "Hawk-Dove" kdGame2Player
+//plotResults "Simple Majority" kdSimple
+//plotResults "Weigted Majority" kdWeigthed
+//plotResults "Hawk-Dove" kdGame2Player
+plotResults "Hedonic Game" kdHedonic
 
 
 (*

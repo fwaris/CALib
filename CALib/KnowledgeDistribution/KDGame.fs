@@ -1,5 +1,6 @@
 ﻿module KDGame
 open CA
+open CAUtils
 open FSharp.Collections.ParallelSeq
 
 type Action = 
@@ -19,18 +20,22 @@ type Game =
         Payoff   : PayoffMatrix
     }  
 
-let inline yourself x = x
-
 let solve (g:Game)  =  [g.Player1,[| Hawk, 0.2 ; Dove, 0.8 |]; g.Player2,[| Hawk, 0.8 ; Dove, 0.2 |]]
 
 let opponents pop network =
-    let opponents = pop |> PSeq.collect (fun p -> network pop p.Id |> Seq.map (fun p2 -> set[p.Id; p2.Id])) |> set
-    opponents |> Seq.map Set.toArray |> Seq.toArray
+    pop 
+    |> PSeq.collect (fun p -> network pop p.Id  |> Seq.map (fun p2 -> set[p.Id; p2.Id])) 
+    |> set
+    |> Set.map Set.toArray
+    |> Set.toArray
 
-let individualStrategies game pop  : TypeStrategy[] = 
+let radomizePopStrategies game pop  : TypeStrategy[] = //randomy assgin a game type to each player
     let strategies = solve game
-    let istrs = pop |> Array.map (fun i -> strategies.[if CAUtils.rnd.Value.NextDouble() >= 0.5 then 1 else 0])
-    let v = istrs |> Array.countBy fst
+    let istrs = 
+        pop 
+        |> PSeq.ordered 
+        |> PSeq.map (fun i -> strategies.[CAUtils.rnd.Value.Next(0,strategies.Length-1)])
+        |> PSeq.toArray
     istrs
 
 
@@ -59,23 +64,12 @@ let playGame game (strategies:TypeStrategy[]) i (opponents:Opponents) =
 let playAllGames opponents game strategies = 
     opponents 
     |> PSeq.mapi (playGame game strategies) 
-    |> PSeq.collect yourself 
+    |> PSeq.collect CAUtils.yourself 
     |> PSeq.groupBy fst
     |> PSeq.map (fun (i,xs) -> i, xs |> PSeq.sumBy snd)
     |> PSeq.sortBy fst
-    |> PSeq.map snd
-    |> PSeq.toArray
-
-let scaler (sMin,sMax) (vMin,vMax) (v:float) =
-    if v < vMin then failwith "out of min range for scaling"
-    if v > vMax then failwith "out of max range for scaling"
-    (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
-    (*
-    scaler (0.1, 0.9) (10., 500.) 223.
-    scaler (0.1, 0.9) (10., 500.) 10.
-    scaler (0.1, 0.9) (10., 500.) 500.
-    scaler (0.1, 0.9) (-200., -100.) -110.
-    *)
+    |> Seq.map snd
+    |> Seq.toArray
 
 let fitness (i:Individual) = i.Fitness
 
@@ -94,6 +88,7 @@ let rec fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefS
     let scaledFitness = pop |> Array.mapi (fun i p -> scaledPayoffs.[i] * sf p.Fitness)
     let pop =
         pop
+        |> PSeq.ordered
         |> PSeq.map (fun p ->
             let friends = network pop p.Id
             let maxP = Seq.append friends [p] |> Seq.maxBy (fun p->scaledFitness.[p.Id])
@@ -118,6 +113,6 @@ let hawkDoveGame = {Player1={Name="Hawk"}; Player2={Name="Dove"};Payoff=hawkDove
 let gtKnowledgeDist minmax game pop network =
     let sign = if minmax 2. 1. then +1. else -1.
     let opponents = opponents pop network 
-    let strategies = individualStrategies game pop
+    let strategies = radomizePopStrategies game pop
     KD(fixedStrategyKD sign opponents game strategies)
     

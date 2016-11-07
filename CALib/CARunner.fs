@@ -14,9 +14,13 @@ let defaultBeliefSpace parms minmax fitness =
         ]
 
 ///evaluate the finess of the population
-let evaluate fitness = 
-    PSeq.map (fun (ind:Individual) -> {ind with Fitness=fitness ind.Parms})
-    >> PSeq.toArray
+let evaluate fitness pop = 
+    let pop =
+        pop 
+        |> PSeq.map (fun (ind:Individual) -> {ind with Fitness=fitness ind.Parms})
+        |> PSeq.toArray
+    Array.sortInPlaceBy(fun p->p.Id) pop
+    pop
 
 ///default acceptance function used in most CAs
 let acceptance take minmax beliefSpace (pop:Population) =
@@ -24,8 +28,8 @@ let acceptance take minmax beliefSpace (pop:Population) =
     let topInds = 
         pop 
         |> PSeq.sortBy (fun ind -> sign * ind.Fitness) 
-        |> PSeq.truncate take
-        |> PSeq.toArray
+        |> Seq.truncate take
+        |> Seq.toArray
     topInds
 
 ///default belief space update function
@@ -44,9 +48,12 @@ let update beliefSpace bestInds =
 ///default population influence function
 let influence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let pop =
+        pop
+        |> PSeq.map (fun p -> (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
+        |> PSeq.toArray
+    Array.sortInPlaceBy(fun i->i.Id) pop
     pop
-    |> PSeq.map (fun p -> ksMap.[p.KS].Influence p)
-    |> PSeq.toArray
 
 
 ///single step CA
