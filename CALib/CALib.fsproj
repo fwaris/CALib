@@ -62,6 +62,7 @@
     <Compile Include="KnowledgeDistribution\KDBase.fs" />
     <Compile Include="KnowledgeDistribution\KDGame.fs" />
     <Compile Include="KnowledgeDistribution\KDHedonicGame.fs" />
+    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
     <None Include="Script.fsx" />
