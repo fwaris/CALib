@@ -3,53 +3,64 @@ open CA
 open FSharp.Collections.ParallelSeq
 
 type Neighbors = Individual array
-type S<'action>  = Individual * 'action
-type Payoff<'action,'payout> = Individual -> S<'action> seq -> 'payout
-type Play<'action,'payout> = Individual -> Neighbors -> Payoff<'action,'payout> -> 'action
-type Outcome<'action,'payout> = Individual -> 'payout -> S<'action> seq -> Individual
 
-type private State<'action,'payout> =
+type Payoff<'action,'payout> = 
+    Comparator 
+        -> Individual 
+        -> 'action 
+        -> 'action seq 
+        -> 'payout
+
+type Play<'action,'payout> = 
+    Comparator 
+        -> Individual 
+        -> Neighbors 
+        -> Payoff<'action,'payout> 
+        -> 'action
+
+type Outcome<'action,'payout> = 
+    Comparator
+        -> Population * BeliefSpace 
+        -> 'payout array 
+        ->  Population * BeliefSpace * CSGame<'action,'payout>
+
+and CSGame<'action,'payout> =
     {
-        Payoff  : Payoff<'action,'payout>
-        Play    : Play<'action,'payout>
-        Outcome : Outcome<'action,'payout>
-        Sign    : float
+        Play        : Play<'action,'payout>
+        Payoff      : Payoff<'action,'payout>
+        Outcome     : Outcome<'action,'payout>
     }
 
-let playGame play payoff (network:Network) pop indv =
+let playGame cmprtr play payoff (network:Network) pop indv =
     let neighbors = network pop indv.Id
-    let action = play indv neighbors payoff
-    (indv,action):S<_>
+    let action = play cmprtr indv neighbors payoff
+    action
 
 let rec private csStrategy 
-    state 
-    (pop:Population ,beliefSpace) 
+    cmprtr
+    game 
+    (pop,beliefSpace)
     (network:Network) 
     =
     let actions = 
         pop 
         |> PSeq.ordered
-        |> PSeq.map (playGame state.Play state.Payoff network pop) 
+        |> PSeq.map (playGame cmprtr game.Play game.Payoff network pop) 
         |> PSeq.toArray
-    let pop =
+    let payoffs =
         pop
         |> PSeq.ordered 
-        |> PSeq.mapi (fun i indv ->
-            let ns = network pop indv.Id
-            let nas = ns |> Array.map (fun n ->  actions.[n.Id]) |> Seq.ofArray
-            let y = state.Payoff indv  nas
-            let indv = state.Outcome indv y nas
-            indv)    
+        |> PSeq.map (fun indv ->
+            let indvActn = actions.[indv.Id]
+            let nhbrs = network pop indv.Id
+            let nhbrActns = 
+                nhbrs 
+                |> Array.map (fun n ->  actions.[n.Id]) 
+                |> Seq.ofArray
+            game.Payoff cmprtr indv indvActn  nhbrActns)
         |> PSeq.toArray
-    pop,beliefSpace,KD(csStrategy state)
+    let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace) payoffs
+    pop,beliefSpace,KD(csStrategy cmprtr game)
 
-let csGameDist isBetter (pop:Individual[]) network payoff play outcome =
-    let sign = if isBetter 2. 1. then +1. else -1.
-    let state = 
-        {
-            Payoff      = payoff
-            Play        = play
-            Outcome     = outcome
-            Sign        = sign
-        }
-    KD(csStrategy state)
+let knowledgeDist comparator gameConfig =
+    KD(csStrategy comparator gameConfig)

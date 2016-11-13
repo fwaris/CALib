@@ -73,7 +73,7 @@ let playAllGames opponents game strategies =
 
 let fitness (i:Individual) = i.Fitness
 
-let rec fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefSpace) (network:Network) =
+let rec private fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefSpace) (network:Network) =
     let targetRange = (0.1,0.9)
     //payoff
     let payoffs = playAllGames opponents game strategies
@@ -110,7 +110,7 @@ let hawkDovePayoff = function
 
 let hawkDoveGame = {Player1={Name="Hawk"}; Player2={Name="Dove"};Payoff=hawkDovePayoff}
 
-let gtKnowledgeDist minmax game pop network =
+let knowledgeDist minmax game pop network =
     let sign = if minmax 2. 1. then +1. else -1.
     let opponents = opponents pop network 
     let strategies = radomizePopStrategies game pop

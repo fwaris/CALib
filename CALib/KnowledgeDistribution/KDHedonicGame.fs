@@ -135,7 +135,7 @@ let breakCoalition
     nhbrKSStrengths 
     coalitions
     ((coalition:Set<Id>),(leavingIndvs:Set<Id>))
-   = 
+    = 
     let ftstIndv = leavingIndvs |> Seq.maxBy (fun id -> curNormlzdFit.[id]) //fittest leaving individual
     let coalKSset = pop.[ftstIndv].KS
     if coalKSset.Count <> coalition.Count then failwithf "KS count mismatch %A %A" coalition coalKSset
@@ -277,9 +277,11 @@ let formCoalitions availableKS network pop coalitions curNormlzdFit unsatisfied 
 
     pop,coalitions
 
-let rec hedonicStrategy ({Count=i;Coalitions=coalitions;PrevFit=prevNormlzdFit;Sign=sign} as ksState) 
-                        (pop:Individual[],beliefSpace) 
-                        (network:Network) =
+let rec private hedonicStrategy 
+    ({Count=i;Coalitions=coalitions;PrevFit=prevNormlzdFit;Sign=sign} as ksState) 
+    (pop:Individual[],beliefSpace) 
+    (network:Network) 
+    =
     let target = (0.1,0.9)
     let curNormlzdFit = normalizePopFitness target sign pop
     if i < 2 then                                                  //initially just collect enough data
@@ -292,7 +294,7 @@ let rec hedonicStrategy ({Count=i;Coalitions=coalitions;PrevFit=prevNormlzdFit;S
         let ksState = {ksState with Count = i+1; PrevFit=curNormlzdFit; Coalitions=coalitions}
         pop,beliefSpace,KD(hedonicStrategy ksState)
 
-let hedonicKDist isBetter (pop:Individual[]) network =
+let knowledgeDist isBetter (pop:Individual[]) network =
     let sign = if isBetter 2. 1. then +1. else -1.
     let state = 
         {
