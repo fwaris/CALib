@@ -33,8 +33,8 @@ let payoff _ indv indvActn (nhbrActns:Action seq) : Payout =
         failwithf "neighbor action counts not matched %A %A" indv nhbrActns
     payoff
 
-let updatePop cmprtr pop (payouts:Payout array) = pop
-    
+let updatePop cmprtr pop (payouts:Payout array) = 
+    pop
 
 let rec outcome cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let pop = updatePop cmprtr pop payouts

@@ -2,7 +2,7 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-let smDist pop network indv =
+let private smDist pop network indv =
     let nhbrs = network pop indv.Id
     let indvsPool = Array.append [|indv|] nhbrs
     let kdCounts = 

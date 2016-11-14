@@ -60,6 +60,7 @@
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDGame.fs" />
     <Compile Include="KnowledgeDistribution\KDHedonicGame.fs" />

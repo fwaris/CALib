@@ -5,8 +5,10 @@
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS.fs"
-#load "../KnowledgeDistribution/KDBase.fs"
+#load "../KnowledgeDistribution/KDSimpleMajority.fs"
+#load "../KnowledgeDistribution/KDWeightedMajority.fs"
 #load "../KnowledgeDistribution/KDGame.fs"
+#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
 #load "../KnowledgeDistribution/KDHedonicGame.fs"
 #load "../CARunner.fs"
 open CA
@@ -38,15 +40,16 @@ let beliefSpace = CARunner.defaultBeliefSpace parms comparator fitness
 //let beliefSpace = Leaf (SituationalKS.create comparator 5)
 let pop         = CAUtils.createPop parms 1000 beliefSpace true
 
-let gameKdist           = KDGame.gtKnowledgeDist comparator KDGame.hawkDoveGame pop CAUtils.l4BestNetwork
-let simpleMajorityKDist = KD(KDBase.knowledgeDistribution KDBase.majority)
+let gameKdist           = KDGame.knowledgeDist comparator KDGame.hawkDoveGame pop CAUtils.l4BestNetwork
+let simpleMajorityKDist = KD(KDSimpleMajority.knowledgeDist)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
-let wtdMajorityKdist = KD(KDBase.knowledgeDistribution KDBase.weightedMajority)
+let wtdMajorityKdist = KD(KDWeightedMajority.knowledgeDist comparator)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
+let lWtdMajorityKdist = KD(KDLocallyWeightedMajority.knowledgeDist comparator)
 
-let hedonicKdist = KDHedonicGame.hedonicKDist comparator pop CAUtils.l4BestNetwork
+let hedonicKdist = KDHedonicGame.knowledgeDist comparator pop CAUtils.l4BestNetwork
 
 let ca =
     {
@@ -77,9 +80,10 @@ let runCollect data maxBest ca =
 
 let tk s = s |> Seq.take 50 |> Seq.toList
 
-//let kdSimple        = ca |> runCollect dataCollector 2 |> tk
-//let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect dataCollector 2 |> tk
-//let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect dataCollector 2 |> tk
+let kdSimple        = ca |> runCollect dataCollector 2 |> tk
+let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect dataCollector 2 |> tk
+let kdlWeigthed     = {ca with KnowlegeDistribution=lWtdMajorityKdist} |> runCollect dataCollector 2 |> tk
+let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect dataCollector 2 |> tk
 let kdHedonic       = {ca with KnowlegeDistribution=hedonicKdist} |> runCollect dataCollector 2 |> tk
 //
 #r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
@@ -122,9 +126,10 @@ let plotResults title kd =
     |> Chart.WithArea.AxisX(Title="Generation")
 //    |> Chart.Show
 
-//plotResults "Simple Majority" kdSimple
-//plotResults "Weigted Majority" kdWeigthed
-//plotResults "Hawk-Dove" kdGame2Player
+plotResults "Simple Majority" kdSimple
+plotResults "Weigted Majority" kdWeigthed
+plotResults "Locally Weigted Majority" kdlWeigthed
+plotResults "Hawk-Dove" kdGame2Player
 plotResults "Hedonic Game" kdHedonic
 
 

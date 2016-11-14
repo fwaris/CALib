@@ -2,7 +2,7 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-let maxConverter isBetter = 
+let private maxConverter isBetter = 
     if isBetter 2. 1. then 
         fun x->x 
     else 
@@ -12,7 +12,7 @@ let maxConverter isBetter =
             else
                 System.Double.MaxValue
 
-let totalKSFit isBetter pop =
+let private totalKSFit isBetter pop =
     let mc = maxConverter isBetter
     pop 
     |> PSeq.map (fun i -> i.KS.MinimumElement,i.Fitness) 
@@ -24,7 +24,7 @@ let totalKSFit isBetter pop =
         )
     |> Map.ofSeq
 
-let wmDist pop network (nrmlzdFit:Map<_,_>) indv =
+let private wmDist pop network (nrmlzdFit:Map<_,_>) indv =
     let nhbrs = network pop indv.Id
     let acc = Map.add indv.KS.MinimumElement 1.
     let ks = Array.append [|indv|] nhbrs
