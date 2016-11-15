@@ -12,10 +12,10 @@ let private maxConverter isBetter =
             else
                 System.Double.MaxValue
 
-let private localKSFitness isBetter indvs =
+let private localKSFitness isBetter (indvs:Individual<Knowledge> array) =
     let mc = maxConverter isBetter
     indvs 
-    |> Array.map (fun i -> i.KS.MinimumElement,i.Fitness) 
+    |> Array.map (fun i -> i.KS,i.Fitness) 
     |> Array.groupBy fst
     |> Array.map (fun (k,fs) -> 
         k, 
@@ -25,15 +25,15 @@ let private localKSFitness isBetter indvs =
     |> Map.ofSeq
 
 ///weighted majority wheel KS distribution
-let private locallyWeightedMajority comparator (indv,friends:Individual array) = 
-    let acc = Map.add indv.KS.MinimumElement 1.
+let private locallyWeightedMajority comparator (indv,friends:Individual<Knowledge> array) = 
+    let acc = Map.add indv.KS 1.
     let grp = Array.append [|indv|] friends
     let relFit = localKSFitness comparator grp
-    let kdCounts = grp |> Array.countBy (fun i->i.KS.MinimumElement)
+    let kdCounts = grp |> Array.countBy (fun i->i.KS)
     let totalKD = float kdCounts.Length
     let nrmlzdCnts = kdCounts |> Array.map (fun (k,v) -> k, float v / totalKD * relFit.[k])
     let kd,_ = nrmlzdCnts |> Array.maxBy snd
-    {indv with KS = set[kd]}
+    {indv with KS = kd}
 
 let rec knowledgeDist comparator (pop,b) network =
     let pop =

@@ -33,7 +33,7 @@ let maxSlope isBetter fitness oldFitness parms  =
     {Index=maxI; Magnitude=snd maxS; Direction=fst maxS},parms    
 
 let create isBetter fitness maxExemplars =
-    let create state fAccept fInfluence : KnowledgeSource =
+    let create state fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Domain
             Accept      = fAccept fInfluence state
@@ -42,8 +42,8 @@ let create isBetter fitness maxExemplars =
 
     let rec acceptance 
         fInfluence 
-        (prevExemplars : Individual list, pBestSlope) 
-        (newBestInds : Individual array) =
+        (prevExemplars : Individual<_> list, pBestSlope) 
+        (newBestInds : Individual<_> array) =
         match newBestInds with
         | [||] -> newBestInds, create (prevExemplars,pBestSlope) acceptance fInfluence
         | inds ->
@@ -61,7 +61,7 @@ let create isBetter fitness maxExemplars =
             | None -> 
                 [||], create (prevExemplars,pBestSlope) acceptance fInfluence
 
-    let influence (exemplars,gBestSlope) (ind:Individual) =
+    let influence (exemplars,gBestSlope) (ind:Individual<_>) =
         let (slope,parms) = maxSlope isBetter fitness ind.Fitness ind.Parms
         let maxParm = parms.[slope.Index]
         //printfn "maxParm: %A" maxParm

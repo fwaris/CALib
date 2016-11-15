@@ -17,13 +17,13 @@ let defaultBeliefSpace parms minmax fitness =
 let evaluate fitness pop = 
     let pop =
         pop 
-        |> PSeq.map (fun (ind:Individual) -> {ind with Fitness=fitness ind.Parms})
+        |> PSeq.map (fun (ind:Individual<_>) -> {ind with Fitness=fitness ind.Parms})
         |> PSeq.toArray
     Array.sortInPlaceBy(fun p->p.Id) pop
     pop
 
 ///default acceptance function used in most CAs
-let acceptance take minmax beliefSpace (pop:Population) =
+let acceptance take minmax beliefSpace (pop:Population<_>) =
     let sign = if minmax 2. 1. then -1. else +1. 
     let topInds = 
         pop 
@@ -46,15 +46,14 @@ let update beliefSpace bestInds =
     update bestInds beliefSpace
 
 ///default population influence function
-let influence beliefSpace pop =
+let baseInfluence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> PSeq.map (fun p -> (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
+        |> PSeq.ordered
+        |> PSeq.map (fun p -> ksMap.[p.KS].Influence p)
         |> PSeq.toArray
-    Array.sortInPlaceBy(fun i->i.Id) pop
     pop
-
 
 ///single step CA
 let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
@@ -96,7 +95,7 @@ let run termination maxBest ca =
     loop {CA=ca; Best=[]; Count=0; Progress=[]}
 
 
-let ``terminate if no improvement in 5 generations`` (step:TimeStep) =
+let ``terminate if no improvement in 5 generations`` (step:TimeStep<_>) =
     match step.Progress with
     | f1::f2::f3::f4::f5::_ when f1=f2 && f2=f3 && f3=f4 && f4=f5 -> true
     | _ -> false

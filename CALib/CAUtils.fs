@@ -149,8 +149,15 @@ let evolveInd individual =
         Parms = individual.Parms |> Array.map evolveS
     }
 
-let createPop parms size beliefSpace randomizeAll =
+let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
+    fun i -> kss.[i % kss.Length].Type
+
+let ksSetInit beliefSpace = 
+    let kss = flatten beliefSpace |> List.toArray
+    fun i -> set[kss.[i % kss.Length].Type]
+
+let createPop ksInitializer parms size randomizeAll =
     let rnd = System.Random()
     [|
         for i in 1..size do
@@ -165,8 +172,7 @@ let createPop parms size beliefSpace randomizeAll =
                     Id      = i-1
                     Parms   = parms
                     Fitness = System.Double.MinValue
-                    KS      = set [kss.[i % kss.Length].Type]
-
+                    KS      = ksInitializer i
                 }
     |]
 
@@ -217,7 +223,7 @@ let epsilon = function
     | I(_,mn,mx)    -> I(1,mn,mx)
     | I64(_,mn,mx)  -> I64(1L,mn,mx)
 
-let lBestNetwork (pop:Population) id = //return 2 'friends' from the ring
+let lBestNetwork (pop:Population<'k>) id = //return 2 'friends' from the ring
     let m1 = id - 1
     let m1 = if m1 < 0 then pop.Length + m1 else m1
     let p1 = id + 1 
@@ -231,7 +237,7 @@ let parms = [|F(1.,1.,10.)|]
 let pop= [|for i in 1..100 -> {Id=i;Parms=parms;Fitness=0.;KS=Normative}|]
 let net = pop |> Array.mapi (fun i _ -> lBestNetwork pop i)       
 *)
-let l4BestNetwork (pop:Population) id = //return 4 'friends' from the ring
+let l4BestNetwork (pop:Population<'k>) id = //return 4 'friends' from the ring
     let m2 = id - 2
     let m2 = if m2 < 0 then pop.Length + m2 else m2
     let m1 = id - 1

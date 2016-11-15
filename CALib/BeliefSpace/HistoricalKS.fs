@@ -25,17 +25,17 @@ let parmAvg count = function
     | I(v,_,_)      -> float v / float count
     | I64(v,_,_)    -> float v / float count
 
-type ChangeEvent = {Best:Individual; Direction:Dir array}
-type History = 
+type ChangeEvent<'k> = {Best:Individual<'k>; Direction:Dir array}
+type History<'k> = 
     {
         Window      : int
         Distance    : Parm array
         Direction   : Dir array
-        Events      : ChangeEvent list
+        Events      : ChangeEvent<'k> list
     }
 
 let create isBetter window =
-    let create history fAccept fInfluence : KnowledgeSource =
+    let create history fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Historical
             Accept      = fAccept fInfluence history
@@ -45,7 +45,7 @@ let create isBetter window =
     let rec acceptance 
         fInfluence 
         ({Window=win; Events=events} as history)
-        (inds:Individual array) =
+        (inds:Individual<_> array) =
         match inds with
         | [||] -> [||],create history acceptance fInfluence
         | inds ->
@@ -74,7 +74,7 @@ let create isBetter window =
                     }
                 [|nBest|], create updatedHistory acceptance fInfluence
     
-    let influence {Events=events} (ind:Individual) =
+    let influence {Events=events} (ind:Individual<_>) =
         let ev = events.[rnd.Value.Next(0,events.Length-1)]
         if isBetter ev.Best.Fitness ind.Fitness then
             ev.Best |> influenceInd ind

@@ -36,11 +36,13 @@ let fitness (parms:Parm array) =
         -9999.0
 
 let comparator  = CAUtils.Maximize
-let beliefSpace = CARunner.defaultBeliefSpace parms comparator fitness
+let bsp = CARunner.defaultBeliefSpace parms comparator fitness
+let bspS = CARunner.defaultBeliefSpace parms comparator fitness
 //let beliefSpace = Leaf (SituationalKS.create comparator 5)
-let pop         = CAUtils.createPop parms 1000 beliefSpace true
+let popB         = CAUtils.createPop (CAUtils.baseKsInit bsp) parms 1000 true
+let popS         = CAUtils.createPop (CAUtils.ksSetInit bspS) parms 1000 true
 
-let gameKdist           = KDGame.knowledgeDist comparator KDGame.hawkDoveGame pop CAUtils.l4BestNetwork
+let gameKdist           = KDGame.knowledgeDist comparator KDGame.hawkDoveGame popS CAUtils.l4BestNetwork
 let simpleMajorityKDist = KD(KDSimpleMajority.knowledgeDist)
                   //best game 7.071035596; [(Normative, 1000)]
                   //best majority 7.070912972 seq [(Normative, 1000)]
@@ -49,24 +51,25 @@ let wtdMajorityKdist = KD(KDWeightedMajority.knowledgeDist comparator)
                   //best majority 7.070912972 seq [(Normative, 1000)]
 let lWtdMajorityKdist = KD(KDLocallyWeightedMajority.knowledgeDist comparator)
 
-let hedonicKdist = KDHedonicGame.knowledgeDist comparator pop CAUtils.l4BestNetwork
+let hedonicKdist = KDHedonicGame.knowledgeDist comparator popS CAUtils.l4BestNetwork
 
-let ca =
-    {
-        Population           = pop
-        Network              = CAUtils.l4BestNetwork
-        KnowlegeDistribution = simpleMajorityKDist
-        BeliefSpace          = beliefSpace
-        Acceptance           = CARunner.acceptance 5 comparator
-        Influence            = CARunner.influence
-        Update               = CARunner.update
-        Fitness              = fitness
-        Comparator           = comparator
-    }
+let inline makeCA pop bspace kd influence =
+        {
+            Population           = pop
+            Network              = CAUtils.l4BestNetwork
+            KnowlegeDistribution = kd
+            BeliefSpace          = bspace
+            Acceptance           = CARunner.acceptance 5 comparator
+            Influence            = influence
+            Update               = CARunner.update
+            Fitness              = fitness
+            Comparator           = comparator
+        }
 
 let termination step = step.Count > 1000
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
-let dataCollector s = best s, s.CA.Population |> Seq.collect (fun p->p.KS) |> Seq.countBy CAUtils.yourself |> Seq.sortBy fst |> Seq.toList
+let dataCollector s = best s, s.CA.Population |> Seq.map (fun p->p.KS) |> Seq.countBy CAUtils.yourself |> Seq.sortBy fst |> Seq.toList
+let setDataClctr s = best s, s.CA.Population |> Seq.collect (fun p->p.KS) |> Seq.countBy CAUtils.yourself |> Seq.sortBy fst |> Seq.toList
 
 let runCollect data maxBest ca =
     let loop stp = 
@@ -80,11 +83,18 @@ let runCollect data maxBest ca =
 
 let tk s = s |> Seq.take 50 |> Seq.toList
 
-let kdSimple        = ca |> runCollect dataCollector 2 |> tk
-let kdWeigthed      = {ca with KnowlegeDistribution=wtdMajorityKdist} |> runCollect dataCollector 2 |> tk
-let kdlWeigthed     = {ca with KnowlegeDistribution=lWtdMajorityKdist} |> runCollect dataCollector 2 |> tk
-let kdGame2Player   = {ca with KnowlegeDistribution=gameKdist} |> runCollect dataCollector 2 |> tk
-let kdHedonic       = {ca with KnowlegeDistribution=hedonicKdist} |> runCollect dataCollector 2 |> tk
+let kdSimpleCA      = makeCA popB bsp simpleMajorityKDist CARunner.baseInfluence
+let kdWeightedCA    = makeCA popB bsp wtdMajorityKdist CARunner.baseInfluence
+let kdlWeightedCA   = makeCA popB bsp lWtdMajorityKdist CARunner.baseInfluence
+let kdGame2PlayerCA = makeCA popB bsp gameKdist CARunner.baseInfluence
+let kdHedonicCA     = makeCA popS bspS hedonicKdist KDHedonicGame.setInfluence
+
+let kdSimple        = kdSimpleCA |> runCollect dataCollector 2 |> tk
+let kdWeigthed      = kdWeightedCA |> runCollect dataCollector 2 |> tk
+let kdlWeigthed     = kdlWeightedCA |> runCollect dataCollector 2 |> tk
+let kdGame2Player   = kdGame2PlayerCA |> runCollect dataCollector 2 |> tk
+let kdHedonic       = kdHedonicCA |> runCollect setDataClctr 2 |> tk
+
 //
 #r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"

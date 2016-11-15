@@ -100,20 +100,20 @@ let normalizeParm {ParmLo=pLo; ParmHi=pHi} parm =
         | a,b,c -> failwithf "Normative: norm-parameter type mismatch %A,%A,%A" a b c
 
 let create parms isBetter =
-    let create (norms:Norm array) fAccept fInfluence : KnowledgeSource =
+    let create (norms:Norm array) fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Normative
             Accept      = fAccept fInfluence norms
             Influence   = fInfluence norms
         }
 
-    let rec acceptance fInfluence norms (inds:Individual array) =
+    let rec acceptance fInfluence norms (inds:Individual<_> array) =
         //assumes that individuals are sorted best fitness first
         let updatedNorms = inds |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
         inds,create updatedNorms acceptance fInfluence 
     
-    let influence (norms:Norm array) (ind:Individual) =
+    let influence (norms:Norm array) (ind:Individual<_>) =
         {ind with
             Parms = (norms,ind.Parms) ||> Array.map2 normalizeParm
         }

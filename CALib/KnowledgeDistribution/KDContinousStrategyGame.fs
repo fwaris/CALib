@@ -2,36 +2,36 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-type Neighbors = Individual array
+type Neighbors<'k> = Individual<'k> array
 
-type Payoff<'action,'payout> = 
+type Payoff<'action,'payout,'k> = 
     Comparator 
-        -> Individual 
+        -> Individual<'k>
         -> 'action 
         -> 'action seq 
         -> 'payout
 
-type Play<'action,'payout> = 
+type Play<'action,'payout,'k> = 
     Comparator 
-        -> Individual 
-        -> Neighbors 
-        -> Payoff<'action,'payout> 
+        -> Individual<'k> 
+        -> Neighbors<'k> 
+        -> Payoff<'action,'payout,'k> 
         -> 'action
 
-type Outcome<'action,'payout> = 
+type Outcome<'action,'payout,'k> = 
     Comparator
-        -> Population * BeliefSpace 
+        -> Population<'k> * BeliefSpace<'k> 
         -> 'payout array 
-        ->  Population * BeliefSpace * CSGame<'action,'payout>
+        ->  Population<'k> * BeliefSpace<'k> * CSGame<'action,'payout,'k>
 
-and CSGame<'action,'payout> =
+and CSGame<'action,'payout,'k> =
     {
-        Play        : Play<'action,'payout>
-        Payoff      : Payoff<'action,'payout>
-        Outcome     : Outcome<'action,'payout>
+        Play        : Play<'action,'payout,'k>
+        Payoff      : Payoff<'action,'payout,'k>
+        Outcome     : Outcome<'action,'payout,'k>
     }
 
-let playGame cmprtr play payoff (network:Network) pop indv =
+let playGame cmprtr play payoff (network:Network<_>) pop indv =
     let neighbors = network pop indv.Id
     let action = play cmprtr indv neighbors payoff
     action
@@ -40,7 +40,7 @@ let rec private csStrategy
     cmprtr
     game 
     (pop,beliefSpace)
-    (network:Network) 
+    (network:Network<_>) 
     =
     let actions = 
         pop 

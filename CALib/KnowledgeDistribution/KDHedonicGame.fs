@@ -2,10 +2,19 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
+let setInfluence beliefSpace pop =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let pop =
+        pop
+        |> PSeq.map (fun p -> (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
+        |> PSeq.toArray
+    Array.sortInPlaceBy(fun i->i.Id) pop
+    pop
+
 type IndState = {RelFit:float; RelImprovment:float}
 type GameState = {Count:int; Coalitions:Map<Id,Set<Id>>; PrevFit:float[]; Sign:float; KSset:Set<Knowledge>}
 
-let normalizePopFitness target sign (pop:Individual[]) =
+let normalizePopFitness target sign (pop:Individual<_>[]) =
     let currentFit = pop |> PSeq.ordered |> PSeq.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
     let minFit = currentFit |> PSeq.min
     let maxFit = currentFit |> PSeq.max
@@ -28,13 +37,13 @@ let calcUnsatisfied curNormlzdFit normlzdImprovements =
 
 let parmDiff p1 p2 = abs (CAUtils.parmToFloat p1 - CAUtils.parmToFloat p2) //p1 norm
 
-let mutualUtility (p1:Individual) (p2:Individual)  =
+let mutualUtility (p1:Individual<_>) (p2:Individual<_>)  =
     if p1.KS |> Set.intersect p2.KS |> Set.isEmpty |> not then 
         -99999999.0
     else
         Array.map2 parmDiff p1.Parms p2.Parms  |> Seq.sum 
 
-let mutualUtilitiyCoalition (pop:Individual[]) (p1:Individual) (coalition:Set<Id>) =
+let mutualUtilitiyCoalition (pop:Individual<_>[]) (p1:Individual<_>) (coalition:Set<Id>) =
     let ksSet = (Set.empty,coalition) ||> Set.fold (fun acc id -> acc |> Set.union pop.[id].KS)
     if p1.KS |> Set.intersect ksSet |> Set.isEmpty |> not  then
         -9999999.0
@@ -51,7 +60,7 @@ let mutualUtilityPartner pop indv prtnr =
     | Coalition c   -> prtnr, mutualUtilitiyCoalition pop indv c
     | Ind id        -> prtnr, mutualUtility indv pop.[id]
 
-let extendFriends (pop:Individual array) coalitions (friends:Individual array) =
+let extendFriends (pop:Individual<_> array) coalitions (friends:Individual<_> array) =
     let initialFriends = friends |> Array.map (fun i -> i.Id) |> set
     (initialFriends,friends) ||> Array.fold (fun acc i -> 
         match coalitions |> Map.tryFind i.Id with
@@ -65,7 +74,7 @@ let removeExistingCoalitionPartners id coalitions extendedFriends =
     | Some s -> extendedFriends |> Array.filter (fun i -> s |> Set.contains i.Id |> not)
     | None   -> extendedFriends
 
-let findPartners (pop:Individual[]) coalitions (id,extendedFriends:Individual[]) = 
+let findPartners (pop:Individual<_>[]) coalitions (id,extendedFriends:Individual<_>[]) = 
     let extendedFriends = removeExistingCoalitionPartners id coalitions extendedFriends
     let possiblePartners = (Set.empty,extendedFriends) ||> Array.fold (fun acc i -> 
         match coalitions |> Map.tryFind i.Id with 
@@ -80,7 +89,7 @@ let findPartners (pop:Individual[]) coalitions (id,extendedFriends:Individual[])
     |> Seq.map (fun p -> id,p)
     |> Seq.toArray
 
-let dbg (pop:Individual[]) = function
+let dbg (pop:Individual<_>[]) = function
     | id,(Coalition c) -> printfn "Adding %d (%A) to coalition %A (%A)" id pop.[id].KS c (pop.[Set.minElement c].KS)
     | id,(Ind i)       -> printfn  "Forming c %d (%A), %d (%A" id pop.[id].KS i pop.[i].KS
 
@@ -97,7 +106,7 @@ let findDominantKS (coalKSset:Set<Knowledge>) nhbrKSStrengths id =
         failwithf "empty ks set for indv %d, ordered %A" id ordered
     fst filtered.[0]
 
-let validateUpdate pop (coalitions:Map<Id,Set<Id>>) =
+let validateUpdate (pop:Population<Set<Knowledge>>) (coalitions:Map<Id,Set<Id>>) =
     pop |> Array.iter (fun i -> 
         let ksSet = i.KS
         match ksSet.Count with
@@ -130,7 +139,7 @@ let assignKSToLeavingIndvs coalKSset (curNormlzdFit:float[]) dominantKS newCoali
     leavingKSs |> Map.add fitstLeavIndv domKS
 
 let breakCoalition 
-    (pop:Individual[])       //this will be mutated
+    (pop:Individual<Set<Knowledge>>[])       //this will be mutated
     (curNormlzdFit:float[]) 
     nhbrKSStrengths 
     coalitions
@@ -175,7 +184,7 @@ let breakCoalition
     coalitions
 
 let processLeavingMembers 
-    (pop:Individual[])        //this will be mutated
+    (pop:Individual<Set<Knowledge>>[])        //this will be mutated
     (curNormlzdFit:float[]) 
     frndsLookup 
     nhbrKSStrengths
@@ -195,7 +204,7 @@ let processLeavingMembers
 
 let processNewMembers 
     availableKsSet
-    (pop:Individual[])   //this will be mutated; assumes pop reflects changes do to breaking coalitions
+    (pop:Individual<Set<Knowledge>>[])   //this will be mutated; assumes pop reflects changes do to breaking coalitions
     coalitions 
     newCoalition =
     let coalitions = (coalitions,newCoalition) ||> Set.fold (fun acc id -> acc |> Map.add id newCoalition)
@@ -279,8 +288,8 @@ let formCoalitions availableKS network pop coalitions curNormlzdFit unsatisfied 
 
 let rec private hedonicStrategy 
     ({Count=i;Coalitions=coalitions;PrevFit=prevNormlzdFit;Sign=sign} as ksState) 
-    (pop:Individual[],beliefSpace) 
-    (network:Network) 
+    (pop:Individual<_>[],beliefSpace) 
+    (network:Network<_>) 
     =
     let target = (0.1,0.9)
     let curNormlzdFit = normalizePopFitness target sign pop
@@ -294,7 +303,7 @@ let rec private hedonicStrategy
         let ksState = {ksState with Count = i+1; PrevFit=curNormlzdFit; Coalitions=coalitions}
         pop,beliefSpace,KD(hedonicStrategy ksState)
 
-let knowledgeDist isBetter (pop:Individual[]) network =
+let knowledgeDist isBetter (pop:Individual<_>[]) network =
     let sign = if isBetter 2. 1. then +1. else -1.
     let state = 
         {

@@ -71,9 +71,9 @@ let playAllGames opponents game strategies =
     |> Seq.map snd
     |> Seq.toArray
 
-let fitness (i:Individual) = i.Fitness
+let fitness (i:Individual<_>) = i.Fitness
 
-let rec private fixedStrategyKD sign opponents game strategies (pop:Individual[],beliefSpace) (network:Network) =
+let rec private fixedStrategyKD sign opponents game strategies (pop:Individual<_>[],beliefSpace) (network:Network<_>) =
     let targetRange = (0.1,0.9)
     //payoff
     let payoffs = playAllGames opponents game strategies

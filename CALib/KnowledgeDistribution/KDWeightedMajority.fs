@@ -12,10 +12,10 @@ let private maxConverter isBetter =
             else
                 System.Double.MaxValue
 
-let private totalKSFit isBetter pop =
+let private totalKSFit isBetter (pop:Population<Knowledge>) =
     let mc = maxConverter isBetter
     pop 
-    |> PSeq.map (fun i -> i.KS.MinimumElement,i.Fitness) 
+    |> PSeq.map (fun i -> i.KS,i.Fitness) 
     |> PSeq.groupBy fst
     |> PSeq.map (fun (k,fs) -> 
         k, 
@@ -26,13 +26,13 @@ let private totalKSFit isBetter pop =
 
 let private wmDist pop network (nrmlzdFit:Map<_,_>) indv =
     let nhbrs = network pop indv.Id
-    let acc = Map.add indv.KS.MinimumElement 1.
+    let acc = Map.add indv.KS 1.
     let ks = Array.append [|indv|] nhbrs
-    let kdCounts = ks |> Array.countBy (fun i->i.KS.MinimumElement)
+    let kdCounts = ks |> Array.countBy (fun i->i.KS)
     let totalKD = float kdCounts.Length
     let nrmlzdCnts = kdCounts |> Array.map (fun (k,v) -> k, float v / totalKD * nrmlzdFit.[k])
     let kd,_ = nrmlzdCnts |> Array.maxBy snd
-    {indv with KS = set[kd]}
+    {indv with KS = kd}
 
 let rec knowledgeDist isBetter (pop,b) network =
     let ksFit = totalKSFit isBetter pop

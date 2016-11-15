@@ -3,7 +3,7 @@ open CA
 open CAUtils
 
 let create isBetter maxExemplars =
-    let create (examplars:Individual list) fAccept fInfluence : KnowledgeSource =
+    let create (examplars:Individual<_> list) fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Situational
             Accept      = fAccept fInfluence examplars
@@ -12,8 +12,8 @@ let create isBetter maxExemplars =
 
     let rec acceptance 
         fInfluence 
-        (prevExemplars : Individual list) 
-        (newlyAcceptedInds : Individual array) =
+        (prevExemplars : Individual<_> list) 
+        (newlyAcceptedInds : Individual<_> array) =
         match newlyAcceptedInds with
         | [||] -> failwith "SituationalKS.acceptance : accepted individual list empty"
         | inds ->
@@ -30,7 +30,7 @@ let create isBetter maxExemplars =
             | None -> [||], create prevExemplars acceptance fInfluence
 
     
-    let influence exemplars (ind:Individual) =
+    let influence exemplars (ind:Individual<_>) =
         match exemplars with
         | [] -> ind
         | best::_ -> best |> influenceInd  ind
