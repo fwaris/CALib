@@ -1,6 +1,7 @@
 ﻿module NormativeKS
 open CA
 open CAUtils
+open CAEvolve
 
 type ParmRange =
     | Fr    of float
@@ -89,14 +90,14 @@ let updateNorms isBetter norms highPerfInd =
             }
     )
 
-let normalizeParm {ParmLo=pLo; ParmHi=pHi} parm = 
-    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS parm
+let normalizeParm s {ParmLo=pLo; ParmHi=pHi} parm = 
+    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS s parm
     else
         match parm,pLo,pHi with
-        | F(_,mn,mx),Fr(l),Fr(h)        -> F(   randF l h ,mn,mx)
-        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32( randF32 l h ,mn,mx)
-        | I(_,mn,mx),Ir(l),Ir(h)        -> I(   randI l h ,mn,mx)
-        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64( randI64 l h ,mn,mx)
+        | F(_,mn,mx),Fr(l),Fr(h)        -> F(randF s l h mn mx,mn,mx)
+        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32(randF32 s l h mn mx,mn,mx)
+        | I(_,mn,mx),Ir(l),Ir(h)        -> I(randI s l h mn mx,mn,mx)
+        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64(randI64 s l h mn mx,mn,mx)
         | a,b,c -> failwithf "Normative: norm-parameter type mismatch %A,%A,%A" a b c
 
 let create parms isBetter =
@@ -113,9 +114,9 @@ let create parms isBetter =
         //printfn "%A" updatedNorms
         inds,create updatedNorms acceptance fInfluence 
     
-    let influence (norms:Norm array) (ind:Individual<_>) =
+    let influence (norms:Norm array) s (ind:Individual<_>) =
         {ind with
-            Parms = (norms,ind.Parms) ||> Array.map2 normalizeParm
+            Parms = (norms,ind.Parms) ||> Array.map2 (normalizeParm s)
         }
         
     let initialNorms = parms |> Array.map (fun p -> 

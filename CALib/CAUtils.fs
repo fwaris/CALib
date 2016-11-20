@@ -12,9 +12,24 @@ module Probability =
             let seed = seedGenerator.Next()
             new Random(seed)))
         localGenerator
-   
      
 let rnd = Probability.RNG
+
+//Marsaglia polar method
+let gaussian mean sigma = 
+    let mutable v1 = 0.
+    let mutable v2 = 0.
+    let mutable s = 2.
+    while s >= 1. || s = 0. do
+        v1 <- 2. * rnd.Value.NextDouble() - 1.
+        v2 <- 2. * rnd.Value.NextDouble() - 1.
+        s <- v1 * v1 + v2 * v2
+    let polar = sqrt(-2.*log(s) / s)
+    v1*polar*sigma + mean
+(*
+let rnd = System.Random()
+[for i in 0..100 -> gaussian (float 50.) 1.]
+*)
 
 let inline yourself x = x
 
@@ -39,115 +54,29 @@ let flatten tree =
         | Leaf(leaf)        -> leaf::acc
     loop [] tree
         
-let randI min max = rnd.Value.Next(min,max)
-let randF32 (min:float32) (max:float32) =  min + (float32 ((rnd.Value.NextDouble()) * float (max - min)))
-let randF  min max = min + (rnd.Value.NextDouble() * (max - min))
-let randI64 min max =  min + (int64 ((rnd.Value.NextDouble()) * float (max - min)))
-(*
-let rnd = System.Random()
-[for i in 1..100 -> randI 1 1000]
-[for i in 1..100 -> randF32 1.f 1000.f]
-[for i in 1..100 -> randF 1000. 1000000.]
-[for i in 1..100 -> randI64 1000L 1000000L]
-*)   
-
-//Marsaglia polar method
-let gaussian mean sigma = 
-    let mutable v1 = 0.
-    let mutable v2 = 0.
-    let mutable s = 2.
-    while s >= 1. || s = 0. do
-        v1 <- 2. * rnd.Value.NextDouble() - 1.
-        v2 <- 2. * rnd.Value.NextDouble() - 1.
-        s <- v1 * v1 + v2 * v2
-    let polar = sqrt(-2.*log(s) / s)
-    v1*polar*sigma + mean
-(*
-let rnd = System.Random()
-[for i in 0..100 -> gaussian (float 50.) 1.]
-*)
-
-let randomize = function
-    | F (v,mn,mx)   -> F (randF mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 mn mx, mn, mx)
-
-let slideUp = function
-    | F (v,mn,mx)   -> F (randF v mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 v mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI v mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 v mx, mn, mx)
-
-let slideDown = function
-    | F (v,mn,mx)   -> F (randF mn v, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 mn v, mn, mx)
-    | I (v,mn,mx)   -> I(randI mn v, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 mn v, mn, mx)
-
 let clamp mn mx x = max (min x mx) mn
 
-let evolveInt iV =
-    let v = float iV
-    let v' = gaussian v 3.
-    if abs (v' - v) > 1. then 
-        int v' 
-    elif v'<v then 
-        iV - 1 
-    else 
-        iV + 1 
+let randI (s:float) frmV toV mn mx = 
+    frmV + (int ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-let evolveInt64 i64V =
-    let v  = float i64V
-    let v' = gaussian v 3.
-    if abs (v' - v) > 1. then 
-        int64 v' 
-    elif v' < v then 
-        i64V - 1L
-    else 
-        i64V + 1L 
+let randF32 s (frmV:float32) (toV:float32) mn mx = 
+    frmV + (float32 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-let evolveS = function
-    | F (v,mn,mx)    -> F   (gaussian v 1.                      |> clamp mn mx, mn, mx)
-    | F32 (v,mn,mx)  -> F32 (gaussian (float v) 1. |> float32   |> clamp mn mx, mn, mx)
-    | I (v,mn,mx)    -> I   (evolveInt v                        |> clamp mn mx, mn, mx)
-    | I64 (v,mn,mx)  -> I64 (evolveInt64 v                      |> clamp mn mx, mn, mx)
+let randF s frmV toV mn mx = 
+    frmV + (rnd.Value.NextDouble() * s * (toV - frmV))
+    |> clamp mn mx
 
-///Use values from the 2nd parm to influence 1st parm
-///(randomly move towards 2nd parm value)
-let influenceParm influenced influencer =
-    match influencer,influenced with
-    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(randF iV pV,mn,mx)
-    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(randF pV iV,mn,mx)
-    | F(_),fInd                              -> evolveS fInd
+let randI64 s frmV toV mn mx =  
+    frmV + (int64 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(randF32 iV pV,mn,mx)
-    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(randF32 pV iV,mn,mx)
-    | F32(_),fInd                            -> evolveS fInd
-
-    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(randI iV pV,mn,mx)
-    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(randI pV iV,mn,mx)
-    | I(_),fInd                              -> evolveS fInd
-
-    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(randI64 iV pV,mn,mx)
-    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(randI64 pV iV,mn,mx)
-    | I64(_),fInd                            -> evolveS fInd
-
-    | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
-
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
-let influenceInd influenced influencer =
-    {influenced with
-        Parms = (influenced.Parms,influencer.Parms) ||> Array.map2 influenceParm
-    }
-
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
-let evolveInd individual =
-    {individual with
-        Parms = individual.Parms |> Array.map evolveS
-    }
+let randomize = function
+    | F (v,mn,mx)   -> F (randF 1.0 mn mx mn mx, mn, mx)
+    | F32 (v,mn,mx) -> F32 (randF32 1.0 mn mx mn mx, mn, mx)
+    | I (v,mn,mx)   -> I(randI 1.0 mn mx mn mx, mn, mx)
+    | I64 (v,mn,mx) -> I64(randI64 1.0 mn mx mn mx, mn, mx)
 
 let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
@@ -195,20 +124,6 @@ let parmDiff newParm oldParm  =
     | I(prevV,_,_),I(newV,mn,mx)        -> I(newV - prevV   ,mn,mx)
     | I64(prevV,_,_),I64(newV,mn,mx)    -> I64(newV - prevV ,mn,mx)
     | a,b -> failwithf "CAUtils: invalid combination of types for parmDiff %A,%A" a b
-
-//Effectively numerator / denominator
-let parmDiv numerator denominator  = 
-    try
-        let r = 
-            match numerator, denominator with
-            | F(n,_,_),F(d,_,_)        -> n / d
-            | F32(n,_,_),F32(d,_,_)    -> float n / float d
-            | I(n,_,_),I(d,_,_)        -> float n / float d
-            | I64(n,_,_),I64(d,_,_)    -> float n / float d
-            | a,b -> failwithf "CAUtils: invalid combination of types for parmDiv %A,%A" a b
-        Some r
-    with :? System.DivideByZeroException ->
-        None
 
 //Effectively numerator / denominator
 let parmToFloat = function

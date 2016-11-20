@@ -1,6 +1,7 @@
 ﻿#r @"../../packages/FSharp.Collections.ParallelSeq.1.0.2\lib\net40\FSharp.Collections.ParallelSeq.dll"
 #load "../CA.fs"
 #load "../CAUtils.fs"
+#load "../CAEvolve.fs"
 #load "../BeliefSpace/SituationalKS.fs"
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"

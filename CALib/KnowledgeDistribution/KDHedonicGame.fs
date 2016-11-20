@@ -7,7 +7,7 @@ let setInfluence beliefSpace pop :Population<Set<Knowledge>> =
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
-            (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
+            (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence 1.0 p))
     pop 
 
 type IndState = {RelFit:float; RelImprovment:float}

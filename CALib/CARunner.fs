@@ -48,7 +48,7 @@ let baseInfluence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
     pop
 
 ///single step CA

@@ -9,6 +9,7 @@ type Parm =
     | I64 of    v:int64     * min:int64     * max:int64
 
 type Id = int
+type Temp = float
 type Topology   = LBest | Global
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain | Other of string
 type Individual<'k> = {Id:Id; Parms:Parm array; Fitness:float; KS:'k}
@@ -26,7 +27,7 @@ and KnowledgeSource<'k> =
     {
         Type        : Knowledge
         Accept      : Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
-        Influence   : Individual<'k> -> Individual<'k>
+        Influence   : Temp -> Individual<'k> -> Individual<'k>
     }
 
 type CA<'k> =

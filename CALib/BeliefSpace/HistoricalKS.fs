@@ -1,6 +1,7 @@
 ﻿module HistoricalKS
 open CA
 open CAUtils
+open CAEvolve
 
 //determine direction of change
 let dir newParm prevParm = 
@@ -74,12 +75,12 @@ let create isBetter window =
                     }
                 [|nBest|], create updatedHistory acceptance fInfluence
     
-    let influence {Events=events} (ind:Individual<_>) =
+    let influence {Events=events} s (ind:Individual<_>) =
         let ev = events.[rnd.Value.Next(0,events.Length-1)]
         if isBetter ev.Best.Fitness ind.Fitness then
-            ev.Best |> influenceInd ind
+            ev.Best |> influenceInd s ind
         else
-            evolveInd ind
+            evolveInd s ind
 
     let initialHistory = {Window=window; Distance=[||]; Direction=[||]; Events=[]}
        

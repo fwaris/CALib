@@ -1,6 +1,7 @@
 ﻿module SituationalKS
 open CA
 open CAUtils
+open CAEvolve
 
 let create isBetter maxExemplars =
     let create (examplars:Individual<_> list) fAccept fInfluence : KnowledgeSource<_> =
@@ -30,9 +31,9 @@ let create isBetter maxExemplars =
             | None -> [||], create prevExemplars acceptance fInfluence
 
     
-    let influence exemplars (ind:Individual<_>) =
+    let influence exemplars s (ind:Individual<_>) =
         match exemplars with
         | [] -> ind
-        | best::_ -> best |> influenceInd  ind
+        | best::_ -> best |> influenceInd s ind
        
     create [] acceptance influence

@@ -1,6 +1,7 @@
 ﻿module DomainKS
 open CA
 open CAUtils
+open CAEvolve
 
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
@@ -61,19 +62,19 @@ let create isBetter fitness maxExemplars =
             | None -> 
                 [||], create (prevExemplars,pBestSlope) acceptance fInfluence
 
-    let influence (exemplars,gBestSlope) (ind:Individual<_>) =
+    let influence (exemplars,gBestSlope) s (ind:Individual<_>) =
         let (slope,parms) = maxSlope isBetter fitness ind.Fitness ind.Parms
         let maxParm = parms.[slope.Index]
         //printfn "maxParm: %A" maxParm
         let parm =
             match slope.Direction with
-            | Up   -> slideUp maxParm
-            | Down -> slideDown maxParm
+            | Up   -> slideUp s maxParm
+            | Down -> slideDown s maxParm
             | Flat -> 
                 match gBestSlope.Direction with
-                | Up    -> slideUp parms.[slope.Index]
-                | Down  -> slideDown parms.[slope.Index]
-                | Flat  -> evolveS(parms.[slope.Index])
+                | Up    -> slideUp s parms.[slope.Index]
+                | Down  -> slideDown s parms.[slope.Index]
+                | Flat  -> evolveS s (parms.[slope.Index])
         parms.[slope.Index] <- parm
         {ind with Parms=parms}
        
