@@ -38,9 +38,5 @@ let rec knowledgeDist isBetter (pop,b) network =
     let ksFit = totalKSFit isBetter pop
     let totalFit = (0.,ksFit) ||> Map.fold (fun acc _  v -> v + acc)
     let nrmlzdKdFit = ksFit |> Map.map (fun _ v -> v / totalFit)
-    let pop = 
-        pop
-        |> PSeq.ordered
-        |> PSeq.map (wmDist pop network nrmlzdKdFit)
-        |> PSeq.toArray
+    let pop = pop |> Array.Parallel.map (wmDist pop network nrmlzdKdFit)
     pop,b,KD(knowledgeDist isBetter)

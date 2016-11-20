@@ -32,10 +32,8 @@ let opponents pop network =
 let radomizePopStrategies game pop  : TypeStrategy[] = //randomy assgin a game type to each player
     let strategies = solve game
     let istrs = 
-        pop 
-        |> PSeq.ordered 
-        |> PSeq.map (fun i -> strategies.[CAUtils.rnd.Value.Next(0,strategies.Length-1)])
-        |> PSeq.toArray
+        pop |> Array.Parallel.map(fun i -> 
+            strategies.[CAUtils.rnd.Value.Next(0,strategies.Length-1)])
     istrs
 
 
@@ -88,16 +86,21 @@ let rec private fixedStrategyKD sign opponents game strategies (pop:Individual<_
     let scaledFitness = pop |> Array.mapi (fun i p -> scaledPayoffs.[i] * sf p.Fitness)
     let pop =
         pop
-        |> PSeq.ordered
-        |> PSeq.map (fun p ->
+        |> Array.Parallel.map (fun p ->
             let friends = network pop p.Id
             let maxP = Seq.append friends [p] |> Seq.maxBy (fun p->scaledFitness.[p.Id])
             {p with KS=maxP.KS}
         )
-        |> PSeq.toArray
+
     printfn "payoff %A, scaledFit %A" (minP,maxP) sourceRange
-    let gtScore = scaledFitness |> PSeq.mapi (fun i f -> fst strategies.[i],f ) |> PSeq.groupBy fst |> Seq.map (fun (x,y) -> x.Name,y|>Seq.map snd|>Seq.sum)
+
+    let gtScore = 
+        scaledFitness 
+        |> PSeq.mapi (fun i f -> fst strategies.[i],f ) 
+        |> PSeq.groupBy fst 
+        |> Seq.map (fun (x,y) -> x.Name,y |> Seq.map snd |>Seq.sum)
     printfn "Winners: %A" gtScore
+
     let counts = strategies |> Array.countBy fst
     printfn "Types: %A" counts
     pop,beliefSpace,KD(fixedStrategyKD sign opponents game strategies)

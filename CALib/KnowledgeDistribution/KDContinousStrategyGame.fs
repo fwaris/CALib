@@ -44,13 +44,11 @@ let rec private csStrategy
     =
     let actions = 
         pop 
-        |> PSeq.ordered
-        |> PSeq.map (playGame cmprtr game.Play game.Payoff network pop) 
-        |> PSeq.toArray
+        |> Array.Parallel.map (playGame cmprtr game.Play game.Payoff network pop) 
+
     let payoffs =
         pop
-        |> PSeq.ordered 
-        |> PSeq.map (fun indv ->
+        |> Array.Parallel.map (fun indv ->
             let indvActn = actions.[indv.Id]
             let nhbrs = network pop indv.Id
             let nhbrActns = 
@@ -58,7 +56,7 @@ let rec private csStrategy
                 |> Array.map (fun n ->  actions.[n.Id]) 
                 |> Seq.ofArray
             game.Payoff cmprtr indv indvActn  nhbrActns)
-        |> PSeq.toArray
+
     let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace) payoffs
     pop,beliefSpace,KD(csStrategy cmprtr game)
 

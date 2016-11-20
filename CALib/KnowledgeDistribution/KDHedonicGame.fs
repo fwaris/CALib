@@ -2,24 +2,23 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-let setInfluence beliefSpace pop =
+let setInfluence beliefSpace pop :Population<Set<Knowledge>> =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> PSeq.map (fun p -> (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
-        |> PSeq.toArray
-    Array.sortInPlaceBy(fun i->i.Id) pop
-    pop
+        |> Array.Parallel.map (fun p -> 
+            (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
+    pop 
 
 type IndState = {RelFit:float; RelImprovment:float}
 type GameState = {Count:int; Coalitions:Map<Id,Set<Id>>; PrevFit:float[]; Sign:float; KSset:Set<Knowledge>}
 
 let normalizePopFitness target sign (pop:Individual<_>[]) =
-    let currentFit = pop |> PSeq.ordered |> PSeq.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
+    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
     let minFit = currentFit |> PSeq.min
     let maxFit = currentFit |> PSeq.max
     let scaler = CAUtils.scaler target (minFit,maxFit) 
-    currentFit |> PSeq.map scaler |> PSeq.toArray //scale fitness to target range
+    currentFit |> Array.Parallel.map scaler //scale fitness to target range
 
 let normalizeImprovement target curNormlzdFit prevNormlzdFit =
     let improvements = Array.map2 (fun a b -> a - b) curNormlzdFit prevNormlzdFit

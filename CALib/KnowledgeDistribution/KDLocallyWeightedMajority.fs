@@ -38,8 +38,7 @@ let private locallyWeightedMajority comparator (indv,friends:Individual<Knowledg
 let rec knowledgeDist comparator (pop,b) network =
     let pop =
         pop
-        |> PSeq.ordered
-        |> PSeq.map (fun ind -> ind,network pop ind.Id)
-        |> PSeq.map (locallyWeightedMajority comparator)
-        |> PSeq.toArray
+        |> Array.Parallel.map (fun ind -> 
+            (ind,network pop ind.Id) 
+            |> locallyWeightedMajority comparator)
     pop,b,KD(knowledgeDist comparator)

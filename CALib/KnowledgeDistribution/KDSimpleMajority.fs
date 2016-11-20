@@ -21,8 +21,6 @@ let private smDist pop network (indv:Individual<Knowledge>) =
 let rec knowledgeDist (pop,b) network =
     let pop = 
         pop
-        |> PSeq.ordered
-        |> PSeq.map (smDist pop network)
-        |> PSeq.toArray
+        |> Array.Parallel.map (smDist pop network)
     pop,b,KD(knowledgeDist)
 
