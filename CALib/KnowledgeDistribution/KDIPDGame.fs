@@ -1,24 +1,61 @@
 ﻿module KDIPDGame
 open CA
+open CAUtils
 open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
-type IpdKS = Map<Knowledge,float>
+type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
 type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-let cooperation  neighbor indv =  set[indv.Id; neighbor.Id], 0.1 //tbd
+type IpdState = {SumDiversity:float; NormalizedFit:float array}
 
-let relativeCoop totalCoop (s,coop) = s,coop / totalCoop
+let parmDiversity p1 p2 = 
+    (p1,p2)
+    ||> Array.map2 (fun a b -> parmDiff a b |> parmToFloat |> abs) 
+    |> Array.sum
 
-let play _ indv neighbors payoff : Action =
-    let coops = neighbors |> Seq.map (cooperation indv) |> Seq.toList
-    let sumCoops = coops |> List.sumBy (fun (_,c) -> c)
+//est. avg diversity of pop via sampling
+let sampleAvgDiversity (pop:Population<_>) =
+    let sampleSize = 30
+    let rec loop acc c =
+        if c >= sampleSize 
+            then acc / float sampleSize
+        else
+            let i1 = rnd.Value.Next(0,pop.Length-1)
+            let i2 = rnd.Value.Next(0,pop.Length-1)
+            let p1 = pop.[i1]
+            let p2 = pop.[i2]
+            let d = parmDiversity p1.Parms p2.Parms
+            loop (acc + d) (c + 1)
+    loop 0. 0
+
+let cooperation 
+    st
+    neighbor 
+    indv =  
+    let ids = set[indv.Id; neighbor.Id]
+    let d = parmDiversity indv.Parms neighbor.Parms / st.SumDiversity  //normalize diversity
+    let fNbr = st.NormalizedFit.[neighbor.Id]
+    let fI = st.NormalizedFit.[indv.Id]
+    let attraction = (fNbr - fI) // |> max 0.
+//    if attraction < 0. then failwithf "attr neg %A" (f1,f1, attraction)
+    let coop = d * attraction
+    ids,coop
+
+let relativeCoop totalCoop (s,coop) = s, if coop < 0. then 0. else coop / totalCoop
+
+let play state _ indv neighbors payoff : Action =
+    let coops = neighbors |> Seq.map (cooperation state indv) |> Seq.toList
+    let sumCoops = coops |> List.sumBy (fun (_,c) -> max c 0.)
     let ws = coops |> List.map (relativeCoop sumCoops)
+//    if ws |> List.exists(fun (_,f) -> f < 0. && f > 1.) then printfn "******** %A" ws
+//    let ws2 = ws |> List.toArray 
+//    printfn "%A" ws2
     ws
 
-let payoff _ indv indvActn (nhbrActns:Action seq) : Payout =
+let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
     let m1 = indvActn |> Map.ofList
     let payoff = 
         nhbrActns 
@@ -47,64 +84,98 @@ let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElemen
 let VMAX = 1.5 //payout is between 0 and 2 
 let VMIN = 0.5 
 
-let updateKsw (pop:Population<_>) payout indv ksw =
-    let fromRange = (0.,2.)
-    let toRange = (0., 1.)
+let updateKsw (pop:Population<IpdKS>) payout indv =
     let ksw = 
         payout 
         |> List.map (fun (idSet,f) ->  //set<id>, float [0-2]
             let nhbrId = other indv.Id idSet
-            let ks = pop.[nhbrId].KS
-            ks,f)
+            let (ks,_) = pop.[nhbrId].KS
+            ks,f / 2.)    //payout is in range [0., 2.] so normalize to max 1.0
         |> List.groupBy fst
         |> List.map (fun (ks,fs)->
             ks,
-            fs |> List.sumBy snd |> CAUtils.scaler fromRange toRange
+            fs |> List.sumBy snd |> max 1.0    //cap alt KS influence to 1.0
             )
         |> Map.ofList
     ksw
 
-let updateIndv cmprtr (pop:Population<_>) indv ksw payout =
+let removePrimaryKS ks m = Map.remove ks m
+
+let createKs primary others = primary, removePrimaryKS primary others
+
+let updateIndv cmprtr (pop:Population<IpdKS>) indv payout =
     let payout = payout |> List.filter (fun (_,f) -> f < VMIN)
-    let vmx = payout |> List.filter (fun (_,f) -> f >= VMAX )
-    let indv,ksw = 
+    let vmx = payout |> List.filter (fun (_,f) -> f >= VMAX)
+    let indv = 
         match vmx.Length,payout.Length with
-        | 0,0 -> indv, Map.empty
-        | 0,_ -> indv, updateKsw pop payout indv ksw
+        | 0,0 -> {indv with KS=fst indv.KS,Map.empty}
+        | 0,_ -> let ks = createKs (fst indv.KS) (updateKsw pop payout indv)
+                 {indv with KS=ks}
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
-            {indv with KS = nhbr.KS}, updateKsw pop payout indv ksw  
+            let (ks,_):IpdKS = nhbr.KS
+            //let ksw = updateKsw pop payout indv 
+            {indv with KS = createKs ks Map.empty}
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)
             let nhbr = pop.[other indv.Id (fst vmx.[i])]
-            {indv with KS = nhbr.KS}, updateKsw pop payout indv ksw  
-    ksw,indv
+            let (ks,_):IpdKS = nhbr.KS
+            //let ksw = updateKsw pop payout indv 
+            {indv with KS = createKs ks Map.empty}  
+    indv
 
-let updatePop cmprtr kswIn pop (payouts:Payout array) = 
-    let kswOut = Array.copy kswIn
-    let pop = pop |> Array.Parallel.mapi(fun i indv ->
-        let ksw,indv = updateIndv cmprtr pop indv kswIn.[i] payouts.[i]
-        kswOut.[i] <- ksw
-        indv
+let updatePop cmprtr pop (payouts:Payout array) = 
+    let pop = pop |> Array.Parallel.map(fun indv ->
+        updateIndv cmprtr pop indv payouts.[indv.Id]
     )
-    pop,kswOut
+    pop
 
-let rec outcome ksWeights cmprtr (pop,beliefSpace) (payouts:Payout array) =
-    let pop,ksWeights = updatePop cmprtr ksWeights pop payouts
+let createState cmprtr pop =
+    {
+        SumDiversity = sampleAvgDiversity pop * float pop.Length
+        NormalizedFit = normalizePopFitness (0., 1.0) cmprtr pop
+    }
+
+let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
+    let pop = updatePop cmprtr pop payouts
+    let state = createState cmprtr pop
     pop,
     beliefSpace,
     {
-        Play = play
-        Payoff = payoff
-        Outcome = outcome ksWeights
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state
     }
 
-let initWeights pop = pop |> Array.Parallel.map (fun indv -> Map.ofList [indv.KS,1.0])
+let initKS (pop:Population<Knowledge>) = 
+    pop 
+    |> Array.Parallel.map (fun indv -> 
+        {
+            Id = indv.Id
+            Fitness = indv.Fitness
+            Parms = indv.Parms
+            KS=indv.KS,Map.empty
+        })
 
-let init pop =
-    let ksWeights = initWeights pop
+let game cmprtr pop =
+    let state = createState cmprtr pop
     {
-        Play = play
-        Payoff = payoff
-        Outcome = outcome ksWeights
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state
     }
+
+let ipdInfluence beliefSpace pop :Population<IpdKS> =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let pop =
+        pop
+        |> Array.Parallel.map (fun p -> 
+            let mainKs,otherKs = p.KS
+            let p = ksMap.[mainKs].Influence 1.0 p
+            (p,otherKs) ||> Map.fold (fun p k w -> ksMap.[k].Influence w p))
+    pop 
+
+let knowledgeDist comparator pop =
+    let g = game comparator pop
+    KDContinousStrategyGame.knowledgeDist comparator g
+
