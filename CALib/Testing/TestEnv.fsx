@@ -1,4 +1,4 @@
-﻿#r @"../../packages/FSharp.Collections.ParallelSeq.1.0.2\lib\net40\FSharp.Collections.ParallelSeq.dll"
+﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
 #load "../CA.fs"
 #load "../CAUtils.fs"
 #load "../CAEvolve.fs"
@@ -121,7 +121,7 @@ let kdIpdCA vmx f c p  =
     let kd = ipdKdist vmx c pop 
     makeCA f c pop bsp kd KDIPDGame.ipdInfluence
 
-#r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
+#r @"..\..\packages\FSharp.Charting\lib\net40\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")

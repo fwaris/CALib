@@ -28,7 +28,7 @@ let fitness df (parms:Parm array)  =
 let fits = landscapes |> List.map (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,fitness d)
 
 let comparator  = CAUtils.Maximize
-let termination step = step.Count > 1000
+let termination step = step.Count > 100
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
