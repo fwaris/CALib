@@ -69,14 +69,21 @@
     <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
-    <None Include="Script.fsx" />
     <Content Include="packages.config" />
+    <None Include="Landscapes\test_cone1.01.csv" />
+    <None Include="Landscapes\test_cone2.0.csv" />
+    <None Include="Landscapes\test_cone3.35.csv" />
+    <None Include="Landscapes\test_cone3.5.csv" />
+    <None Include="Landscapes\test_cone3.99.csv" />
+    <None Include="Testing\TestIPDPerf.fsx" />
+    <None Include="Testing\TestDF1.fsx" />
     <None Include="Testing\TestCA3D.fsx" />
     <None Include="Testing\TestDomain.fsx" />
     <None Include="Testing\TestHistorical.fsx" />
     <None Include="Testing\TestNormative.fsx" />
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
+    <None Include="Testing\TestEnv.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Charting">

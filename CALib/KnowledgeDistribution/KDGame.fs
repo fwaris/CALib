@@ -92,17 +92,17 @@ let rec private fixedStrategyKD sign opponents game strategies (pop:Individual<_
             {p with KS=maxP.KS}
         )
 
-    printfn "payoff %A, scaledFit %A" (minP,maxP) sourceRange
+//    printfn "payoff %A, scaledFit %A" (minP,maxP) sourceRange
 
     let gtScore = 
         scaledFitness 
         |> PSeq.mapi (fun i f -> fst strategies.[i],f ) 
         |> PSeq.groupBy fst 
         |> Seq.map (fun (x,y) -> x.Name,y |> Seq.map snd |>Seq.sum)
-    printfn "Winners: %A" gtScore
+//    printfn "Winners: %A" gtScore
 
     let counts = strategies |> Array.countBy fst
-    printfn "Types: %A" counts
+//    printfn "Types: %A" counts
     pop,beliefSpace,KD(fixedStrategyKD sign opponents game strategies)
 
 let hawkDovePayoff = function

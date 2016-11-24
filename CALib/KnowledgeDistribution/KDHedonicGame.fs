@@ -93,7 +93,7 @@ let dbg (pop:Individual<_>[]) = function
     | id,(Ind i)       -> printfn  "Forming c %d (%A), %d (%A" id pop.[id].KS i pop.[i].KS
 
 let joinCoalition pop coalitionSet (id,partner) =
-    dbg pop (id,partner)
+    //dbg pop (id,partner)
     match partner with
     | Coalition c  ->  Set.add (c |> Set.add id) coalitionSet
     | Ind id2      ->  Set.add (set[id;id2]) coalitionSet
@@ -160,7 +160,7 @@ let breakCoalition
             accKS,accIndv)
 
     let leaveKSAssingments = remainLeavKSAssignments |> Map.add  ftstIndv dominantKS
-    printfn "breaking %A (%A) for leaving %A (%A)" coalition coalKSset leavingIndvs leaveKSAssingments
+    //printfn "breaking %A (%A) for leaving %A (%A)" coalition coalKSset leavingIndvs leaveKSAssingments
 
     let remainingCoalition = (coalition,leavingIndvs) ||> Set.fold (fun acc k -> Set.remove k acc)
     let remainingMembers = remainingCoalition |> Seq.map (fun id -> {pop.[id] with KS=remainKS}) |> Seq.toList

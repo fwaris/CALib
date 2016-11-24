@@ -82,7 +82,7 @@ let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
 let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElement s
 
 let VMAX = 1.5 //payout is between 0 and 2 
-let VMIN = 0.5 
+let VMIN = 0.25 
 
 let updateKsw (pop:Population<IpdKS>) payout indv =
     let ksw = 

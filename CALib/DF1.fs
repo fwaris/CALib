@@ -20,3 +20,33 @@ let landscape =
         for y in -1.0 .. 0.1 .. 1.0 do
             yield (x,y,testDfi x y)]
 *)
+open System.IO
+type Cone = {H:float; R:float; X:float; Y:float}
+
+let maxF x y m c = 
+    let dist = sqrt (sqr (x - c.X) + sqr (y - c.Y))
+    max m (c.H - c.R * dist)
+
+let createDf1 file =
+    let lines = File.ReadLines file |> Seq.skip 5
+    let cones =
+        lines
+        |> Seq.filter (fun s -> s.Trim().Length > 10)
+//        |> Seq.mapi(fun i s -> printfn "%d - %s" i s; s)
+        |> Seq.map(fun s -> s.Split([|','; ' '; '\t'|],System.StringSplitOptions.RemoveEmptyEntries))
+        |> Seq.map(fun xs -> xs |> Array.map float)
+        |> Seq.map (fun xs -> {X=xs.[0]; Y=xs.[1]; H=xs.[2]; R=xs.[3]})
+        |> Seq.toArray
+    let maxCone = cones |> Array.maxBy (fun x -> x.H)
+    let df x y = (System.Double.MinValue,cones) ||> Array.fold (maxF x y)
+    maxCone,df
+(*
+let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../Landscapes/test_cone3.5.csv")
+let df1 = createDf1 @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALib\CALib\Landscapes\test_cone1.01.csv"
+[for i in -1. .. 0.1 .. 1. do
+    for j in -1. .. 0.1 .. 1. do
+        yield df1 i j]
+*)
+        
+
+    

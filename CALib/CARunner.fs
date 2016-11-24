@@ -83,7 +83,7 @@ let run termination maxBest ca =
         let stp = step stp maxBest
         let best = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
         printfn "step %i. fitness=%A" stp.Count best
-        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
+//        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
         if termination stp then
             stp
         else
