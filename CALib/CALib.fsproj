@@ -69,7 +69,6 @@
     <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
-    <Content Include="packages.config" />
     <None Include="Landscapes\test_cone1.01.csv" />
     <None Include="Landscapes\test_cone2.0.csv" />
     <None Include="Landscapes\test_cone3.35.csv" />
