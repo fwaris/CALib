@@ -39,7 +39,7 @@ let runT vmx (l,m,f) =
 let ipdsT vmx = fits |> List.map (runT vmx)
 
 let avgs = 
-    [for mn in 0.1 .. 0.1 .. 0.1 do
+    [for mn in 0.1 .. 0.1 .. 1.0 do
         for mx in 0.2 .. 0.1 .. 1.99 do
             if mx > mn + 0.2 then
                 let vmx = (mn,mx)
@@ -48,9 +48,18 @@ let avgs =
                     rs 
                     |> List.collect CAUtils.yourself
                     |> List.groupBy (fun (t,_,_) -> t) 
-                    |> List.map (fun (t,xs) -> t, xs |> List.averageBy (fun (_,_,f) -> f))
+                    |> List.map (fun (t,xs) -> t,vmx, xs |> List.averageBy (fun (_,_,f) -> f))
                 yield rs]
 
+let maxs = 
+    avgs
+    |> List.collect CAUtils.yourself 
+    |> List.groupBy (fun (x,y,z) -> y) 
+    |> List.map (fun (x,xs)->x, xs |> List.sumBy(fun (x,y,z)->z))
+
+let maxAll = maxs |> List.maxBy snd
+
+maxs |> List.map fst |> List.distinct
 (*
 *)
 
