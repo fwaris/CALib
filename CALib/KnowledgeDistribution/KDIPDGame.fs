@@ -9,7 +9,7 @@ type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-type IpdState = {SumDiversity:float; NormalizedFit:float array}
+type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float}
 
 let parmDiversity p1 p2 = 
     (p1,p2)
@@ -81,8 +81,8 @@ let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
 
 let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElement s
 
-let VMAX = 1.5 //payout is between 0 and 2 
-let VMIN = 0.25 
+//let VMAX = 01.75 //payout is between 0 and 2 
+//let VMIN = 0.25 
 
 let updateKsw (pop:Population<IpdKS>) payout indv =
     let ksw = 
@@ -103,9 +103,9 @@ let removePrimaryKS ks m = Map.remove ks m
 
 let createKs primary others = primary, removePrimaryKS primary others
 
-let updateIndv cmprtr (pop:Population<IpdKS>) indv payout =
-    let payout = payout |> List.filter (fun (_,f) -> f < VMIN)
-    let vmx = payout |> List.filter (fun (_,f) -> f >= VMAX)
+let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
+    let payout = payout |> List.filter (fun (_,f) -> f < vmin)
+    let vmx = payout |> List.filter (fun (_,f) -> f >= vmax)
     let indv = 
         match vmx.Length,payout.Length with
         | 0,0 -> {indv with KS=fst indv.KS,Map.empty}
@@ -124,21 +124,24 @@ let updateIndv cmprtr (pop:Population<IpdKS>) indv payout =
             {indv with KS = createKs ks Map.empty}  
     indv
 
-let updatePop cmprtr pop (payouts:Payout array) = 
+let updatePop vmx cmprtr pop (payouts:Payout array) = 
     let pop = pop |> Array.Parallel.map(fun indv ->
-        updateIndv cmprtr pop indv payouts.[indv.Id]
+        updateIndv vmx cmprtr pop indv payouts.[indv.Id]
     )
     pop
 
-let createState cmprtr pop =
+let createState (vmin,vmax) cmprtr pop =
     {
         SumDiversity = sampleAvgDiversity pop * float pop.Length
         NormalizedFit = normalizePopFitness (0., 1.0) cmprtr pop
+        VMin = vmin
+        VMax = vmax
     }
 
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
-    let pop = updatePop cmprtr pop payouts
-    let state = createState cmprtr pop
+    let vmx = (state.VMin, state.VMax)
+    let pop = updatePop vmx cmprtr pop payouts
+    let state = createState vmx cmprtr pop
     pop,
     beliefSpace,
     {
@@ -157,8 +160,8 @@ let initKS (pop:Population<Knowledge>) =
             KS=indv.KS,Map.empty
         })
 
-let game cmprtr pop =
-    let state = createState cmprtr pop
+let game (vmin,vmax) cmprtr pop =
+    let state = createState (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state
@@ -175,7 +178,7 @@ let ipdInfluence beliefSpace pop :Population<IpdKS> =
             (p,otherKs) ||> Map.fold (fun p k w -> ksMap.[k].Influence w p))
     pop 
 
-let knowledgeDist comparator pop =
-    let g = game comparator pop
+let knowledgeDist (vmin,vmax) comparator pop =
+    let g = game (vmin,vmax)  comparator pop
     KDContinousStrategyGame.knowledgeDist comparator g
 

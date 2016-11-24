@@ -34,7 +34,7 @@ let inline makeCA fitness comparator pop bspace kd influence =
         }
 
 let termination step = step.Count > 1000
-let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
+let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness,stp.Best.[0].Parms else 0.0,[||]
 
 let dataCollector s = 
     best s, 
@@ -115,10 +115,10 @@ let kdHedonicCA f c p =
     let kd = hedonicKdist c pop 
     makeCA f c pop bsp kd KDHedonicGame.setInfluence
 
-let kdIpdCA f c p  = 
+let kdIpdCA vmx f c p  = 
     let bsp = bsp f p c
     let pop = createPop bsp p CAUtils.baseKsInit |> KDIPDGame.initKS
-    let kd = ipdKdist c pop 
+    let kd = ipdKdist vmx c pop 
     makeCA f c pop bsp kd KDIPDGame.ipdInfluence
 
 #r @"..\..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll"
@@ -151,13 +151,13 @@ let plotResults title kd =
     let lbls = labels (kd |> Seq.map snd)
     let cls = [for i in 0 .. lbls |> Seq.length -> toColor(colors.[i])]
     let ldata = (Map.empty,(kd |> Seq.map snd)) ||> Seq.fold (fun m xs -> (m,xs) ||> Seq.fold (fun m (k,v:float) -> add m k v)) |> Map.map (fun k v -> List.rev v)
-    let maxF = kd |> Seq.map fst |> Seq.max
+    let maxF = kd |> Seq.map (fst>>fst) |> Seq.max
     lbls 
     |> Seq.mapi (fun i l -> Chart.Line (ldata.[l], Name=ks l)) 
     |> Seq.append 
         [Chart.Line (
             kd 
-            |> Seq.map fst 
+            |> Seq.map (fst>>fst)
             |> Seq.map  (fun x -> x * 80.), Name=sprintf "Fitness [%f] (scaled)" maxF)             
         |> Chart.WithSeries.Marker(Style=System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Diamond)
        ]

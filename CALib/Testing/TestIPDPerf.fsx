@@ -32,11 +32,44 @@ let termination step = step.Count > 1000
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
-let runF (l,m,f) = 
-    let d = kdIpdCA f comparator parms |> runCollect ipdDataCollector 2 |> tk
+let runT vmx (l,m,f) = 
+    let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
+    l,m,best t
+
+let ipdsT vmx = fits |> List.map (runT vmx)
+
+let avgs = 
+    [for mn in 0.1 .. 0.1 .. 0.1 do
+        for mx in 0.2 .. 0.1 .. 1.99 do
+            if mx > mn + 0.2 then
+                let vmx = (mn,mx)
+                let rs = [for _ in 1 .. 5 -> ipdsT vmx]
+                let rs = 
+                    rs 
+                    |> List.collect CAUtils.yourself
+                    |> List.groupBy (fun (t,_,_) -> t) 
+                    |> List.map (fun (t,xs) -> t, xs |> List.averageBy (fun (_,_,f) -> f))
+                yield rs]
+
+(*
+*)
+
+(*
+let runC vmx (l,m,f) = 
+    let d = kdIpdCA vmx f comparator parms |> runCollect ipdDataCollector 2 |> tk
     l,m,d
 
-let ipds  = fits |> List.map runF
-
-for (l,m,d) in ipds do
-   async{plotResults (sprintf "%s [%f]" l m.H) d |> FSharp.Charting.Chart.Show} |> Async.Start
+let ipdsC vmx = fits |> List.map (runC vmx)
+let vmx = (0.3,1.25)
+let ipdvmx = ipds vmx
+for (l,m,d) in ipdvmx do
+    async{
+        let t = sprintf "%s [%f]" l m.H
+        plotResults t d |> FSharp.Charting.Chart.Show
+        } |> Async.Start
+;;
+for (l,m,d) in ipdvmx do
+    let f,p = d |> List.last |> fst
+    printfn "%s: F=%f,F'=%f, P=%A, P'=%A" l f m.H p [|m.X,m.Y|]
+;;
+*)
