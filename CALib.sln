@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{45B94AFE-0ACE-4966-8F77-97518170807B}"
 	ProjectSection(SolutionItems) = preProject
 		License.md = License.md
+		paket.dependencies = paket.dependencies
 		paketupdate.txt = paketupdate.txt
 		README.md = README.md
 	EndProjectSection

@@ -176,7 +176,7 @@ let ipdInfluence beliefSpace pop :Population<IpdKS> =
         pop
         |> Array.Parallel.map (fun p -> 
             let mainKs,otherKs = p.KS
-            let p = ksMap.[mainKs].Influence 1.0 p
+            let p = ksMap.[mainKs].Influence 3.0 p
             (p,otherKs) ||> Map.fold (fun p k w -> ksMap.[k].Influence w p))
     pop 
 

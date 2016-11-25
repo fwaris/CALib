@@ -14,9 +14,9 @@ let slideDown s = function
     | I (v,mn,mx)   -> I(randI s mn v mn mx, mn, mx)
     | I64 (v,mn,mx) -> I64(randI64 s mn v mn mx, mn, mx)
 
-let evolveInt s iV =
+let evolveInt s sg iV =
     let v = float iV
-    let v' = gaussian v (s * 3.)
+    let v' = gaussian v (s * sg)
     if abs (v' - v) > 1. then 
         int v' 
     elif v'<v then 
@@ -24,9 +24,9 @@ let evolveInt s iV =
     else 
         iV + 1 
 
-let evolveInt64 s i64V =
+let evolveInt64 s sg i64V =
     let v  = float i64V
-    let v' = gaussian v (s * 3.)
+    let v' = gaussian v (s * sg)
     if abs (v' - v) > 1. then 
         int64 v' 
     elif v' < v then 
@@ -34,11 +34,11 @@ let evolveInt64 s i64V =
     else 
         i64V + 1L 
 
-let evolveS s = function
-    | F (v,mn,mx)    -> F   (gaussian v (s * 1.)                        |> clamp mn mx, mn, mx)
-    | F32 (v,mn,mx)  -> F32 (gaussian  (float v) (s * 1.) |> float32    |> clamp mn mx, mn, mx)
-    | I (v,mn,mx)    -> I   (evolveInt s v                              |> clamp mn mx, mn, mx)
-    | I64 (v,mn,mx)  -> I64 (evolveInt64 s v                            |> clamp mn mx, mn, mx)
+let evolveS s sg = function
+    | F (v,mn,mx)    -> F   (gaussian v (s * sg)                        |> clamp mn mx, mn, mx)
+    | F32 (v,mn,mx)  -> F32 (gaussian  (float v) (s * sg) |> float32    |> clamp mn mx, mn, mx)
+    | I (v,mn,mx)    -> I   (evolveInt s sg v                           |> clamp mn mx, mn, mx)
+    | I64 (v,mn,mx)  -> I64 (evolveInt64 s sg v                         |> clamp mn mx, mn, mx)
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)
@@ -46,19 +46,19 @@ let influenceParm s influenced influencer =
     match influencer,influenced with
     | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(randF s iV pV mn mx, mn,mx)
     | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(randF s pV iV mn mx, mn,mx)
-    | F(_),fInd                              -> evolveS s fInd
+    | F(_),fInd                              -> evolveS s 1.0 fInd
 
     | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(randF32 s iV pV mn mx,mn,mx)
     | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(randF32 s pV iV mn mx,mn,mx)
-    | F32(_),fInd                            -> evolveS s fInd
+    | F32(_),fInd                            -> evolveS s 1.0 fInd
 
     | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(randI s iV pV mn mx,mn,mx)
     | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(randI s pV iV mn mx,mn,mx)
-    | I(_),fInd                              -> evolveS s fInd
+    | I(_),fInd                              -> evolveS s 1.0 fInd
 
     | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(randI64 s iV pV mn mx,mn,mx)
     | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(randI64 s pV iV mn mx,mn,mx)
-    | I64(_),fInd                            -> evolveS s fInd
+    | I64(_),fInd                            -> evolveS s 1.0 fInd
 
     | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
 
@@ -71,9 +71,9 @@ let influenceInd s influenced influencer =
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let evolveInd s individual =
+let evolveInd s sg individual =
     {individual with
-        Parms = individual.Parms |> Array.map (evolveS s)
+        Parms = individual.Parms |> Array.map (evolveS s sg)
     }
 
 (*

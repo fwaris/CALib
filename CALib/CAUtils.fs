@@ -1,35 +1,9 @@
 ﻿module CAUtils
 open CA
 
-module Probability =
-    open System
-    open System.Threading
-    let RNG =
-        // Create master seed generator and thread local value
-        let seedGenerator = new Random()
-        let localGenerator = new ThreadLocal<Random>(fun _ -> 
-            lock seedGenerator (fun _ -> 
-            let seed = seedGenerator.Next()
-            new Random(seed)))
-        localGenerator
-     
 let rnd = Probability.RNG
 
-//Marsaglia polar method
-let gaussian mean sigma = 
-    let mutable v1 = 0.
-    let mutable v2 = 0.
-    let mutable s = 2.
-    while s >= 1. || s = 0. do
-        v1 <- 2. * rnd.Value.NextDouble() - 1.
-        v2 <- 2. * rnd.Value.NextDouble() - 1.
-        s <- v1 * v1 + v2 * v2
-    let polar = sqrt(-2.*log(s) / s)
-    v1*polar*sigma + mean
-(*
-let rnd = System.Random()
-[for i in 0..100 -> gaussian (float 50.) 1.]
-*)
+let gaussian mean sigma = Probability.GAUSS mean sigma
 
 let inline yourself x = x
 

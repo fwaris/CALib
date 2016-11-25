@@ -80,7 +80,7 @@ let create isBetter window =
         if isBetter ev.Best.Fitness ind.Fitness then
             ev.Best |> influenceInd s ind
         else
-            evolveInd s ind
+            evolveInd s 3.0 ind
 
     let initialHistory = {Window=window; Distance=[||]; Direction=[||]; Events=[]}
        

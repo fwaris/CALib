@@ -74,7 +74,7 @@ let create isBetter fitness maxExemplars =
                 match gBestSlope.Direction with
                 | Up    -> slideUp s parms.[slope.Index]
                 | Down  -> slideDown s parms.[slope.Index]
-                | Flat  -> evolveS s (parms.[slope.Index])
+                | Flat  -> evolveS s 0.5 (parms.[slope.Index])
         parms.[slope.Index] <- parm
         {ind with Parms=parms}
        

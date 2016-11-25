@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DF1.fs" />
+    <Compile Include="Probability.fs" />
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="CAEvolve.fs" />
@@ -83,6 +84,7 @@
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
     <None Include="Testing\TestEnv.fsx" />
+    <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -116,6 +118,17 @@
       <ItemGroup>
         <Reference Include="FSharp.Collections.ParallelSeq">
           <HintPath>..\packages\FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
+      <ItemGroup>
+        <Reference Include="FsRandom">
+          <HintPath>..\packages\FsRandom\lib\net40\FsRandom.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
