@@ -32,6 +32,8 @@ let termination step = step.Count > 100
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
+(* vmin,vmax hyperparameter search -> .7, 1.4
+
 let runT vmx (l,m,f) = 
     let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
     l,m,best t
@@ -58,19 +60,21 @@ let maxs =
     |> List.map (fun (x,xs)->x, xs |> List.sumBy(fun (x,y,z)->z))
 
 let maxAll = maxs |> List.maxBy snd
+let ms = maxs |> List.sortBy (fun (v,m) -> -m)
 
 maxs |> List.map fst |> List.distinct
-(*
+
 *)
 
-(*
+(* plot all landscapes
+
 let runC vmx (l,m,f) = 
     let d = kdIpdCA vmx f comparator parms |> runCollect ipdDataCollector 2 |> tk
     l,m,d
 
 let ipdsC vmx = fits |> List.map (runC vmx)
-let vmx = (0.3,1.25)
-let ipdvmx = ipds vmx
+let vmx = (0.7,1.4)
+let ipdvmx = ipdsC vmx
 for (l,m,d) in ipdvmx do
     async{
         let t = sprintf "%s [%f]" l m.H
@@ -81,4 +85,31 @@ for (l,m,d) in ipdvmx do
     let f,p = d |> List.last |> fst
     printfn "%s: F=%f,F'=%f, P=%A, P'=%A" l f m.H p [|m.X,m.Y|]
 ;;
+
+*)
+
+let runT vmx (l,m,f) = 
+    let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
+    l,m,best t
+
+let ipdsT vmx = fits |> List.map (runT vmx)
+
+let vmx = (0.7,1.45)
+let ipdruns = [for _ in 1 .. 5 -> ipdsT vmx]
+let rs = 
+    ipdruns 
+    |> List.collect CAUtils.yourself
+    |> List.groupBy (fun (t,_,_) -> t) 
+    |> List.map (fun (t,xs) -> t,vmx, xs |> List.averageBy (fun (_,_,f) -> f))
+let sumRs = rs |> List.sumBy (fun (_,_,f) -> f)
+
+
+(* averae over  5 runs
+.6,1.4 -> 99.43641464
+.7,1.4 -> 99.47308799
+.65,1.4 -> 99.3658414
+val it : (string * (float * float) * float) list =
+  [("1.01", (0.7, 1.4), 19.96395054); ("2.0", (0.7, 1.4), 19.92578216);
+   ("3.35", (0.7, 1.4), 19.97035671); ("3.5", (0.7, 1.4), 19.83331324);
+   ("3.99", (0.7, 1.4), 19.77968535)]
 *)
