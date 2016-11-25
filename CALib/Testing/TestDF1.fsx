@@ -34,16 +34,16 @@ let tk s = s |> Seq.truncate 1000 |> Seq.toList
 //let kdSimpleCA      = kdSimpleCA fitness comparator parms
 let kdWeightedCA    = kdWeightedCA fitness comparator parms
 let kdlWeightedCA   = kdlWeightedCA fitness comparator parms
-let kdGame2PlayerCA = kdGame2PlayerCA fitness comparator parms
-let kdHedonicCA     = kdHedonicCA fitness comparator parms
+//let kdGame2PlayerCA = kdGame2PlayerCA fitness comparator parms
+//let kdHedonicCA     = kdHedonicCA fitness comparator parms
 //let kdIpdCA         = kdIpdCA (0.5,1.9) fitness comparator parms 
 let kdIpdCA         = kdIpdCA (0.7,1.4) fitness comparator parms 
 
 //let kdSimple        = kdSimpleCA |> runCollect dataCollector 2 |> tk
 let kdWeigthed      = kdWeightedCA |> runCollect dataCollector 2 |> tk
 let kdlWeigthed     = kdlWeightedCA |> runCollect dataCollector 2 |> tk
-let kdGame2Player   = kdGame2PlayerCA |> runCollect dataCollector 2 |> tk
-let kdHedonic       = kdHedonicCA |> runCollect setDataClctr 2 |> tk
+//let kdGame2Player   = kdGame2PlayerCA |> runCollect dataCollector 2 |> tk
+//let kdHedonic       = kdHedonicCA |> runCollect setDataClctr 2 |> tk
 let kdIpd           = kdIpdCA |> runCollect ipdDataCollector 2 |> tk
 //
 
@@ -52,7 +52,7 @@ let (!!) s = sprintf "%s - %f" s maxCone.H
 //plotResults !!"Simple Majority" kdSimple;;
 plotResults !!"Weigted Majority" kdWeigthed;;
 plotResults !!"Locally Weigted Majority" kdlWeigthed;;
-plotResults !!"Hawk-Dove" kdGame2Player;;
-plotResults !!"Hedonic Game" kdHedonic;;
+//plotResults !!"Hawk-Dove" kdGame2Player;;
+//plotResults !!"Hedonic Game" kdHedonic;;
 plotResults !!"IPD Game" kdIpd;;
 maxCone;;

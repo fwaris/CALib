@@ -78,12 +78,16 @@ let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     }
 
 ///run till termination
-let run termination maxBest ca =
+let run desc termination maxBest ca =
     let rec loop stp = 
         let stp = step stp maxBest
         let best = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
-        printfn "step %i. fitness=%A" stp.Count best
-//        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
+        match stp.Progress.Length with
+        | 0 -> printfn "starting '%s'" desc
+        | 1 -> printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+        | _ when stp.Progress.[0] = stp.Progress.[1] |> not -> 
+            printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+        | _ -> ()
         if termination stp then
             stp
         else

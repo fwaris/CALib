@@ -77,6 +77,7 @@
     <None Include="Landscapes\test_cone3.99.csv" />
     <None Include="Testing\TestIPDPerf.fsx" />
     <None Include="Testing\TestDF1.fsx" />
+    <None Include="Testing\TestDF1Gen.fsx" />
     <None Include="Testing\TestCA3D.fsx" />
     <None Include="Testing\TestDomain.fsx" />
     <None Include="Testing\TestHistorical.fsx" />

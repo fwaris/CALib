@@ -89,7 +89,8 @@ for (l,m,d) in ipdvmx do
 *)
 
 let runT vmx (l,m,f) = 
-    let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
+    let d = sprintf "%A" (l,m,f)
+    let t = kdIpdCA vmx f comparator parms |> CARunner.run d termination 2
     l,m,best t
 
 let ipdsT vmx = fits |> List.map (runT vmx)
