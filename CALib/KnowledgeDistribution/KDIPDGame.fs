@@ -40,8 +40,8 @@ let cooperation
     let fNbr = st.NormalizedFit.[neighbor.Id]
     let fI = st.NormalizedFit.[indv.Id]
     let attraction = (fNbr - fI) // |> max 0.
-//    if attraction < 0. then failwithf "attr neg %A" (f1,f1, attraction)
-    let coop = d * attraction
+//    let coop = d * attraction
+    let coop = if d <> 0. then attraction / d else System.Double.MaxValue
     ids,coop
 
 let relativeCoop totalCoop (s,coop) = s, if coop < 0. then 0. else coop / totalCoop
