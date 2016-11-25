@@ -32,7 +32,7 @@ let termination step = step.Count > 100
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
-(* vmin,vmax hyperparameter search -> .7, 1.4
+(* vmin,vmax hyperparameter search -> .7, 1.4 ; .5,1.9
 
 let runT vmx (l,m,f) = 
     let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
@@ -94,8 +94,8 @@ let runT vmx (l,m,f) =
 
 let ipdsT vmx = fits |> List.map (runT vmx)
 
-let vmx = (0.7,1.45)
-let ipdruns = [for _ in 1 .. 5 -> ipdsT vmx]
+let vmx = (0.7,1.4)
+let ipdruns = [for _ in 1 .. 30 -> ipdsT vmx]
 let rs = 
     ipdruns 
     |> List.collect CAUtils.yourself
@@ -105,11 +105,29 @@ let sumRs = rs |> List.sumBy (fun (_,_,f) -> f)
 
 
 (* averae over  5 runs
+coop = d * attraction
 .6,1.4 -> 99.43641464
 .7,1.4 -> 99.47308799
 .65,1.4 -> 99.3658414
-val it : (string * (float * float) * float) list =
-  [("1.01", (0.7, 1.4), 19.96395054); ("2.0", (0.7, 1.4), 19.92578216);
-   ("3.35", (0.7, 1.4), 19.97035671); ("3.5", (0.7, 1.4), 19.83331324);
-   ("3.99", (0.7, 1.4), 19.77968535)]
-*)
+.7,1.35 -> 99.4491
+
+.7,1.4 
+coop = d + attraction -> 99.3884387
+coop =  attraction/d ->  99.43208188
+coop =  attraction -> 99.4253216
+coop = d * 0.5 * attraction -> 99.33046583
+coop = d -> 99.37909667
+coop = d/attraction -> 99.35757437
+coop = attraction/ (d * 0.5) -> 99.43962729 / 99.30397174 / 99.44627642
+coop = attraction/ (d * 1.5) -> 99.36950399
+coop = attraction/ (d * 0.4) -> 99.46012299 / 99.38281922 /99.40703995 / 99.44406658
+coop = attraction/ (d * 0.3) -> 99.43860639 / 99.43350058 / 99.38714745
+coop = attraction/ (d * 0.45) -> 99.33929704
+coop = attraction/ (d * 0.35) -> 99.35648942
+
+coop = attraction/ (d * 0.4)
+.5,1.9 -> 99.45051976
+.7,1.4 -> 99.3987008
+
+
+ *)

@@ -10,9 +10,9 @@ let rateOfImprovement oldFitness newFitness isBetter epsilon =
     if oldFitness = newFitness then 
         Flat,0.
     elif isBetter newFitness oldFitness then
-        Up, (abs newFitness-oldFitness) / denominator
+        Up, (abs (newFitness-oldFitness)) / denominator
     else
-        Down,(abs newFitness-oldFitness) / denominator
+        Down,(abs (newFitness-oldFitness)) / denominator
 
 let maxSlope isBetter fitness oldFitness parms  =
     let parms    = Array.copy parms
