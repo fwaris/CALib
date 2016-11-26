@@ -3,6 +3,8 @@ open CA
 open CAUtils
 open CAEvolve
 
+let eSigma = 3.
+
 let create isBetter maxExemplars =
     let create (examplars:Individual<_> list) fAccept fInfluence : KnowledgeSource<_> =
         {
@@ -34,6 +36,6 @@ let create isBetter maxExemplars =
     let influence exemplars s (ind:Individual<_>) =
         match exemplars with
         | [] -> ind
-        | best::_ -> best |> influenceInd s ind
+        | best::_ -> best |> influenceInd s eSigma ind
        
     create [] acceptance influence

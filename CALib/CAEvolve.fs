@@ -42,11 +42,11 @@ let evolveS s sg = function
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)
-let influenceParm s influenced influencer =
+let influenceParm s sa influenced influencer =
     match influencer,influenced with
     | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(randF s iV pV mn mx, mn,mx)
     | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(randF s pV iV mn mx, mn,mx)
-    | F(_),fInd                              -> evolveS s 1.0 fInd
+    | F(_),fInd                              -> evolveS s sa fInd
 
     | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(randF32 s iV pV mn mx,mn,mx)
     | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(randF32 s pV iV mn mx,mn,mx)
@@ -64,9 +64,9 @@ let influenceParm s influenced influencer =
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let influenceInd s influenced influencer =
+let influenceInd s sa influenced influencer =
     {influenced with
-        Parms = (influenced.Parms,influencer.Parms) ||> Array.map2  (influenceParm s)
+        Parms = (influenced.Parms,influencer.Parms) ||> Array.map2  (influenceParm s sa)
     }
 
 ///influenced indivual's parameters are modified 

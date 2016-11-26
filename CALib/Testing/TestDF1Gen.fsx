@@ -28,7 +28,16 @@ let fitness df (parms:Parm array)  =
 let fits = landscapes |> List.map (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,fitness d)
 
 let comparator  = CAUtils.Maximize
-let termination maxCone step = let (f,_) =best step in step.Count > 10000 || abs (f - maxCone.H) < 0.0001
+
+let termination d maxCone step = 
+    let (f,_) = best step 
+    let c1 = step.Count > 10000 
+    let c2 = abs (f - maxCone.H) < 0.0001
+    if c1 then printfn "no solution %s" d
+    if c2 then printfn "sol %s %d" d step.Count
+    c1 || c2
+
+
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
@@ -36,7 +45,7 @@ let tk s = s |> Seq.truncate 100 |> Seq.toList
 *)
 
 let runT  vmx (l,m,f) = 
-    let t = kdIpdCA vmx f comparator parms |> CARunner.run l (termination m) 2
+    let t = kdIpdCA vmx f comparator parms |> CARunner.run l (termination l m) 2
     l,m,best t
 
 let ipdsT vmx = fits |> List.map (runT vmx)

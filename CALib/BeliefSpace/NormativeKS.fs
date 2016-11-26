@@ -3,6 +3,8 @@ open CA
 open CAUtils
 open CAEvolve
 
+let eSigma = 3.
+
 type ParmRange =
     | Fr    of float
     | Fr32  of float32
@@ -91,7 +93,7 @@ let updateNorms isBetter norms highPerfInd =
     )
 
 let normalizeParm s {ParmLo=pLo; ParmHi=pHi} parm = 
-    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS s 1.0 parm
+    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS s eSigma parm
     else
         match parm,pLo,pHi with
         | F(_,mn,mx),Fr(l),Fr(h)        -> F(randF s l h mn mx,mn,mx)

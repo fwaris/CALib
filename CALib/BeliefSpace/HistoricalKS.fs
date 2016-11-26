@@ -3,6 +3,8 @@ open CA
 open CAUtils
 open CAEvolve
 
+let eSigma = 3.
+
 //determine direction of change
 let dir newParm prevParm = 
     match prevParm,newParm with
@@ -78,9 +80,9 @@ let create isBetter window =
     let influence {Events=events} s (ind:Individual<_>) =
         let ev = events.[rnd.Value.Next(0,events.Length-1)]
         if isBetter ev.Best.Fitness ind.Fitness then
-            ev.Best |> influenceInd s ind
+            ev.Best |> influenceInd s eSigma ind
         else
-            evolveInd s 3.0 ind
+            evolveInd s eSigma ind
 
     let initialHistory = {Window=window; Distance=[||]; Direction=[||]; Events=[]}
        

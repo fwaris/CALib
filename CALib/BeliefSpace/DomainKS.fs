@@ -3,6 +3,8 @@ open CA
 open CAUtils
 open CAEvolve
 
+let eSigma = 3.
+
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
 let rateOfImprovement oldFitness newFitness isBetter epsilon =
@@ -74,7 +76,7 @@ let create isBetter fitness maxExemplars =
                 match gBestSlope.Direction with
                 | Up    -> slideUp s parms.[slope.Index]
                 | Down  -> slideDown s parms.[slope.Index]
-                | Flat  -> evolveS s 0.5 (parms.[slope.Index])
+                | Flat  -> evolveS s eSigma (parms.[slope.Index])
         parms.[slope.Index] <- parm
         {ind with Parms=parms}
        
