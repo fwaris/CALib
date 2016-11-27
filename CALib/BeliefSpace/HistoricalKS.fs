@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.
+let eSigma = 0.3
 
 //determine direction of change
 let dir newParm prevParm = 
@@ -27,6 +27,10 @@ let parmAvg count = function
     | F32(v,_,_)    -> float v / float count
     | I(v,_,_)      -> float v / float count
     | I64(v,_,_)    -> float v / float count
+
+let isSignificantlyDifferent i1 i2 =
+    (i1.Parms,i2.Parms) 
+    ||> Array.exists2 (fun p1 p2 -> parmToFloat p1 - parmToFloat p2 |> abs > 0.001)
 
 type ChangeEvent<'k> = {Best:Individual<'k>; Direction:Dir array}
 type History<'k> = 
@@ -56,7 +60,8 @@ let create isBetter window =
             let nBest = 
                 match events with
                 | []                                                -> Some rBest
-                | b::_ when isBetter rBest.Fitness b.Best.Fitness   -> Some rBest
+                | b::_ when isBetter rBest.Fitness b.Best.Fitness
+                       && isSignificantlyDifferent rBest b.Best     -> Some rBest
                 | _                                                 -> None
             match nBest with
             | None -> [||], create history acceptance fInfluence

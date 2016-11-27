@@ -41,8 +41,8 @@ let cooperation
     let fI = st.NormalizedFit.[indv.Id]
     let attraction = (fNbr - fI) // |> max 0.
 //    if attraction < 0. then failwithf "attr neg %A" (f1,f1, attraction)
-    //let coop = d * attraction
-    let coop = if d <> 0. then attraction/ (d * 0.4) else System.Double.MaxValue
+    let coop = d + attraction
+    //let coop = if d <> 0. then attraction/ (d * 0.4) else System.Double.MaxValue
     //let coop = d * 0.5 * attraction
     ids,coop
 
@@ -96,7 +96,7 @@ let updateKsw (pop:Population<IpdKS>) payout indv =
         |> List.groupBy fst
         |> List.map (fun (ks,fs)->
             ks,
-            fs |> List.sumBy snd |> max 1.0    //cap alt KS influence to 1.0
+            fs |> List.sumBy snd |> min 1.0    //cap alt KS influence to 1.0
             )
         |> Map.ofList
     ksw
@@ -106,7 +106,7 @@ let removePrimaryKS ks m = Map.remove ks m
 let createKs primary others = primary, removePrimaryKS primary others
 
 let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
-    let payout = payout |> List.filter (fun (_,f) -> f < vmin)
+    let payout = payout |> List.filter (fun (_,f) -> f > vmin)
     let vmx = payout |> List.filter (fun (_,f) -> f >= vmax)
     let indv = 
         match vmx.Length,payout.Length with

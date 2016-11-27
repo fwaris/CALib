@@ -1,9 +1,9 @@
-﻿module DomainKS
+﻿module DomainKS2
 open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.3
+let eSigma = 0.1
 
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
@@ -16,9 +16,21 @@ let rateOfImprovement oldFitness newFitness isBetter epsilon =
     else
         Down,(abs (newFitness-oldFitness)) / denominator
 
+let slopes isBetter fitness oldFit parms =
+    let parms = Array.copy parms
+    parms
+    |> Array.mapi (fun i p -> 
+        let e = epsilonM p
+        let p' =  parmAdd p e
+        parms.[i] <- p'
+        let newFit = fitness parms
+        let partialSlope = rateOfImprovement oldFit newFit isBetter e
+        parms.[i] <- p
+        partialSlope)
+
 let maxSlope isBetter fitness oldFitness parms  =
     let parms    = Array.copy parms
-    let epsilons = parms |> Array.map epsilon
+    let epsilons = parms |> Array.map epsilonM
     let mutable maxS = Flat,0.
     let mutable maxI = 0
     for i in 0..parms.Length - 1 do
@@ -65,19 +77,16 @@ let create isBetter fitness maxExemplars =
                 [||], create (prevExemplars,pBestSlope) acceptance fInfluence
 
     let influence (exemplars,gBestSlope) s (ind:Individual<_>) =
-        let (slope,parms) = maxSlope isBetter fitness ind.Fitness ind.Parms
-        let maxParm = parms.[slope.Index]
-        printfn "maxParm: %A %A" slope maxParm
-        let parm =
-            match slope.Direction with
-            | Up   -> slideUp s eSigma maxParm
-            | Down -> slideDown s eSigma maxParm
-            | Flat -> 
-                match gBestSlope.Direction with
-                | Up    -> slideUp s eSigma parms.[slope.Index]
-                | Down  -> slideDown s eSigma parms.[slope.Index]
-                | Flat  -> evolveS s eSigma (parms.[slope.Index])
-        parms.[slope.Index] <- parm
+        let slopes = slopes isBetter fitness ind.Fitness ind.Parms
+        let parms =
+            ind.Parms
+            |> Array.mapi (fun i p ->
+                let (dir,mag) = slopes.[i]
+                match dir with
+                | Up   -> slideUp s eSigma p
+                | Down -> slideDown s eSigma p
+                | Flat -> evolveS s eSigma p
+            )
         {ind with Parms=parms}
        
     create ([],{Index=0; Direction=Flat; Magnitude=0.}) acceptance influence

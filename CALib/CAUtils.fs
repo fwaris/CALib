@@ -5,6 +5,8 @@ let rnd = Probability.RNG
 
 let gaussian mean sigma = Probability.GAUSS mean sigma
 
+let zsample = Probability.ZSample
+
 let inline yourself x = x
 
 let scaler (sMin,sMax) (vMin,vMax) (v:float) =
@@ -30,27 +32,41 @@ let flatten tree =
         
 let clamp mn mx x = max (min x mx) mn
 
-let randI (s:float) frmV toV mn mx = 
+let clampP = function
+    | F(v,mn,mx)    -> F(clamp mn mx v,mn,mx)
+    | F32(v,mn,mx)  -> F32(clamp mn mx v,mn,mx)
+    | I(v,mn,mx)    -> I(clamp mn mx v,mn,mx)
+    | I64(v,mn,mx)  -> I64(clamp mn mx v,mn,mx)
+    
+let unifrmI (s:float) frmV toV mn mx = 
     frmV + (int ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
     |> clamp mn mx
 
-let randF32 s (frmV:float32) (toV:float32) mn mx = 
+let unifrmF32 s (frmV:float32) (toV:float32) mn mx = 
     frmV + (float32 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
     |> clamp mn mx
 
-let randF s frmV toV mn mx = 
+let unifrmF s frmV toV mn mx = 
     frmV + (rnd.Value.NextDouble() * s * (toV - frmV))
     |> clamp mn mx
 
-let randI64 s frmV toV mn mx =  
+let unifrmI64 s frmV toV mn mx =  
     frmV + (int64 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
     |> clamp mn mx
 
+let gaussI (s:int) sg = gaussian (float s) sg |> int
+
+let gaussF32 (s:float32) sg = gaussian (float s) sg |> float32
+
+let gaussF s sg = gaussian s sg
+
+let gaussI64 (s:int64) sg = gaussian (float s) sg |> int64
+
 let randomize = function
-    | F (v,mn,mx)   -> F (randF 1.0 mn mx mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 1.0 mn mx mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI 1.0 mn mx mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 1.0 mn mx mn mx, mn, mx)
+    | F (v,mn,mx)   -> F (unifrmF 1.0 mn mx mn mx, mn, mx)
+    | F32 (v,mn,mx) -> F32 (unifrmF32 1.0 mn mx mn mx, mn, mx)
+    | I (v,mn,mx)   -> I(unifrmI 1.0 mn mx mn mx, mn, mx)
+    | I64 (v,mn,mx) -> I64(unifrmI64 1.0 mn mx mn mx, mn, mx)
 
 let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
@@ -112,6 +128,12 @@ let epsilon = function
     | I(_,mn,mx)    -> I(1,mn,mx)
     | I64(_,mn,mx)  -> I64(1L,mn,mx)
 
+let epsilonM = function
+    | F(_,mn,mx)    -> F(0.001,mn,mx)
+    | F32(_,mn,mx)  -> F32(0.001f,mn,mx)
+    | I(_,mn,mx)    -> I(1,mn,mx)
+    | I64(_,mn,mx)  -> I64(1L,mn,mx)
+
 let lBestNetwork (pop:Population<'k>) id = //return 2 'friends' from the ring
     let m1 = id - 1
     let m1 = if m1 < 0 then pop.Length + m1 else m1
@@ -146,4 +168,7 @@ let vF32 = function F32(v,_,_) -> v | _ -> failwith "invalid type"
 let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"
 let vI64 = function I64(v,_,_) -> v | _ -> failwith "invalid type"
 
-
+let toVF (v:float) mn mx = F(clamp mn mx v, mn, mx)
+let toVI (v:float) mn mx = I(clamp mn mx (int v), mn, mx)
+let toVF32 (v:float) mn mx = F32(clamp mn mx (float32 v), mn, mx)
+let toVI64 (v:float) mn mx = I64(clamp mn mx (int64 v), mn, mx)

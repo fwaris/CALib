@@ -2,17 +2,21 @@
 open CA
 open CAUtils
 
-let slideUp s = function
-    | F (v,mn,mx)   -> F (randF s v mx mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 s v mx mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI s v mx mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 s v mx mn mx, mn, mx)
+let slideUp s sg p = 
+    let z = zsample()
+    match p with
+    | F (v,mn,mx)   -> toVF (v + (abs z * sg * s)) mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v + (abs z * sg * s)) mn mx
+    | I (v,mn,mx)   -> toVI (float v + (abs z * sg * s)) mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v + (abs z * sg * s)) mn mx
 
-let slideDown s = function
-    | F (v,mn,mx)   -> F (randF s mn v mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 s mn v mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI s mn v mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 s mn v mn mx, mn, mx)
+let slideDown s sg p =
+    let z = zsample()
+    match p with
+    | F (v,mn,mx)   -> toVF (v - (abs z * sg * s)) mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v - (abs z * sg * s)) mn mx
+    | I (v,mn,mx)   -> toVI (float v - (abs z * sg * s)) mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - (abs z * sg * s)) mn mx
 
 let evolveInt s sg iV =
     let v = float iV
@@ -35,30 +39,30 @@ let evolveInt64 s sg i64V =
         i64V + 1L 
 
 let evolveS s sg = function
-    | F (v,mn,mx)    -> F   (gaussian v (s * sg)                        |> clamp mn mx, mn, mx)
-    | F32 (v,mn,mx)  -> F32 (gaussian  (float v) (s * sg) |> float32    |> clamp mn mx, mn, mx)
-    | I (v,mn,mx)    -> I   (evolveInt s sg v                           |> clamp mn mx, mn, mx)
-    | I64 (v,mn,mx)  -> I64 (evolveInt64 s sg v                         |> clamp mn mx, mn, mx)
+    | F (v,mn,mx)    -> toVF (gaussian v (s * sg)) mn mx         
+    | F32 (v,mn,mx)  -> toVF32 (gaussian  (float v) (s * sg)) mn mx
+    | I (v,mn,mx)    -> I (clamp (evolveInt s sg v) mn mx, mn, mx)
+    | I64 (v,mn,mx)  -> I64 (clamp (evolveInt64 s sg v) mn mx, mn, mx)      
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)
 let influenceParm s sa influenced influencer =
     match influencer,influenced with
-    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(randF s iV pV mn mx, mn,mx)
-    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(randF s pV iV mn mx, mn,mx)
+    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(unifrmF s iV pV mn mx, mn,mx)
+    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(unifrmF s pV iV mn mx, mn,mx)
     | F(_),fInd                              -> evolveS s sa fInd
 
-    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(randF32 s iV pV mn mx,mn,mx)
-    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(randF32 s pV iV mn mx,mn,mx)
-    | F32(_),fInd                            -> evolveS s 1.0 fInd
+    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(unifrmF32 s iV pV mn mx,mn,mx)
+    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(unifrmF32 s pV iV mn mx,mn,mx)
+    | F32(_),fInd                            -> evolveS s sa fInd
 
-    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(randI s iV pV mn mx,mn,mx)
-    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(randI s pV iV mn mx,mn,mx)
-    | I(_),fInd                              -> evolveS s 1.0 fInd
+    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(unifrmI s iV pV mn mx,mn,mx)
+    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(unifrmI s pV iV mn mx,mn,mx)
+    | I(_),fInd                              -> evolveS s sa fInd
 
-    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(randI64 s iV pV mn mx,mn,mx)
-    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(randI64 s pV iV mn mx,mn,mx)
-    | I64(_),fInd                            -> evolveS s 1.0 fInd
+    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(unifrmI64 s iV pV mn mx,mn,mx)
+    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(unifrmI64 s pV iV mn mx,mn,mx)
+    | I64(_),fInd                            -> evolveS s sa fInd
 
     | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
 

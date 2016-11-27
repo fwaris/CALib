@@ -61,6 +61,7 @@
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="BeliefSpace\DomainKS2.fs" />
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
@@ -85,6 +86,8 @@
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
     <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\ObservableExt.fs" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

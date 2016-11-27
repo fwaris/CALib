@@ -7,6 +7,7 @@
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS.fs"
+#load "../BeliefSpace/DomainKS2.fs"
 #load "../KnowledgeDistribution/KDSimpleMajority.fs"
 #load "../KnowledgeDistribution/KDWeightedMajority.fs"
 #load "../KnowledgeDistribution/KDGame.fs"

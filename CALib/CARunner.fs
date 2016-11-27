@@ -5,10 +5,10 @@ open FSharp.Collections.ParallelSeq
 ///create the belief space structure that is normally used in CAs
 let defaultBeliefSpace parms minmax fitness =
     Roots [ 
-        Node (SituationalKS.create minmax 2,
+        Node (SituationalKS.create minmax 10,
             [
-                Leaf (HistoricalKS.create minmax 20)
-                Leaf (DomainKS.create minmax fitness 2)
+                Leaf (HistoricalKS.create minmax 100)
+                Leaf (DomainKS2.create minmax fitness 2)
             ])
         Leaf (NormativeKS.create parms minmax)
         ]

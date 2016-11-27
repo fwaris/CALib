@@ -31,9 +31,9 @@ let comparator  = CAUtils.Maximize
 
 let termination d maxCone step = 
     let (f,_) = best step 
-    let c1 = step.Count > 10000 
+    let c1 = step.Count > 100 
     let c2 = abs (f - maxCone.H) < 0.0001
-    if c1 then printfn "no solution %s" d
+    if c1 then printfn "no solution %s - tg %A" d maxCone
     if c2 then printfn "sol %s %d" d step.Count
     c1 || c2
 

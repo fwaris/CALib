@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.
+let eSigma = 0.3
 
 type ParmRange =
     | Fr    of float
@@ -96,10 +96,10 @@ let normalizeParm s {ParmLo=pLo; ParmHi=pHi} parm =
     if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS s eSigma parm
     else
         match parm,pLo,pHi with
-        | F(_,mn,mx),Fr(l),Fr(h)        -> F(randF s l h mn mx,mn,mx)
-        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32(randF32 s l h mn mx,mn,mx)
-        | I(_,mn,mx),Ir(l),Ir(h)        -> I(randI s l h mn mx,mn,mx)
-        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64(randI64 s l h mn mx,mn,mx)
+        | F(_,mn,mx),Fr(l),Fr(h)        -> F(unifrmF s l h mn mx,mn,mx)
+        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32(unifrmF32 s l h mn mx,mn,mx)
+        | I(_,mn,mx),Ir(l),Ir(h)        -> I(unifrmI s l h mn mx,mn,mx)
+        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64(unifrmI64 s l h mn mx,mn,mx)
         | a,b,c -> failwithf "Normative: norm-parameter type mismatch %A,%A,%A" a b c
 
 let create parms isBetter =
