@@ -58,9 +58,9 @@ let create isBetter fitness maxExemplars =
     let rec acceptance 
         fInfluence 
         (prevExemplars : Individual<_> list, pBestSlope) 
-        (newBestInds : Individual<_> array) =
-        match newBestInds with
-        | [||] -> newBestInds, create (prevExemplars,pBestSlope) acceptance fInfluence
+        (voters : Individual<_> array) =
+        match voters with
+        | [||] -> voters, create (prevExemplars,pBestSlope) acceptance fInfluence
         | inds ->
             let rBest = inds.[0] //assume best individual is first
             let nBest =
@@ -72,9 +72,9 @@ let create isBetter fitness maxExemplars =
             | Some nBest ->
                 let slope,_ = maxSlope isBetter fitness nBest.Fitness nBest.Parms
                 let exemplars = nBest::prevExemplars |> List.truncate maxExemplars
-                [|nBest|], create (exemplars,slope) acceptance fInfluence
+                voters, create (exemplars,slope) acceptance fInfluence
             | None -> 
-                [||], create (prevExemplars,pBestSlope) acceptance fInfluence
+                voters, create (prevExemplars,pBestSlope) acceptance fInfluence
 
     let influence (exemplars,gBestSlope) s (ind:Individual<_>) =
         let slopes = slopes isBetter fitness ind.Fitness ind.Parms

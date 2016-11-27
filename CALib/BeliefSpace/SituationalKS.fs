@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.3
+let eSigma = 1.5
 
 type State<'a> = {Exemplars:Individual<'a> list; SpinWheel:(int*float)array}
 
@@ -23,8 +23,8 @@ let create isBetter maxExemplars =
     let rec acceptance 
         fInfluence 
         state
-        (newlyAcceptedInds : Individual<_> array) =
-        match newlyAcceptedInds with
+        (voters : Individual<_> array) =
+        match voters with
         | [||] -> failwith "SituationalKS.acceptance : accepted individual list empty"
         | inds ->
             let rBest = inds.[0] //assume best individual is first for the latest genertion
@@ -39,8 +39,8 @@ let create isBetter maxExemplars =
                 let weights = fitweights isBetter exemplars
                 let wheel = Probability.createWheel weights
                 let state = {Exemplars=exemplars; SpinWheel=wheel}
-                [|nBest|], create state acceptance fInfluence
-            | None -> [||], create state acceptance fInfluence
+                voters, create state acceptance fInfluence
+            | None -> voters, create state acceptance fInfluence
 
     
     let influence state s (ind:Individual<_>) =

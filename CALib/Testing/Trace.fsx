@@ -54,7 +54,7 @@ let cts = new System.Threading.CancellationTokenSource()
 let observable,fPost = Observable.createObservableAgent<(float*float) seq> cts.Token
 
 let step st = CARunner.step st 2
-let vmx = (0.2, 0.9)
+let vmx = (0.1, 1.4)
 let startCA = kdIpdCA vmx fitness comparator parms
 //let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}

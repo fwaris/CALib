@@ -110,11 +110,11 @@ let create parms isBetter =
             Influence   = fInfluence norms
         }
 
-    let rec acceptance fInfluence norms (inds:Individual<_> array) =
+    let rec acceptance fInfluence norms (voters:Individual<_> array) =
         //assumes that individuals are sorted best fitness first
-        let updatedNorms = inds |> Array.fold (updateNorms isBetter) norms
+        let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
-        inds,create updatedNorms acceptance fInfluence 
+        voters,create updatedNorms acceptance fInfluence 
     
     let influence (norms:Norm array) s (ind:Individual<_>) =
         {ind with

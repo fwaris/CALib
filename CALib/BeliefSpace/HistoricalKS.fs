@@ -52,9 +52,9 @@ let create isBetter window =
     let rec acceptance 
         fInfluence 
         ({Window=win; Events=events} as history)
-        (inds:Individual<_> array) =
-        match inds with
-        | [||] -> [||],create history acceptance fInfluence
+        (voters:Individual<_> array) =
+        match voters with
+        | [||] -> voters,create history acceptance fInfluence
         | inds ->
             let rBest = inds.[0] //assume best individual is first 
             let nBest = 
@@ -64,7 +64,7 @@ let create isBetter window =
                        && isSignificantlyDifferent rBest b.Best     -> Some rBest
                 | _                                                 -> None
             match nBest with
-            | None -> [||], create history acceptance fInfluence
+            | None -> voters, create history acceptance fInfluence
             | Some nBest ->
                 let pBest = match events with [] -> nBest | b::_ -> b.Best
                 let eventDirection  = (pBest.Parms,nBest.Parms) ||> Array.map2 dir
@@ -80,7 +80,7 @@ let create isBetter window =
                         Direction   = direction
                         Events      = events
                     }
-                [|nBest|], create updatedHistory acceptance fInfluence
+                voters, create updatedHistory acceptance fInfluence
     
     let influence {Events=events} s (ind:Individual<_>) =
         let ev = events.[rnd.Value.Next(0,events.Length-1)]
