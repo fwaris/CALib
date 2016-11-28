@@ -3,48 +3,51 @@ open CA
 open CAUtils
 
 let slideUp s sg p = 
-    let sd = (p |> parmToFloat) / 2. * sg
     let z = zsample()
+    let z' = z * s * sg |> abs
     match p with
-    | F (v,mn,mx)   -> toVF (v + (abs z * sd * s)) mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v + (abs z * sd * s)) mn mx
-    | I (v,mn,mx)   -> toVI (float v + (abs z * sd * s)) mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v + (abs z * sd * s)) mn mx
+    | F (v,mn,mx)   -> toVF (v + (v * z')) mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v + (float v * z')) mn mx
+    | I (v,mn,mx)   -> toVI (float v + (float v * z')) mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v + (float v * z')) mn mx
 
 let slideDown s sg p =
-    let sd = (p |> parmToFloat) / 2. * sg
     let z = zsample()
+    let z' = z * s * sg |> abs
     match p with
-    | F (v,mn,mx)   -> toVF (v - (abs z * sd * s)) mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v - (abs z * sd * s)) mn mx
-    | I (v,mn,mx)   -> toVI (float v - (abs z * sd * s)) mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - (abs z * sd * s)) mn mx
+    | F (v,mn,mx)   -> toVF (v + (v * z')) mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v + (float v * z')) mn mx
+    | I (v,mn,mx)   -> toVI (float v + (float v * z')) mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v + (float v * z')) mn mx
 
-let evolveInt s sg iV =
-    let v = float iV
-    let v' = gaussian v (s * sg)
-    if abs (v' - v) > 1. then 
-        int v' 
-    elif v'<v then 
-        iV - 1 
-    else 
-        iV + 1 
+//let evolveInt s sg iV =
+//    let v = float iV
+//    let v' = gaussian v (s * sg)
+//    if abs (v' - v) > 1. then 
+//        int v' 
+//    elif v'<v then 
+//        iV - 1 
+//    else 
+//        iV + 1 
+//
+//let evolveInt64 s sg i64V =
+//    let v  = float i64V
+//    let v' = gaussian v (s * sg)
+//    if abs (v' - v) > 1. then 
+//        int64 v' 
+//    elif v' < v then 
+//        i64V - 1L
+//    else 
+//        i64V + 1L 
 
-let evolveInt64 s sg i64V =
-    let v  = float i64V
-    let v' = gaussian v (s * sg)
-    if abs (v' - v) > 1. then 
-        int64 v' 
-    elif v' < v then 
-        i64V - 1L
-    else 
-        i64V + 1L 
-
-let evolveS s sg = function
-    | F (v,mn,mx)    -> toVF (gaussian v (v / 2. * s * sg)) mn mx         
-    | F32 (v,mn,mx)  -> toVF32 (gaussian  (float v) (float v / 2. * s * sg)) mn mx
-    | I (v,mn,mx)    -> I (clamp (evolveInt s (float v / 2. * sg) v) mn mx, mn, mx)
-    | I64 (v,mn,mx)  -> I64 (clamp (evolveInt64 s (float v / 2. * sg) v) mn mx, mn, mx)      
+let evolveS s sg p = 
+    let z = zsample()
+    let z' = z * s * sg
+    match p with
+    | F (v,mn,mx)   -> toVF (v - (v * z')) mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v - (float v * z')) mn mx
+    | I (v,mn,mx)   -> toVI (float v - (float v * z')) mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - (float v * z')) mn mx
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)

@@ -33,9 +33,10 @@ let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 let tk s = s |> Seq.truncate 100 |> Seq.toList
 
 (* vmin,vmax hyperparameter search -> .7, 1.4 ; .5,1.9
+*)
 
 let runT vmx (l,m,f) = 
-    let t = kdIpdCA vmx f comparator parms |> CARunner.run termination 2
+    let t = kdIpdCA vmx f comparator parms |> CARunner.run l termination 2
     l,m,best t
 
 let ipdsT vmx = fits |> List.map (runT vmx)
@@ -64,7 +65,6 @@ let ms = maxs |> List.sortBy (fun (v,m) -> -m)
 
 maxs |> List.map fst |> List.distinct
 
-*)
 
 (* plot all landscapes
 
@@ -88,6 +88,7 @@ for (l,m,d) in ipdvmx do
 
 *)
 
+(* averae over  5 runs
 let runT vmx (l,m,f) = 
     let d = sprintf "%A" (l,m,f)
     let t = kdIpdCA vmx f comparator parms |> CARunner.run d termination 2
@@ -105,7 +106,6 @@ let rs =
 let sumRs = rs |> List.sumBy (fun (_,_,f) -> f)
 
 
-(* averae over  5 runs
 coop = d * attraction
 .6,1.4 -> 99.43641464
 .7,1.4 -> 99.47308799

@@ -11,7 +11,7 @@ let parms =
         F(0.,-1.,1.) // y
     |]
 
-let testDf1 = df1_2d CAUtils.rnd.Value 5 (3.,3.) (5.,5.)
+//let testDf1 = df1_2d CAUtils.rnd.Value 5 (3.,3.) (5.,5.)
 //let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../../Landscapes/test_cone1.01.csv")
 //let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../../Landscapes/test_cone2.0.csv")
 let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../../Landscapes/test_cone3.35.csv")
@@ -26,7 +26,7 @@ let fitness (parms:Parm array) =
 
 let comparator  = CAUtils.Maximize
 
-let termination step = step.Count > 1000
+let termination step = step.Count > 100
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 
 let tk s = s |> Seq.truncate 1000 |> Seq.toList

@@ -32,7 +32,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 20 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 50 true
 
 let kdIpdCA vmx f c p  = 
     let b = bsp f p c

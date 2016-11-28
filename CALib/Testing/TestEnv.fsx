@@ -70,7 +70,7 @@ let ipdDataCollector s =
 let runCollect data maxBest ca =
     let loop stp = 
         let stp = CARunner.step stp maxBest
-        printfn "step %i. fitness=%A" stp.Count (best stp)
+//        printfn "step %i. fitness=%A" stp.Count (best stp)
 //        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
         stp
     let step = {CA=ca; Best=[]; Count=0; Progress=[]}
