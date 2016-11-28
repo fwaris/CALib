@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.3
+let eSigma = 3.0
 
 //determine direction of change
 let dir newParm prevParm = 

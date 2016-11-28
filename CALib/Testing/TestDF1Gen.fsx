@@ -31,7 +31,7 @@ let comparator  = CAUtils.Maximize
 
 let termination d maxCone step = 
     let (f,_) = best step 
-    let c1 = step.Count > 100 
+    let c1 = step.Count > 1000 
     let c2 = abs (f - maxCone.H) < 0.0001
     if c1 then printfn "no solution %s - tg %A" d maxCone
     if c2 then printfn "sol %s %d" d step.Count
@@ -50,5 +50,6 @@ let runT  vmx (l,m,f) =
 
 let ipdsT vmx = fits |> List.map (runT vmx)
 
-let ipds = ipdsT (0.7,1.4) 
+let ipds = ipdsT (0.1, 1.4)
+
 
