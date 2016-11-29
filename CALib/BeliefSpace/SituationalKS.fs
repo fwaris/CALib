@@ -55,23 +55,23 @@ let pickExamplars isBetter prevE voters =
     let ex = Array.sortBy (fun (x:Individual<_>) -> tx * x.Fitness) ex
     let best = ex.[0]
     let ex = ex.[1..] //all others, i.e. not best
-    let fitVals = ex |> Array.map (fun x->tx * x.Fitness)
-    let mnFit = fitVals |> Array.min
-    let mxFit = fitVals |> Array.max
-    let bins = makeBins mnFit (mxFit + 0.0001) 5.
+    let divsM = ex |> Array.map (fun i-> i.Id, parmDiversity best.Parms i.Parms) |> Map.ofArray
+    let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
+    let (_,mnD) = divsM |> Map.toArray |> Seq.minBy snd
+    let bins = makeBins mnD (mxD + 0.0001) 5.
     let binned = (Map.empty,ex) ||> Array.fold (fun acc indv -> 
-        let f1 = tx * indv.Fitness
-        let b = bins |> List.find (fun (mn,mx) -> mn <= f1 && f1 < mx)
+        let d = divsM.[indv.Id]
+        let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
         match acc |> Map.tryFind b with
         | Some ls -> indv::ls
         | None    -> [indv]
         |> fun x -> acc |> Map.add b x
         )
-    let binned = //sort each bin by decreasing order of divesity from best
+    let binned = //sort each bin by decreasing order of fitness
         binned 
-        |> Map.map (fun k v -> v |> List.sortBy (fun i-> -1. * (parmDiversity best.Parms i.Parms)))
+        |> Map.map (fun k v -> v |> List.sortBy (fun i-> tx * i.Fitness))
         |> Map.toSeq
-        |> Seq.sortBy (fun ((mn,mx),_) -> mx) //sort all bins by decreasing fitness
+        |> Seq.sortBy (fun ((mn,mx),_) -> mx) //sort all bins by decreasing diversity
         |> Seq.toList
     best::(clct [] binned [])    
 

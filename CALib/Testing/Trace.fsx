@@ -55,7 +55,7 @@ let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsvblK,fPostK= Observable.createObservableAgent<(string*float) seq> cts.Token
 
 let step st = CARunner.step st 2
-let vmx = (0.5, 1.1)
+let vmx = (0.5, 0.9)
 let startCA = kdIpdCA vmx fitness comparator parms
 //let startCA = kdlWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}

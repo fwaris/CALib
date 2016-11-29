@@ -12,7 +12,7 @@ type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float}
+type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float; PrevNrmlzdFit:float array}
 
 let parmDiversity p1 p2 = 
     (p1,p2)
@@ -34,8 +34,8 @@ let sampleAvgDiversity (pop:Population<_>) =
             loop (acc + d) (c + 1)
     loop 0. 0
 
-let isExplorative = function Situational | Historical -> true | _ -> false
-let isExploitative = function Domain | Normative -> true | _ -> false
+let isExplorative = function Situational | Historical | Normative -> true | _ -> false
+let isExploitative = function Domain  -> true | _ -> false
 
 let cooperation 
     st
@@ -50,7 +50,8 @@ let cooperation
     let (ksI,_) = indv.KS
     let (ksN,_) = neighbor.KS
     let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
-    let coop = d + attraction + ksCompatibility
+    let fitImprvFactor = st.PrevNrmlzdFit.[indv.Id] - fI //reduce coop if fit improved
+    let coop = d + attraction + ksCompatibility + fitImprvFactor
     //let coop = if d <> 0. then attraction/ (d * 0.4) else System.Double.MaxValue
     //let coop = d * 0.5 * attraction
     ids,coop
@@ -143,18 +144,20 @@ let updatePop vmx cmprtr pop (payouts:Payout array) =
     )
     pop
 
-let createState (vmin,vmax) cmprtr pop =
+let createState prevFitOpt (vmin,vmax) cmprtr pop =
+    let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     {
         SumDiversity = sampleAvgDiversity pop * float pop.Length
-        NormalizedFit = normalizePopFitness (0., 1.0) cmprtr pop
+        NormalizedFit = nrmlzdFit
         VMin = vmin
         VMax = vmax
+        PrevNrmlzdFit = match prevFitOpt with Some f -> f | None -> nrmlzdFit
     }
 
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop = updatePop vmx cmprtr pop payouts
-    let state = createState vmx cmprtr pop
+    let state = createState (Some state.NormalizedFit) vmx cmprtr pop
     pop,
     beliefSpace,
     {
@@ -174,7 +177,7 @@ let initKS (pop:Population<Knowledge>) =
         })
 
 let game (vmin,vmax) cmprtr pop =
-    let state = createState (vmin,vmax) cmprtr pop
+    let state = createState None (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state

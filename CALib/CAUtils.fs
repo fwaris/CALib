@@ -160,6 +160,8 @@ let l4BestNetwork (pop:Population<'k>) id = //return 4 'friends' from the ring
 //    printfn "id=%d, m1=%d, m2=%d, p1=%d, p2=%d" id m1 m2 p1 p2
     [|pop.[m2]; pop.[m1]; pop.[p1]; pop.[p2] |]
 
+
+
 let Maximize a b = a > b
 let Minimize a b = a < b
 
