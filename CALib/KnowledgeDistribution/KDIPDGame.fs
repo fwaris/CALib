@@ -4,6 +4,9 @@ open CAUtils
 open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
+let MAIN_KS_INFLUENCE = 1.0
+let KS_ATTRACTION_COFF = 0.2
+
 type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
 type W = Set<Id> * float
 type Action = W list
@@ -31,6 +34,9 @@ let sampleAvgDiversity (pop:Population<_>) =
             loop (acc + d) (c + 1)
     loop 0. 0
 
+let isExplorative = function Situational | Historical -> true | _ -> false
+let isExploitative = function Domain | Normative -> true | _ -> false
+
 let cooperation 
     st
     neighbor 
@@ -41,7 +47,10 @@ let cooperation
     let fI = st.NormalizedFit.[indv.Id]
     let attraction = (fNbr - fI) // |> max 0.
 //    if attraction < 0. then failwithf "attr neg %A" (f1,f1, attraction)
-    let coop = d + attraction
+    let (ksI,_) = indv.KS
+    let (ksN,_) = neighbor.KS
+    let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
+    let coop = d + attraction + ksCompatibility
     //let coop = if d <> 0. then attraction/ (d * 0.4) else System.Double.MaxValue
     //let coop = d * 0.5 * attraction
     ids,coop
@@ -86,6 +95,7 @@ let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElemen
 //let VMAX = 01.75 //payout is between 0 and 2 
 //let VMIN = 0.25 
 
+
 let updateKsw (pop:Population<IpdKS>) payout indv =
     let ksw = 
         payout 
@@ -102,8 +112,9 @@ let updateKsw (pop:Population<IpdKS>) payout indv =
     ksw
 
 let removePrimaryKS ks m = Map.remove ks m
+let removeSituationalKS m = Map.remove Situational m //Situational cannot be secondary KS as it changes the indv completely
 
-let createKs primary others = primary, removePrimaryKS primary others
+let createKs primary others = primary, removePrimaryKS primary others |> removeSituationalKS
 
 let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
     let payout = payout |> List.filter (fun (_,f) -> f > vmin)
@@ -176,7 +187,7 @@ let ipdInfluence beliefSpace pop :Population<IpdKS> =
         pop
         |> Array.Parallel.map (fun p -> 
             let mainKs,otherKs = p.KS
-            let p = ksMap.[mainKs].Influence 0.7 p
+            let p = ksMap.[mainKs].Influence MAIN_KS_INFLUENCE p
             (p,otherKs) ||> Map.fold (fun p k w -> ksMap.[k].Influence w p))
     pop 
 
