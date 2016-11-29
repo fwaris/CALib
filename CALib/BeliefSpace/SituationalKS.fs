@@ -88,6 +88,8 @@ let create isBetter maxExemplars =
         state
         (voters : Individual<_> array) =
         let explrs = pickExamplars isBetter state.Exemplars voters |> List.truncate maxExemplars |> List.toArray
+//        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
+//        printfn ""
         let weights = fitweights isBetter explrs
         let wheel = Probability.createWheel weights
         let state = {Exemplars=explrs; SpinWheel=wheel}

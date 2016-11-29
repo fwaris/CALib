@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.0
+let eSigma = 1.0
 
 type ParmRange =
     | Fr    of float

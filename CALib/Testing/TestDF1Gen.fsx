@@ -31,7 +31,7 @@ let comparator  = CAUtils.Maximize
 
 let termination d maxCone step = 
     let (f,_) = best step 
-    let c1 = step.Count > 1000 
+    let c1 = step.Count > 250 
     let c2 = abs (f - maxCone.H) < 0.0001
     if c1 then printfn "no solution %s - tg %A" d maxCone
     if c2 then printfn "sol %s %d" d step.Count
@@ -50,6 +50,20 @@ let runT  vmx (l,m,f) =
 
 let ipdsT vmx = fits |> List.map (runT vmx)
 
-let ipds = ipdsT (0.1, 1.4)
+//let ipds = ipdsT (0.1, 0.5) 
 
+let runW (l,m,f) = 
+    let t = kdWeightedCA f comparator parms |> CARunner.run l (termination l m) 2
+    l,m,best t
 
+//let wtdsT = fits |> List.map runW
+
+let stats =
+    seq {
+        for i in 1 .. 100 do
+        let ipds = ipdsT (0.1, 0.5) 
+        let wtdsT = fits |> List.map runW
+        yield! (ipds |> List.map (fun (l,m,f) -> "ipd",l,m,f))
+        yield! (wtdsT |> List.map (fun (l,m,f) -> "wtd",l,m,f))
+        }
+    |> Seq.toList

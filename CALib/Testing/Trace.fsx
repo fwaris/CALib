@@ -90,5 +90,17 @@ Async.Start(run startStep, cts.Token)
 cts.Cancel()
 *)
 
-    
+(* generate df1 landscape data for excel surface plot
+
+let (mc,df1) = createDf1 (__SOURCE_DIRECTORY__ + snd landscape)
+printf "\t"
+for y in -1. .. 0.01 .. 1. do printf "%f\t" y
+printfn ""
+for x in -1. .. 0.01 .. 1. do
+    printf "%f\t" x
+    for y in -1. .. 0.01 .. 1. do
+       printf "%f \t" (df1 x y)
+    printfn ""
+        
+*)
 

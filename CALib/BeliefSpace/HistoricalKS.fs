@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.0
+let eSigma = 1.0
 
 //determine direction of change
 let dir newParm prevParm = 
@@ -83,7 +83,7 @@ let create isBetter window =
                 voters, create updatedHistory acceptance fInfluence
     
     let influence {Events=events} s (ind:Individual<_>) =
-        let ev = events.[rnd.Value.Next(0,events.Length-1)]
+        let ev = events.[rnd.Value.Next(0,events.Length)]
         if isBetter ev.Best.Fitness ind.Fitness then
             ev.Best |> influenceInd s eSigma ind
         else
