@@ -51,19 +51,20 @@ let kdWeightedCA f c p  =
     makeCA f c pop bsp (wtdMajorityKdist c) CARunner.baseInfluence
 
 let cts = new System.Threading.CancellationTokenSource()
-let observable,fPost = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsvblK,fPostK= Observable.createObservableAgent<(string*float) seq> cts.Token
 
 let step st = CARunner.step st 2
-let vmx = (0.1, 1.4)
+let vmx = (0.5, 1.5)
 let startCA = kdIpdCA vmx fitness comparator parms
-//let startCA = kdWeightedCA fitness comparator parms
+//let startCA = kdlWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let run startStep =
     let st = ref startStep
     async {
         while true do
-            do! Async.Sleep 1000
+            do! Async.Sleep 250
             st := step !st
             let (_,gb) = best !st
             let gb = gb |> Array.map parmToFloat
@@ -73,16 +74,36 @@ let run startStep =
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            do fPost data
+            let ksCounts =
+                st.Value.CA.Population
+                |> Seq.map (fun i -> i.KS :> obj)
+                |> Seq.collect (
+                    function 
+                    | :? (Knowledge * Map<Knowledge,float>) as ks -> 
+                        let (k,m) = ks
+                        List.append [k,1.0] (Map.toList m)
+                    | :? Knowledge as k -> [k,1.0]
+                    | _-> failwithf "not handled"
+                    )
+                |> Seq.groupBy (fun (k,f) -> k)
+                |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
+                |> Seq.sortBy fst
+                |> Seq.toList
+            do fPostI data
+            do fPostK ksCounts
     }
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 let grid = ChartTypes.Grid(Interval=0.1)
 let ls = ChartTypes.LabelStyle(TruncatedLabels=true)
-LiveChart.FastPoint(observable, Title="ipd") 
+LiveChart.FastPoint(obsvblI, Title="Live Pop. Coords.") 
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
 |> Chart.WithSeries.DataPoint(Label=l)
+;;
+LiveChart.Column(obsvblK, Title="Live KS Counts") 
+|> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
+;;
 
 (*
 m
