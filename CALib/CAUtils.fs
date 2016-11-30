@@ -160,7 +160,33 @@ let l4BestNetwork (pop:Population<'k>) id = //return 4 'friends' from the ring
 //    printfn "id=%d, m1=%d, m2=%d, p1=%d, p2=%d" id m1 m2 p1 p2
     [|pop.[m2]; pop.[m1]; pop.[p1]; pop.[p2] |]
 
-
+let squareNetwork (pop:Population<'k>) id = 
+    //assume pop is in a square grid with wrap around for indv at the edges or outside the perfect square
+    let h = float pop.Length |> sqrt |> int
+    let w = h
+    let (r,c) =
+        let row = id / w
+        let col = id % h
+        row,col
+    let idx (r,c) =
+        let r = if r < 0 then (h - 1) elif r > h-1 then 0 else r
+        let c = if c < 0 then (w - 1) elif c > w-1 then 0 else c 
+        r * h + c
+    [|
+        pop.[idx (r,c-1)] //left
+        pop.[idx (r-1,c)] //top
+        pop.[idx (r,c+1)] //right
+        pop.[idx (r+1,c)] //bottom        
+    |]
+(*
+#load "CA.fs"
+#load "Probability.fs"
+#load "CAUtils.fs"
+open CA
+open CAUtils
+let pop = [|for i in 0 .. 100 -> {Individual.Id=i; Parms=[||]; KS=Domain; Fitness=1.; } |]
+squareNetwork pop 25
+*)
 
 let Maximize a b = a > b
 let Minimize a b = a < b

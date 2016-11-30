@@ -32,7 +32,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 50 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 16 true
 
 let kdIpdCA vmx f c p  = 
     let b = bsp f p c
@@ -55,7 +55,7 @@ let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsvblK,fPostK= Observable.createObservableAgent<(string*float) seq> cts.Token
 
 let step st = CARunner.step st 2
-let vmx = (0.5, 0.9)
+let vmx = (0.8, 1.5)
 let startCA = kdIpdCA vmx fitness comparator parms
 //let startCA = kdlWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}

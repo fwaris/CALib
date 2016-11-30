@@ -5,7 +5,7 @@ open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
 let MAIN_KS_INFLUENCE = 1.0
-let KS_ATTRACTION_COFF = 0.2
+let KS_ATTRACTION_COFF = 1.5
 
 type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
 type W = Set<Id> * float
@@ -45,15 +45,18 @@ let cooperation
     let d = parmDiversity indv.Parms neighbor.Parms / st.SumDiversity  //normalize diversity
     let fNbr = st.NormalizedFit.[neighbor.Id]
     let fI = st.NormalizedFit.[indv.Id]
-    let attraction = (fNbr - fI) // |> max 0.
-//    if attraction < 0. then failwithf "attr neg %A" (f1,f1, attraction)
+    let pfI = st.PrevNrmlzdFit.[indv.Id]
     let (ksI,_) = indv.KS
     let (ksN,_) = neighbor.KS
-    let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
-    let fitImprvFactor = st.PrevNrmlzdFit.[indv.Id] - fI //reduce coop if fit improved
-    let coop = d + attraction + ksCompatibility + fitImprvFactor
-    //let coop = if d <> 0. then attraction/ (d * 0.4) else System.Double.MaxValue
-    //let coop = d * 0.5 * attraction
+    let coop =
+        if isExploitative ksI && fI > pfI then 
+            -2.0
+        else
+            let attraction = (fNbr - fI) // |> max 0.
+            let ksCompatibility = if isExploitative ksI && isExplorative ksN then KS_ATTRACTION_COFF else 0.
+            let fitImprvFactor = st.PrevNrmlzdFit.[indv.Id] - fI //reduce coop if fit improved
+            d + attraction + ksCompatibility + fitImprvFactor
+//    printfn "%A,%f,%A,%A" ids coop ksI ksN
     ids,coop
 
 let relativeCoop totalCoop (s,coop) = s, if coop < 0. then 0. else coop / totalCoop
@@ -136,6 +139,7 @@ let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
             let (ks,_):IpdKS = nhbr.KS
             //let ksw = updateKsw pop payout indv 
             {indv with KS = createKs ks Map.empty}  
+    printfn "%d %A" indv.Id indv.KS
     indv
 
 let updatePop vmx cmprtr pop (payouts:Payout array) = 

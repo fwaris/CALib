@@ -19,7 +19,8 @@
 open CA
 open CAUtils
 
-let defaultNetwork = CAUtils.l4BestNetwork
+//let defaultNetwork = CAUtils.l4BestNetwork
+let defaultNetwork = CAUtils.squareNetwork
 
 let inline makeCA fitness comparator pop bspace kd influence =
         {
@@ -79,7 +80,7 @@ let runCollect data maxBest ca =
 
 let inline bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
 
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 true
 
 //kd construction
 let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
