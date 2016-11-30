@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 1.0
+let eSigma = 2.0
 
 type State<'a> = 
     {

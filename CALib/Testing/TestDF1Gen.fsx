@@ -68,4 +68,13 @@ let stats =
         yield! (wtdsT |> List.map (fun (l,m,f) -> "wtd",l,m,f))
         }
     |> Seq.toList
+
+let scores = stats |> List.map (fun (a,b,_,c) -> a,b,c)
+let wtd = scores |> List.filter (fun (a,b,c)->a="wtd")
+let ipd = scores |> List.filter (fun (a,b,c)->a="ipd")
+let wtdg = wtd |> List.groupBy (fun (a,b,c)->b) 
+let ipdg = ipd |> List.groupBy (fun (a,b,c)->b)
+let wtda = wtdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c))
+let ipda = ipdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c))
+
     *)
