@@ -140,7 +140,7 @@ m
 Async.Start(run startStep, cts.Token)
 cts.Cancel()
 KDIPDGame.KS_ATTRACTION_COFF <- 12.
-KDIPDGame.IMPROVE_DEFECT_COFF <- -10.
+KDIPDGame.IMPROVE_DEFECT_COFF <- -1.0
 *)
 
 (* generate df1 landscape data for excel surface plot

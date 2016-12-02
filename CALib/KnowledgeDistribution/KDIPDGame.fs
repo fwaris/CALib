@@ -5,8 +5,8 @@ open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
 let MAIN_KS_INFLUENCE = 1.0
-let mutable KS_ATTRACTION_COFF = 4.
-let mutable IMPROVE_DEFECT_COFF = -5.0
+let mutable KS_ATTRACTION_COFF = 2.0
+let mutable IMPROVE_DEFECT_COFF = -1.
 
 type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
 type W = Set<Id> * float
@@ -53,13 +53,15 @@ let cooperation
     let domainBoost = match md |> Map.tryFind Domain  with Some x when ksN = Domain -> x | _ -> 0.
     let nKSC = 1. - st.KSCount.[ksN] //level of ks
     let coop =
-        let fiImprov = fI - pf1I
+//        let fiImprov = fI - pf1I
         let attraction = (fNbr - fI) // |> max 0.
-        let sameKs = if ksI = ksN then -2.0 else 0.
+//        let sameKs = if ksI = ksN then -2.0 else 0.
         let defectCoof =  if isExploitative ksI && (fI > pf1I) then IMPROVE_DEFECT_COFF else 0.
         let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
-        let fitImprvFactor = st.P1Fit.[indv.Id] - fI //reduce coop if fit improved under current regime
-        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
+//        let fitImprvFactor = st.P1Fit.[indv.Id] - fI //reduce coop if fit improved under current regime
+//        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
+        let c = d + ksCompatibility  + defectCoof  + (nKSC * 4.0) + (attraction * 2.0)
+        let c = rnd.Value.NextDouble() * c
         c//System.Math.Tanh(c)
     ids,coop
 
@@ -121,9 +123,14 @@ let updateKsw (pop:Population<IpdKS>) payout indv =
 
 let removePrimaryKS ks m = Map.remove ks m
 let removeSituationalKS m = Map.remove Situational m //Situational cannot be secondary KS as it changes the indv completely
-let promoteDomainKS = function (Domain,_) as k -> k |(_,m) when m |> Map.containsKey Domain -> Domain,Map.empty | k -> k
+let promoteDomainKS = function (Domain,_) as k -> (Domain,Map.empty) | k -> k 
 
-let createKs primary others = (primary, removePrimaryKS primary others |> removeSituationalKS) //|> promoteDomainKS
+let createKs indv primary others = 
+    let ks = (primary, removePrimaryKS primary others |> removeSituationalKS) |> promoteDomainKS
+//    do 
+//        let ps = indv.Parms |> Array.map parmToFloat
+//        printfn "%A\t%d\t%f\t%f\t%A\t%A" System.DateTime.Now indv.Id ps.[0] ps.[1]  (fst indv.KS) (fst ks)
+    {indv with KS=ks}
 
 let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
     let payout = payout |> List.filter (fun (_,f) -> f > vmin)
@@ -131,22 +138,17 @@ let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
     let indv = 
         match vmx.Length,payout.Length with
         | 0,0 -> {indv with KS=fst indv.KS,Map.empty}
-        | 0,_ -> let ks = createKs (fst indv.KS) (updateKsw pop payout indv)
-                 {indv with KS=ks}
+        | 0,_ -> createKs indv (fst indv.KS) (updateKsw pop payout indv)
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (ks,_):IpdKS = nhbr.KS
-//            printfn "%A->%A" (fst indv.KS) (ks)
-            //let ksw = updateKsw pop payout indv 
-            {indv with KS = createKs ks Map.empty}
+            createKs indv ks Map.empty
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)
             let nhbr = pop.[other indv.Id (fst vmx.[i])]
             let (ks,_):IpdKS = nhbr.KS
-//            printfn "*%A->%A" (fst indv.KS) (ks)
-            {indv with KS = createKs ks Map.empty}  
+            createKs indv ks Map.empty
     let (p,_) = indv.KS
-    //if p=Domain then printfn "%d %A" indv.Id indv.KS
     indv
 
 let updatePop vmx cmprtr pop (payouts:Payout array) = 
