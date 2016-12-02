@@ -5,14 +5,15 @@ open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
 let MAIN_KS_INFLUENCE = 1.0
-let KS_ATTRACTION_COFF = 1.5
+let mutable KS_ATTRACTION_COFF = 4.
+let mutable IMPROVE_DEFECT_COFF = -5.0
 
 type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
 type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float; PrevNrmlzdFit:float array}
+type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float; P1Fit:float array; P2Fit:float array; KSCount:Map<Knowledge,float>}
 
 let parmDiversity p1 p2 = 
     (p1,p2)
@@ -45,18 +46,21 @@ let cooperation
     let d = parmDiversity indv.Parms neighbor.Parms / st.SumDiversity  //normalize diversity
     let fNbr = st.NormalizedFit.[neighbor.Id]
     let fI = st.NormalizedFit.[indv.Id]
-    let pfI = st.PrevNrmlzdFit.[indv.Id]
-    let (ksI,_) = indv.KS
+    let pf1I = st.P1Fit.[indv.Id]
+    let pf2I = st.P2Fit.[indv.Id]
+    let (ksI,md) = indv.KS
     let (ksN,_) = neighbor.KS
+    let domainBoost = match md |> Map.tryFind Domain  with Some x when ksN = Domain -> x | _ -> 0.
+    let nKSC = 1. - st.KSCount.[ksN] //level of ks
     let coop =
-        if isExploitative ksI && fI > pfI then 
-            -2.0
-        else
-            let attraction = (fNbr - fI) // |> max 0.
-            let ksCompatibility = if isExploitative ksI && isExplorative ksN then KS_ATTRACTION_COFF else 0.
-            let fitImprvFactor = st.PrevNrmlzdFit.[indv.Id] - fI //reduce coop if fit improved
-            d + attraction + ksCompatibility + fitImprvFactor
-//    printfn "%A,%f,%A,%A" ids coop ksI ksN
+        let fiImprov = fI - pf1I
+        let attraction = (fNbr - fI) // |> max 0.
+        let sameKs = if ksI = ksN then -2.0 else 0.
+        let defectCoof =  if isExploitative ksI && (fI > pf1I) then IMPROVE_DEFECT_COFF else 0.
+        let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
+        let fitImprvFactor = st.P1Fit.[indv.Id] - fI //reduce coop if fit improved under current regime
+        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
+        c//System.Math.Tanh(c)
     ids,coop
 
 let relativeCoop totalCoop (s,coop) = s, if coop < 0. then 0. else coop / totalCoop
@@ -117,8 +121,9 @@ let updateKsw (pop:Population<IpdKS>) payout indv =
 
 let removePrimaryKS ks m = Map.remove ks m
 let removeSituationalKS m = Map.remove Situational m //Situational cannot be secondary KS as it changes the indv completely
+let promoteDomainKS = function (Domain,_) as k -> k |(_,m) when m |> Map.containsKey Domain -> Domain,Map.empty | k -> k
 
-let createKs primary others = primary, removePrimaryKS primary others |> removeSituationalKS
+let createKs primary others = (primary, removePrimaryKS primary others |> removeSituationalKS) //|> promoteDomainKS
 
 let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
     let payout = payout |> List.filter (fun (_,f) -> f > vmin)
@@ -131,15 +136,17 @@ let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (ks,_):IpdKS = nhbr.KS
+//            printfn "%A->%A" (fst indv.KS) (ks)
             //let ksw = updateKsw pop payout indv 
             {indv with KS = createKs ks Map.empty}
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)
             let nhbr = pop.[other indv.Id (fst vmx.[i])]
             let (ks,_):IpdKS = nhbr.KS
-            //let ksw = updateKsw pop payout indv 
+//            printfn "*%A->%A" (fst indv.KS) (ks)
             {indv with KS = createKs ks Map.empty}  
-    printfn "%d %A" indv.Id indv.KS
+    let (p,_) = indv.KS
+    //if p=Domain then printfn "%d %A" indv.Id indv.KS
     indv
 
 let updatePop vmx cmprtr pop (payouts:Payout array) = 
@@ -150,18 +157,23 @@ let updatePop vmx cmprtr pop (payouts:Payout array) =
 
 let createState prevFitOpt (vmin,vmax) cmprtr pop =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
+    let ksc = pop |> Seq.collect(fun i-> let (k,m) = i.KS in (k,1.0)::(Map.toList m)) 
+    let totalKsc = ksc |> Seq.sumBy snd
+    let ksc = ksc |> Seq.map (fun (k,v) -> k, v / totalKsc) |> Map.ofSeq
     {
         SumDiversity = sampleAvgDiversity pop * float pop.Length
         NormalizedFit = nrmlzdFit
         VMin = vmin
         VMax = vmax
-        PrevNrmlzdFit = match prevFitOpt with Some f -> f | None -> nrmlzdFit
+        P1Fit = match prevFitOpt with Some (f,_) -> f | None -> nrmlzdFit
+        P2Fit = match prevFitOpt with Some (_,p) -> p | None -> nrmlzdFit
+        KSCount = ksc
     }
 
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop = updatePop vmx cmprtr pop payouts
-    let state = createState (Some state.NormalizedFit) vmx cmprtr pop
+    let state = createState (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop
     pop,
     beliefSpace,
     {

@@ -6,19 +6,19 @@ let slideUp s sg p =
     let z = zsample()
     let z' = z * s * sg |> abs
     match p with
-    | F (v,mn,mx)   -> toVF (v + (v * z')) mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v + (float v * z')) mn mx
-    | I (v,mn,mx)   -> toVI (float v + (float v * z')) mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v + (float v * z')) mn mx
+    | F (v,mn,mx)   -> toVF (v + z') mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v + z') mn mx
+    | I (v,mn,mx)   -> toVI (float v + z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v + z') mn mx
 
 let slideDown s sg p =
     let z = zsample()
     let z' = z * s * sg |> abs
     match p with
-    | F (v,mn,mx)   -> toVF (v + (v * z')) mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v + (float v * z')) mn mx
-    | I (v,mn,mx)   -> toVI (float v + (float v * z')) mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v + (float v * z')) mn mx
+    | F (v,mn,mx)   -> toVF (v - z') mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
+    | I (v,mn,mx)   -> toVI (float v - z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - z') mn mx
 
 //let evolveInt s sg iV =
 //    let v = float iV
@@ -44,10 +44,10 @@ let evolveS s sg p =
     let z = zsample()
     let z' = z * s * sg
     match p with
-    | F (v,mn,mx)   -> toVF (v - (v * z')) mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v - (float v * z')) mn mx
-    | I (v,mn,mx)   -> toVI (float v - (float v * z')) mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - (float v * z')) mn mx
+    | F (v,mn,mx)   -> toVF (v - z') mn mx
+    | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
+    | I (v,mn,mx)   -> toVI (float v - z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - z') mn mx
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)

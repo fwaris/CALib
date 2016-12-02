@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 2.0
+let eSigma = 3.0
 
 type State<'a> = 
     {
@@ -54,7 +54,9 @@ let pickExamplars isBetter prevE voters =
     let ex = Seq.append prevE  voters |> Seq.toArray
     let ex = Array.sortBy (fun (x:Individual<_>) -> tx * x.Fitness) ex
     let best = ex.[0]
-    let ex = ex.[1..] //all others, i.e. not best
+    let within10Pct = best.Fitness * 0.15
+//    let ex = ex.[1..] |> Array.filter(fun i -> i.Fitness - best.Fitness |> abs <= within10Pct) //all others, i.e. not best
+    let ex = ex.[1..] 
     let divsM = ex |> Array.map (fun i-> i.Id, parmDiversity best.Parms i.Parms) |> Map.ofArray
     let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
     let (_,mnD) = divsM |> Map.toArray |> Seq.minBy snd

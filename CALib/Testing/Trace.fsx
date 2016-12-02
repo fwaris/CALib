@@ -32,7 +32,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 16 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 49 true
 
 let kdIpdCA vmx f c p  = 
     let b = bsp f p c
@@ -53,11 +53,13 @@ let kdWeightedCA f c p  =
 let cts = new System.Threading.CancellationTokenSource()
 let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsvblK,fPostK= Observable.createObservableAgent<(string*float) seq> cts.Token
+let obsvblD,fPostD= Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsvblE,fPostE= Observable.createObservableAgent<(float*float) seq> cts.Token
 
 let step st = CARunner.step st 2
-let vmx = (0.8, 1.5)
+let vmx = (0.2, 0.9)
 let startCA = kdIpdCA vmx fitness comparator parms
-//let startCA = kdlWeightedCA fitness comparator parms
+//let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let run startStep =
@@ -70,6 +72,20 @@ let run startStep =
             let gb = gb |> Array.map parmToFloat
             let data =  
                 st.Value.CA.Population
+                |> Array.map (fun i -> 
+                    let p = i.Parms |> Array.map parmToFloat 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let dData =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> fst i.KS = Domain && snd i.KS |> Map.isEmpty)
+                |> Array.map (fun i -> 
+                    let p = i.Parms |> Array.map parmToFloat 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let eData =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> fst i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
@@ -91,6 +107,8 @@ let run startStep =
                 |> Seq.toList
             do fPostI data
             do fPostK ksCounts
+            do fPostD dData
+            do fPostE eData
     }
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
@@ -101,6 +119,18 @@ LiveChart.FastPoint(obsvblI, Title="Live Pop. Coords.")
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
 |> Chart.WithSeries.DataPoint(Label=l)
 ;;
+LiveChart.FastPoint(obsvblD, Title="Domain") 
+|> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
+|> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
+|> Chart.WithStyling(Color=System.Drawing.Color.Orange)
+|> Chart.WithSeries.DataPoint(Label=l)
+;;
+LiveChart.FastPoint(obsvblE, Title="Situational") 
+|> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
+|> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
+|> Chart.WithStyling(Color=System.Drawing.Color.Chocolate)
+|> Chart.WithSeries.DataPoint(Label=l)
+;;
 LiveChart.Column(obsvblK, Title="Live KS Counts") 
 |> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
 ;;
@@ -109,6 +139,8 @@ LiveChart.Column(obsvblK, Title="Live KS Counts")
 m
 Async.Start(run startStep, cts.Token)
 cts.Cancel()
+KDIPDGame.KS_ATTRACTION_COFF <- 12.
+KDIPDGame.IMPROVE_DEFECT_COFF <- -10.
 *)
 
 (* generate df1 landscape data for excel surface plot

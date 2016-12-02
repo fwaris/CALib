@@ -160,23 +160,41 @@ let l4BestNetwork (pop:Population<'k>) id = //return 4 'friends' from the ring
 //    printfn "id=%d, m1=%d, m2=%d, p1=%d, p2=%d" id m1 m2 p1 p2
     [|pop.[m2]; pop.[m1]; pop.[p1]; pop.[p2] |]
 
-let squareNetwork (pop:Population<'k>) id = 
-    //assume pop is in a square grid with wrap around for indv at the edges or outside the perfect square
-    let h = float pop.Length |> sqrt |> int
-    let w = h
-    let (r,c) =
-        let row = id / w
-        let col = id % h
-        row,col
-    let idx (r,c) =
-        let r = if r < 0 then (h - 1) elif r > h-1 then 0 else r
-        let c = if c < 0 then (w - 1) elif c > w-1 then 0 else c 
-        r * h + c
+//let squareNetwork (pop:Population<'k>) id = 
+//    //assume pop is in a square grid with wrap around for indv at the edges or outside the perfect square
+//    let h = float pop.Length |> sqrt |> int
+//    let w = h
+//    let (r,c) =
+//        let row = id / w
+//        let col = id % h
+//        row,col
+//    let idx (r,c) =
+//        let r = if r < 0 then (h - 1) elif r > h-1 then 0 else r
+//        let c = if c < 0 then (w - 1) elif c > w-1 then 0 else c 
+//        r * h + c
+//    [|
+//        pop.[idx (r,c-1)] //left
+//        pop.[idx (r-1,c)] //top
+//        pop.[idx (r,c+1)] //right
+//        pop.[idx (r+1,c)] //bottom        
+//    |]
+//
+let hexagonNetwork (pop:Population<'k>) id =
+    let sz = pop.Length
     [|
-        pop.[idx (r,c-1)] //left
-        pop.[idx (r-1,c)] //top
-        pop.[idx (r,c+1)] //right
-        pop.[idx (r+1,c)] //bottom        
+        for i in -3 .. 1 .. 3 do
+            let idx = (id + i) % sz
+            let idx = if idx < 0 then idx + sz else idx
+            yield pop.[idx]
+    |]
+
+let squareNetwork (pop:Population<'k>) id =
+    let sz = pop.Length
+    [|
+        for i in -2 .. 1 .. 2 do
+            let idx = (id + i) % sz
+            let idx = if idx < 0 then idx + sz else idx
+            yield pop.[idx]
     |]
 (*
 #load "CA.fs"

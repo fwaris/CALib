@@ -20,7 +20,7 @@ open CA
 open CAUtils
 
 //let defaultNetwork = CAUtils.l4BestNetwork
-let defaultNetwork = CAUtils.squareNetwork
+let defaultNetwork = CAUtils.hexagonNetwork
 
 let inline makeCA fitness comparator pop bspace kd influence =
         {
