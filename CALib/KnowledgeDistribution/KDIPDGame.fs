@@ -4,8 +4,22 @@ open CAUtils
 open KDContinousStrategyGame
 open FSharp.Collections.ParallelSeq
 
+type LIndv = {id:int; x:float; y:float; ks:Knowledge; ksp:Knowledge; gen:int; fit:float}
+type LCoop = {id1:int; id2:int; attr:float; def:float; 
+              kscom:float; kslow:float; dv:float; gen:int; coop:float
+              ksI:Knowledge; ksN:Knowledge}
+type LPout = {gen:int; idA:int; idB:int; payoff:float }
+type Log = MIndv of LIndv | MCoop of LCoop | MPout of LPout
+let mutable ld = []
+let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox -> 
+    async {
+        while true do
+            let! msg = inbox.Receive()
+            ld <- msg::ld
+    })
+
 let MAIN_KS_INFLUENCE = 1.0
-let mutable KS_ATTRACTION_COFF = 2.0
+let mutable KS_ATTRACTION_COFF = 1.0
 let mutable IMPROVE_DEFECT_COFF = -1.
 
 type IpdKS = Knowledge * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
@@ -13,7 +27,7 @@ type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-type IpdState = {SumDiversity:float; NormalizedFit:float array; VMin:float; VMax:float; P1Fit:float array; P2Fit:float array; KSCount:Map<Knowledge,float>}
+type IpdState = {SumDiversity:float; Gen:int; NormalizedFit:float array; VMin:float; VMax:float; P1Fit:float array; P2Fit:float array; KSCount:Map<Knowledge,float>}
 
 let parmDiversity p1 p2 = 
     (p1,p2)
@@ -60,8 +74,15 @@ let cooperation
         let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
 //        let fitImprvFactor = st.P1Fit.[indv.Id] - fI //reduce coop if fit improved under current regime
 //        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
-        let c = d + ksCompatibility  + defectCoof  + (nKSC * 4.0) + (attraction * 2.0)
-        let c = rnd.Value.NextDouble() * c
+        let kslow = nKSC ** 3.0
+        let attr = (attraction * 2.0)
+        let c = d + ksCompatibility  + defectCoof  + kslow + attr
+        {id1=indv.Id; id2=neighbor.Id; attr=attr; 
+         def=defectCoof; kscom=ksCompatibility;
+         kslow=kslow; dv=d; gen=st.Gen; coop=c;
+         ksI=ksI; ksN=ksN } 
+        |> MCoop |> log.Post
+        //let c = rnd.Value.NextDouble() * c
         c//System.Math.Tanh(c)
     ids,coop
 
@@ -125,41 +146,48 @@ let removePrimaryKS ks m = Map.remove ks m
 let removeSituationalKS m = Map.remove Situational m //Situational cannot be secondary KS as it changes the indv completely
 let promoteDomainKS = function (Domain,_) as k -> (Domain,Map.empty) | k -> k 
 
-let createKs indv primary others = 
-    let ks = (primary, removePrimaryKS primary others |> removeSituationalKS) |> promoteDomainKS
-//    do 
-//        let ps = indv.Parms |> Array.map parmToFloat
-//        printfn "%A\t%d\t%f\t%f\t%A\t%A" System.DateTime.Now indv.Id ps.[0] ps.[1]  (fst indv.KS) (fst ks)
-    {indv with KS=ks}
+let logI st newKs indv = 
+    let ps = indv.Parms |> Array.map parmToFloat
+    {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=fst newKs; ksp=fst indv.KS; gen=st.Gen; fit=indv.Fitness} |> MIndv |> log.Post
+    indv
 
-let updateIndv (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
+let crtWthKS st indv primary others = 
+    let ks = (primary, removePrimaryKS primary others |> removeSituationalKS) |> promoteDomainKS
+    {indv with KS=ks} |> logI st ks
+
+let updateIndv st (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
+    payout |> List.iter (fun (is,f) -> {gen=st.Gen; idA=Set.minElement is; idB=Set.maxElement is; payoff=f} |> MPout |> log.Post)
     let payout = payout |> List.filter (fun (_,f) -> f > vmin)
     let vmx = payout |> List.filter (fun (_,f) -> f >= vmax)
     let indv = 
         match vmx.Length,payout.Length with
-        | 0,0 -> {indv with KS=fst indv.KS,Map.empty}
-        | 0,_ -> createKs indv (fst indv.KS) (updateKsw pop payout indv)
+        | 0,0 -> crtWthKS st indv (fst indv.KS) Map.empty
+        | 0,_ -> crtWthKS st indv (fst indv.KS) (updateKsw pop payout indv)
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (ks,_):IpdKS = nhbr.KS
-            createKs indv ks Map.empty
+            crtWthKS st indv ks Map.empty
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)
             let nhbr = pop.[other indv.Id (fst vmx.[i])]
             let (ks,_):IpdKS = nhbr.KS
-            createKs indv ks Map.empty
+            crtWthKS st indv ks Map.empty
     let (p,_) = indv.KS
     indv
 
-let updatePop vmx cmprtr pop (payouts:Payout array) = 
+let updatePop st vmx cmprtr pop (payouts:Payout array) = 
     let pop = pop |> Array.Parallel.map(fun indv ->
-        updateIndv vmx cmprtr pop indv payouts.[indv.Id]
+        updateIndv st vmx cmprtr pop indv payouts.[indv.Id]
     )
     pop
 
-let createState prevFitOpt (vmin,vmax) cmprtr pop =
+let createState gen prevFitOpt (vmin,vmax) cmprtr pop =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
-    let ksc = pop |> Seq.collect(fun i-> let (k,m) = i.KS in (k,1.0)::(Map.toList m)) 
+    let ksc = 
+        pop 
+        |> Seq.collect(fun i-> let (k,m) = i.KS in (k,1.0)::(Map.toList m))  
+        |> Seq.groupBy fst 
+        |> Seq.map (fun (k,xs)->k, xs |>Seq.sumBy snd)
     let totalKsc = ksc |> Seq.sumBy snd
     let ksc = ksc |> Seq.map (fun (k,v) -> k, v / totalKsc) |> Map.ofSeq
     {
@@ -170,12 +198,13 @@ let createState prevFitOpt (vmin,vmax) cmprtr pop =
         P1Fit = match prevFitOpt with Some (f,_) -> f | None -> nrmlzdFit
         P2Fit = match prevFitOpt with Some (_,p) -> p | None -> nrmlzdFit
         KSCount = ksc
+        Gen = gen + 1
     }
 
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
-    let pop = updatePop vmx cmprtr pop payouts
-    let state = createState (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop
+    let pop = updatePop state vmx cmprtr pop payouts
+    let state = createState state.Gen (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop
     pop,
     beliefSpace,
     {
@@ -195,7 +224,7 @@ let initKS (pop:Population<Knowledge>) =
         })
 
 let game (vmin,vmax) cmprtr pop =
-    let state = createState None (vmin,vmax) cmprtr pop
+    let state = createState 0 None (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state

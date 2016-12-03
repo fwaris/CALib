@@ -1,6 +1,7 @@
 ﻿module CAUtils
 open CA
 
+
 let rnd = Probability.RNG
 
 let gaussian mean sigma = Probability.GAUSS mean sigma
@@ -183,18 +184,20 @@ let hexagonNetwork (pop:Population<'k>) id =
     let sz = pop.Length
     [|
         for i in -3 .. 1 .. 3 do
-            let idx = (id + i) % sz
-            let idx = if idx < 0 then idx + sz else idx
-            yield pop.[idx]
+            if i <> 0 then
+                let idx = (id + i) % sz
+                let idx = if idx < 0 then idx + sz else idx
+                yield pop.[idx]
     |]
 
 let squareNetwork (pop:Population<'k>) id =
     let sz = pop.Length
     [|
         for i in -2 .. 1 .. 2 do
-            let idx = (id + i) % sz
-            let idx = if idx < 0 then idx + sz else idx
-            yield pop.[idx]
+            if i <> 0 then
+                let idx = (id + i) % sz
+                let idx = if idx < 0 then idx + sz else idx
+                yield pop.[idx]
     |]
 (*
 #load "CA.fs"

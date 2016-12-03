@@ -134,8 +134,8 @@ LiveChart.FastPoint(obsvblE, Title="Situational")
 LiveChart.Column(obsvblK, Title="Live KS Counts") 
 |> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
 ;;
-
 (*
+TestEnv.defaultNetwork startCA.Population 1
 m
 Async.Start(run startStep, cts.Token)
 cts.Cancel()
@@ -154,6 +154,10 @@ for x in -1. .. 0.01 .. 1. do
     for y in -1. .. 0.01 .. 1. do
        printf "%f \t" (df1 x y)
     printfn ""
-        
+
+//PRNG check for randomness 
+[for i in 1 .. 200 do
+    for j in 1.. 200 do
+        yield (rnd.Value.NextDouble(),rnd.Value.NextDouble())] |> Chart.FastPoint        
 *)
 

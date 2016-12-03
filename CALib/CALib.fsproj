@@ -86,6 +86,7 @@
     <None Include="Testing\TestSituational.fsx" />
     <None Include="Testing\TestEnv.fsx" />
     <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\IPDLogAnalysis.fsx" />
     <None Include="Testing\ObservableExt.fs" />
     <None Include="paket.references" />
   </ItemGroup>

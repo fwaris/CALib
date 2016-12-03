@@ -90,6 +90,7 @@ let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultN
 let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
 let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
 
+
 //CA construction
 let kdSimpleCA   f c p  = 
     let bsp = bsp f p c
