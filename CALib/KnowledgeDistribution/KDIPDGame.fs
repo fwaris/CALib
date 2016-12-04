@@ -7,6 +7,7 @@ open FSharp.Collections.ParallelSeq
 type LIndv = {id:int; x:float; y:float; ks:Knowledge; ksp:Knowledge; gen:int; fit:float}
 type LCoop = {id1:int; id2:int; attr:float; def:float; 
               kscom:float; kslow:float; dv:float; gen:int; coop:float
+              stb:float;
               ksI:Knowledge; ksN:Knowledge}
 type LPout = {gen:int; idA:int; idB:int; payoff:float }
 type Log = MIndv of LIndv | MCoop of LCoop | MPout of LPout
@@ -15,7 +16,8 @@ let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox ->
     async {
         while true do
             let! msg = inbox.Receive()
-            ld <- msg::ld
+            ld <- [msg]
+//            ld <- msg::ld
     })
 
 let MAIN_KS_INFLUENCE = 1.0
@@ -27,7 +29,7 @@ type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
-type IpdState = {SumDiversity:float; Gen:int; NormalizedFit:float array; VMin:float; VMax:float; P1Fit:float array; P2Fit:float array; KSCount:Map<Knowledge,float>}
+type IpdState = {SumDiversity:float; Gen:int; NormalizedFit:float array; VMin:float; VMax:float; P1Fit:float array; Stability:float array; KSCount:Map<Knowledge,float>}
 
 let parmDiversity p1 p2 = 
     (p1,p2)
@@ -61,7 +63,7 @@ let cooperation
     let fNbr = st.NormalizedFit.[neighbor.Id]
     let fI = st.NormalizedFit.[indv.Id]
     let pf1I = st.P1Fit.[indv.Id]
-    let pf2I = st.P2Fit.[indv.Id]
+    let stability = st.Stability.[indv.Id]
     let (ksI,md) = indv.KS
     let (ksN,_) = neighbor.KS
     let domainBoost = match md |> Map.tryFind Domain  with Some x when ksN = Domain -> x | _ -> 0.
@@ -76,10 +78,11 @@ let cooperation
 //        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
         let kslow = nKSC ** 3.0
         let attr = (attraction * 2.0)
-        let c = d + ksCompatibility  + defectCoof  + kslow + attr
+        let c = d + ksCompatibility  + defectCoof  + kslow + attr + stability
         {id1=indv.Id; id2=neighbor.Id; attr=attr; 
          def=defectCoof; kscom=ksCompatibility;
          kslow=kslow; dv=d; gen=st.Gen; coop=c;
+         stb=stability;
          ksI=ksI; ksN=ksN } 
         |> MCoop |> log.Post
         //let c = rnd.Value.NextDouble() * c
@@ -148,12 +151,12 @@ let promoteDomainKS = function (Domain,_) as k -> (Domain,Map.empty) | k -> k
 
 let logI st newKs indv = 
     let ps = indv.Parms |> Array.map parmToFloat
-    {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=fst newKs; ksp=fst indv.KS; gen=st.Gen; fit=indv.Fitness} |> MIndv |> log.Post
-    indv
+    {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=fst newKs; ksp=fst indv.KS; gen=st.Gen; fit=indv.Fitness;} |> MIndv |> log.Post
 
 let crtWthKS st indv primary others = 
     let ks = (primary, removePrimaryKS primary others |> removeSituationalKS) |> promoteDomainKS
-    {indv with KS=ks} |> logI st ks
+    logI st ks indv
+    {indv with KS=ks}
 
 let updateIndv st (vmin,vmax) cmprtr (pop:Population<IpdKS>) indv payout =
     payout |> List.iter (fun (is,f) -> {gen=st.Gen; idA=Set.minElement is; idB=Set.maxElement is; payoff=f} |> MPout |> log.Post)
@@ -181,7 +184,7 @@ let updatePop st vmx cmprtr pop (payouts:Payout array) =
     )
     pop
 
-let createState gen prevFitOpt (vmin,vmax) cmprtr pop =
+let createState gen stability prevFitOpt (vmin,vmax) cmprtr pop =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     let ksc = 
         pop 
@@ -196,16 +199,21 @@ let createState gen prevFitOpt (vmin,vmax) cmprtr pop =
         VMin = vmin
         VMax = vmax
         P1Fit = match prevFitOpt with Some (f,_) -> f | None -> nrmlzdFit
-        P2Fit = match prevFitOpt with Some (_,p) -> p | None -> nrmlzdFit
+        Stability = stability
         KSCount = ksc
         Gen = gen + 1
     }
 
+let updateStability f = function
+    | Domain,Domain -> f + 1. //|> min 10.
+    | _,_           -> 0.
+
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
-    let pop = updatePop state vmx cmprtr pop payouts
-    let state = createState state.Gen (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop
-    pop,
+    let pop' = updatePop state vmx cmprtr pop payouts
+    let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (fst pop'.[i].KS, fst pop.[i].KS))
+    let state = createState state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
+    pop',
     beliefSpace,
     {
         Play = play state
@@ -223,8 +231,9 @@ let initKS (pop:Population<Knowledge>) =
             KS=indv.KS,Map.empty
         })
 
-let game (vmin,vmax) cmprtr pop =
-    let state = createState 0 None (vmin,vmax) cmprtr pop
+let game (vmin,vmax) cmprtr (pop:Population<_>) =
+    let stability = Array.zeroCreate pop.Length
+    let state = createState 0 stability None (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state

@@ -135,7 +135,7 @@ LiveChart.Column(obsvblK, Title="Live KS Counts")
 |> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
 ;;
 (*
-TestEnv.defaultNetwork startCA.Population 1
+TestEnv.defaultNetwork startCA.Population 10
 m
 Async.Start(run startStep, cts.Token)
 cts.Cancel()
