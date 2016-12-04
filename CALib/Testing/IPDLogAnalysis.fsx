@@ -25,8 +25,8 @@ let traceId i =
     |> Seq.iter (printfn "%s")
 
 traceId 10
-traceId 11
+traceId 13
 
 
-ld |> Seq.filter (fltrAll 10) |> Seq.filter (gen>>((=)15)) |> Seq.map flat |> dmps
-ld |> Seq.filter (fltrAll 8) |> Seq.filter (gen>>((=)15)) |> Seq.map flat |> dmps
+ld |> Seq.filter (fltrAll 9) |> Seq.filter (gen>>((=)12)) |> Seq.map flat |> dmps
+ld |> Seq.filter (fltrAll 13) |> Seq.filter (gen>>((=)35)) |> Seq.map flat |> dmps

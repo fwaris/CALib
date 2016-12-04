@@ -50,7 +50,7 @@ let runT  vmx (l,m,f) =
 
 let ipdsT vmx = fits |> List.map (runT vmx)
 
-let ipds = ipdsT (0.3, 1.8) 
+let ipds = ipdsT  (0.2, 0.9)
 
 (*
 let runW (l,m,f) = 

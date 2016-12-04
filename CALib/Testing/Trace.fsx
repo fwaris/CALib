@@ -135,12 +135,12 @@ LiveChart.Column(obsvblK, Title="Live KS Counts")
 |> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
 ;;
 (*
-TestEnv.defaultNetwork startCA.Population 10
 m
 Async.Start(run startStep, cts.Token)
 cts.Cancel()
 KDIPDGame.KS_ATTRACTION_COFF <- 12.
 KDIPDGame.IMPROVE_DEFECT_COFF <- -1.0
+TestEnv.defaultNetwork startCA.Population 10
 *)
 
 (* generate df1 landscape data for excel surface plot

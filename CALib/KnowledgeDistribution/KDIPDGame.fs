@@ -78,7 +78,7 @@ let cooperation
 //        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
         let kslow = nKSC ** 3.0
         let attr = (attraction * 2.0)
-        let c = d + ksCompatibility  + defectCoof  + kslow + attr + stability
+        let c = ksCompatibility  + defectCoof  + kslow + attr + stability * d
         {id1=indv.Id; id2=neighbor.Id; attr=attr; 
          def=defectCoof; kscom=ksCompatibility;
          kslow=kslow; dv=d; gen=st.Gen; coop=c;
@@ -205,7 +205,7 @@ let createState gen stability prevFitOpt (vmin,vmax) cmprtr pop =
     }
 
 let updateStability f = function
-    | Domain,Domain -> f + 1. //|> min 10.
+    | Domain,Domain -> f + 1. //|> min 5.
     | _,_           -> 0.
 
 let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
