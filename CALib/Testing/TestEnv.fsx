@@ -80,7 +80,7 @@ let runCollect data maxBest ca =
 
 let inline bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
 
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 49 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 true
 
 //kd construction
 let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)

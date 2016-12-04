@@ -247,7 +247,9 @@ let ipdInfluence beliefSpace pop :Population<IpdKS> =
         |> Array.Parallel.map (fun p -> 
             let mainKs,otherKs = p.KS
             let p = ksMap.[mainKs].Influence MAIN_KS_INFLUENCE p
-            (p,otherKs) ||> Map.fold (fun p k w -> ksMap.[k].Influence w p))
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExplorative k then ksMap.[k].Influence w p else p) //explorative ks go first
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExploitative k then ksMap.[k].Influence w p else p) //exploitative ks go last
+            p)
     pop 
 
 let knowledgeDist (vmin,vmax) comparator pop =

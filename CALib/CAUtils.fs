@@ -130,8 +130,8 @@ let epsilon = function
     | I64(_,mn,mx)  -> I64(1L,mn,mx)
 
 let epsilonM = function
-    | F(_,mn,mx)    -> F(0.001,mn,mx)
-    | F32(_,mn,mx)  -> F32(0.001f,mn,mx)
+    | F(_,mn,mx)    -> F(0.0001,mn,mx)
+    | F32(_,mn,mx)  -> F32(0.0001f,mn,mx)
     | I(_,mn,mx)    -> I(1,mn,mx)
     | I64(_,mn,mx)  -> I64(1L,mn,mx)
 

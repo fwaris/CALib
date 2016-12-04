@@ -37,7 +37,7 @@ let kdlWeightedCA   = kdlWeightedCA fitness comparator parms
 //let kdGame2PlayerCA = kdGame2PlayerCA fitness comparator parms
 //let kdHedonicCA     = kdHedonicCA fitness comparator parms
 //let kdIpdCA         = kdIpdCA (0.5,1.9) fitness comparator parms 
-let kdIpdCA         = kdIpdCA  (0.1, 1.4) fitness comparator parms 
+let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms 
 
 //let kdSimple        = kdSimpleCA |> runCollect dataCollector 2 |> tk
 let kdWeigthed      = kdWeightedCA |> runCollect dataCollector 2 |> tk

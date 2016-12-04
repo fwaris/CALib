@@ -59,33 +59,43 @@ let obsvblE,fPostE= Observable.createObservableAgent<(float*float) seq> cts.Toke
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
 let startCA = kdIpdCA vmx fitness comparator parms
-//let startCA = kdWeightedCA fitness comparator parms
+//let startCA = kdlWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
+
+let pKS (x:obj) =
+    match x with 
+    | :? (Knowledge * Map<Knowledge,float>) as ks -> fst ks
+    | :? Knowledge as k -> k
+    | _-> failwithf "not handled"
 
 let run startStep =
     let st = ref startStep
+    let go = ref true
     async {
-        while true do
+        while !go do
             do! Async.Sleep 250
             st := step !st
-            let (_,gb) = best !st
+            let (bfit,gb) = best !st
+            if abs(bfit - m.H) < 0.001 then 
+                go := false
+                printfn "sol @ %d" st.Value.Count
             let gb = gb |> Array.map parmToFloat
             let data =  
                 st.Value.CA.Population
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]; m.X,m.Y|]
             let dData =
                 st.Value.CA.Population
-                |> Array.filter (fun i -> fst i.KS = Domain && snd i.KS |> Map.isEmpty)
+                |> Array.filter (fun i -> pKS i.KS = Domain)
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let eData =
                 st.Value.CA.Population
-                |> Array.filter (fun i -> fst i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.filter (fun i -> pKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
