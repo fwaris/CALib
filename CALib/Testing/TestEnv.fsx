@@ -84,7 +84,7 @@ let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 tr
 
 //kd construction
 let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
-let wtdMajorityKdist   c = KD(KDWeightedMajority.knowledgeDist c)
+let wtdMajorityKdist   c = KD(KDWeightedMajority.knowledgeDist 3 0 c)
 let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
 let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork

@@ -1,5 +1,6 @@
 ﻿module CAUtils
 open CA
+open FSharp.Collections.ParallelSeq
 
 
 let rnd = Probability.RNG
@@ -221,3 +222,11 @@ let toVF (v:float) mn mx = F(clamp mn mx v, mn, mx)
 let toVI (v:float) mn mx = I(clamp mn mx (int v), mn, mx)
 let toVF32 (v:float) mn mx = F32(clamp mn mx (float32 v), mn, mx)
 let toVI64 (v:float) mn mx = I64(clamp mn mx (int64 v), mn, mx)
+
+let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
+    let sign = if cmprtr 2. 1. then 1. else -1.
+    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
+    let minFit = currentFit |> PSeq.min
+    let maxFit = currentFit |> PSeq.max
+    let scaler = scaler target (minFit,maxFit) 
+    currentFit |> Array.Parallel.map scaler  //scale fitness to target range

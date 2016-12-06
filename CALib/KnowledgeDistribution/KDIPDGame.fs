@@ -116,13 +116,6 @@ let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
         failwithf "neighbor action counts not matched %A %A" indv nhbrActns
     payoff
 
-let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
-    let sign = if cmprtr 2. 1. then 1. else -1.
-    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
-    let minFit = currentFit |> PSeq.min
-    let maxFit = currentFit |> PSeq.max
-    let scaler = CAUtils.scaler target (minFit,maxFit) 
-    currentFit |> Array.Parallel.map scaler  //scale fitness to target range
 
 let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElement s
 

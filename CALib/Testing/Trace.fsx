@@ -52,14 +52,33 @@ let kdWeightedCA f c p  =
 
 let cts = new System.Threading.CancellationTokenSource()
 let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsvblK,fPostK= Observable.createObservableAgent<(string*float) seq> cts.Token
-let obsvblD,fPostD= Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsvblE,fPostE= Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsvblK,fPostK = Observable.createObservableAgent<(string*float) seq> cts.Token
+let obsvblD,fPostD = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsvblE,fPostE = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsDsp,fpDsp = Observable.createObservableAgent<int*float> cts.Token
+
+let sqr x = x * x
+
+let disp (p1:Parm[]) (p2:Parm[]) =
+    let p1 = p1 |> Array.map parmToFloat
+    let p2 = p2 |> Array.map parmToFloat
+    (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
+    |> sqrt
+
+let dispPop (pop:Population<_>) (network:Network<_>) =
+    let n = network pop 0
+    let esum = 
+        (0.,pop) 
+        ||> Array.fold (fun acc indv -> 
+            (acc,network pop indv.Id) 
+            ||> Array.fold(fun acc n -> disp indv.Parms n.Parms))
+    let st = esum / float n.Length
+    st
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-let startCA = kdIpdCA vmx fitness comparator parms
-//let startCA = kdlWeightedCA fitness comparator parms
+//let startCA = kdIpdCA vmx fitness comparator parms
+let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let pKS (x:obj) =
@@ -119,7 +138,9 @@ let run startStep =
             do fPostK ksCounts
             do fPostD dData
             do fPostE eData
+            do fpDsp (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
     }
+
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 let grid = ChartTypes.Grid(Interval=0.1)
@@ -143,6 +164,8 @@ LiveChart.FastPoint(obsvblE, Title="Situational")
 ;;
 LiveChart.Column(obsvblK, Title="Live KS Counts") 
 |> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
+;;
+LiveChart.FastLineIncremental(obsDsp,Title="Dispersion 1.01  Wtd. Majority")
 ;;
 (*
 m

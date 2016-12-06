@@ -2,41 +2,32 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-let private maxConverter isBetter = 
-    if isBetter 2. 1. then 
-        fun x->x 
-    else 
-        fun x -> 
-            if x <> 0. then
-                1. / x
-            else
-                System.Double.MaxValue
-
-let private totalKSFit isBetter (pop:Population<Knowledge>) =
-    let mc = maxConverter isBetter
-    pop 
-    |> PSeq.map (fun i -> i.KS,i.Fitness) 
-    |> PSeq.groupBy fst
-    |> PSeq.map (fun (k,fs) -> 
-        k, 
-        (fs |> Seq.sumBy snd) / float (Seq.length fs) 
-        |> mc
-        )
-    |> Map.ofSeq
-
 let private wmDist pop network (nrmlzdFit:Map<_,_>) indv =
     let nhbrs = network pop indv.Id
-    let acc = Map.add indv.KS 1.
-    let ks = Array.append [|indv|] nhbrs
-    let kdCounts = ks |> Array.countBy (fun i->i.KS)
-    let totalKD = float kdCounts.Length
+    let allFrnds = Array.append [|indv|] nhbrs
+    let kdCounts = allFrnds |> Array.countBy (fun i->i.KS)
+    let totalKD = kdCounts |> Array.sumBy snd |> float
     let nrmlzdCnts = kdCounts |> Array.map (fun (k,v) -> k, float v / totalKD * nrmlzdFit.[k])
     let kd,_ = nrmlzdCnts |> Array.maxBy snd
+    let possibleConflicts = nrmlzdCnts  |> Array.filter (fun (n,c)->n=kd)
+    let kd = 
+        if possibleConflicts.Length > 1 then
+            let (kd,_) = possibleConflicts.[CAUtils.rnd.Value.Next(possibleConflicts.Length)]
+            kd
+        else
+            kd
+//    printfn "win kd %A" kd
     {indv with KS = kd}
 
-let rec knowledgeDist isBetter (pop,b) network =
-    let ksFit = totalKSFit isBetter pop
-    let totalFit = (0.,ksFit) ||> Map.fold (fun acc _  v -> v + acc)
-    let nrmlzdKdFit = ksFit |> Map.map (fun _ v -> v / totalFit)
-    let pop = pop |> Array.Parallel.map (wmDist pop network nrmlzdKdFit)
-    pop,b,KD(knowledgeDist isBetter)
+let rec knowledgeDist every gen isBetter (pop,b) network =
+    let nrmlzdFit = CAUtils.normalizePopFitness (0.,1.) isBetter pop
+    let ksFit = pop |> PSeq.map(fun indv -> indv.KS, nrmlzdFit.[indv.Id]) |> PSeq.groupBy fst
+    let ksFit = ksFit |> PSeq.map(fun (ks,kss) -> ks, kss |> Seq.sumBy snd) |> Map.ofSeq
+    let ksTotal = (0.,ksFit) ||> Map.fold(fun acc k v -> acc + v)
+    let nrmlzdKdFit = ksFit |> Map.map (fun k v -> v / ksTotal)
+    let pop =
+        if  gen % every = 0 then
+            pop |> Array.Parallel.map (wmDist pop network nrmlzdKdFit)
+        else
+            pop
+    pop,b,KD(knowledgeDist every (gen + 1) isBetter)
