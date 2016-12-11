@@ -150,6 +150,12 @@ let colors =
 let toColor (r,g,b) = System.Drawing.Color.FromArgb(1,r,g,b)
 let ks = function Domain -> "Domain" | Historical -> "Historical" | Situational -> "Situational" | Normative -> "Normative" | _ -> failwith "shoud not happen"
 
+let withBackground image (c:FSharp.Charting.ChartTypes.GenericChart) = 
+    c.ApplyToChart (fun c -> 
+        let a = c.ChartAreas.[0]
+        a.BackImage <- image
+        a.BackImageWrapMode <- System.Windows.Forms.DataVisualization.Charting.ChartImageWrapMode.Scaled)
+
 let plotResults title kd =
     let lbls = labels (kd |> Seq.map snd)
     let cls = [for i in 0 .. lbls |> Seq.length -> toColor(colors.[i])]

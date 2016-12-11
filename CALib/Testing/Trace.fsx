@@ -77,8 +77,8 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-//let startCA = kdIpdCA vmx fitness comparator parms
-let startCA = kdWeightedCA fitness comparator parms
+let startCA = kdIpdCA vmx fitness comparator parms
+//let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let pKS (x:obj) =
@@ -149,12 +149,15 @@ LiveChart.FastPoint(obsvblI, Title="Live Pop. Coords.")
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
 |> Chart.WithSeries.DataPoint(Label=l)
+|> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
+|> withBackground @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALib\CALib\Landscapes\test_cone1.01.png"
 ;;
 LiveChart.FastPoint(obsvblD, Title="Domain") 
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
-|> Chart.WithStyling(Color=System.Drawing.Color.Orange)
+|> Chart.WithStyling(Color=System.Drawing.Color.Turquoise)
 |> Chart.WithSeries.DataPoint(Label=l)
+|> withBackground @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALib\CALib\Landscapes\test_cone1.01.png"
 ;;
 LiveChart.FastPoint(obsvblE, Title="Situational") 
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
@@ -163,9 +166,9 @@ LiveChart.FastPoint(obsvblE, Title="Situational")
 |> Chart.WithSeries.DataPoint(Label=l)
 ;;
 LiveChart.Column(obsvblK, Title="Live KS Counts") 
-|> Chart.WithStyling(Color=System.Drawing.Color.Chartreuse)
+|> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
 ;;
-LiveChart.FastLineIncremental(obsDsp,Title="Dispersion 1.01  Wtd. Majority")
+LiveChart.FastLineIncremental(obsDsp,Title="Dispersion 1.01  IPD")
 ;;
 (*
 m
