@@ -5,6 +5,7 @@ open CAUtils
 open TestEnv
 open CA
 open DF1
+open System.IO
 
 let parms = 
     [|
@@ -13,8 +14,8 @@ let parms =
     |]
 
 let landscape = 
-    "1.01", @"../../Landscapes/test_cone1.01.csv"
-//    "2.0", @"../../Landscapes/test_cone2.0.csv"
+//    "1.01", @"../../Landscapes/test_cone1.01.csv"
+    "2.0", @"../../Landscapes/test_cone2.0.csv"
 //    "3.35", @"../../Landscapes/test_cone3.35.csv"
 //    "3.5", @"../../Landscapes/test_cone3.5.csv"
 //    "3.99", @"../../Landscapes/test_cone3.99.csv"
@@ -27,6 +28,11 @@ let createFtns df (parms:Parm array)  =
     df x y
 
 let (l,m,fitness) = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,createFtns d)
+
+let background = 
+    let p = __SOURCE_DIRECTORY__ + (snd landscape) 
+    let fn = Path.GetFileNameWithoutExtension(p) + ".png"
+    Path.Combine(Path.GetDirectoryName(p),fn)
 
 let comparator  = CAUtils.Maximize
 
@@ -87,18 +93,19 @@ let pKS (x:obj) =
     | :? Knowledge as k -> k
     | _-> failwithf "not handled"
 
+let st = ref startStep
+
 let run startStep =
-    let st = ref startStep
     let go = ref true
     async {
         while !go do
             do! Async.Sleep 250
             st := step !st
             let (bfit,gb) = best !st
-            if abs(bfit - m.H) < 0.001 then 
-                go := false
-                printfn "sol @ %d" st.Value.Count
             let gb = gb |> Array.map parmToFloat
+            if abs(bfit - m.H) < 0.01 then 
+                go := false
+                printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             let data =  
                 st.Value.CA.Population
                 |> Array.map (fun i -> 
@@ -150,14 +157,14 @@ LiveChart.FastPoint(obsvblI, Title="Live Pop. Coords.")
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
 |> Chart.WithSeries.DataPoint(Label=l)
 |> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
-|> withBackground @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALib\CALib\Landscapes\test_cone1.01.png"
+|> withBackground background
 ;;
 LiveChart.FastPoint(obsvblD, Title="Domain") 
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
 |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
 |> Chart.WithStyling(Color=System.Drawing.Color.Turquoise)
 |> Chart.WithSeries.DataPoint(Label=l)
-|> withBackground @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALib\CALib\Landscapes\test_cone1.01.png"
+|> withBackground background
 ;;
 LiveChart.FastPoint(obsvblE, Title="Situational") 
 |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)

@@ -78,7 +78,7 @@ let cooperation
 //        let c = d + attraction + ksCompatibility + fitImprvFactor + defectCoof + (nKSC * 4.0) + sameKs
         let kslow = nKSC ** 3.0
         let attr = (attraction * 2.0)
-        let c = ksCompatibility  + defectCoof  + kslow + attr + stability * d
+        let c = ksCompatibility  + defectCoof  + kslow + attr + (0.5 * stability * d)
         {id1=indv.Id; id2=neighbor.Id; attr=attr; 
          def=defectCoof; kscom=ksCompatibility;
          kslow=kslow; dv=d; gen=st.Gen; coop=c;

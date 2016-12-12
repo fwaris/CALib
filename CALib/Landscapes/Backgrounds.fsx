@@ -68,7 +68,7 @@ let genImage (n:Cone,f) =
 
 let run() =
     df1s 
-    |> Seq.take 1
+//    |> Seq.take 1
     |> Seq.iteri (fun i l ->
         let b = genImage l
         let fn = snd landscapes.[i] |> Path.GetFileNameWithoutExtension

@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.001
+let eSigma = 0.003
 
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
