@@ -2,14 +2,16 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-let private wmDist pop network (nrmlzdFit:Map<_,_>) indv =
+let private wmDist pop network (ksMap:System.Collections.Generic.IDictionary<Knowledge,float>) ksWheel indv =
     let nhbrs = network pop indv.Id
-    let allFrnds = Array.append [|indv|] nhbrs
-    let kdCounts = allFrnds |> Array.countBy (fun i->i.KS)
-    let totalKD = kdCounts |> Array.sumBy snd |> float
-    let nrmlzdCnts = kdCounts |> Array.map (fun (k,v) -> k, float v / totalKD * nrmlzdFit.[k])
-    let kd,_ = nrmlzdCnts |> Array.maxBy snd
-    let possibleConflicts = nrmlzdCnts  |> Array.filter (fun (n,c)->n=kd)
+    let directKS = Probability.spinWheel ksWheel  //wtd. prob. determined direct KS 
+    let ksCounts = nhbrs |> Array.map (fun i -> i.KS,1) |> Array.append [|directKS,1|]
+    let wtdKSCnts =    //weighted sum of ks counts for indv + neighbors
+        ksCounts 
+        |> Array.groupBy fst 
+        |> Array.map (fun (ks,xs) -> ks,(xs |> Array.sumBy snd  |> float) * ksMap.[ks])
+    let kd,_ = wtdKSCnts |> Array.maxBy snd
+    let possibleConflicts = wtdKSCnts  |> Array.filter (fun (n,c)->n=kd)
     let kd = 
         if possibleConflicts.Length > 1 then
             let (kd,_) = possibleConflicts.[CAUtils.rnd.Value.Next(possibleConflicts.Length)]
@@ -19,15 +21,30 @@ let private wmDist pop network (nrmlzdFit:Map<_,_>) indv =
 //    printfn "win kd %A" kd
     {indv with KS = kd}
 
-let rec knowledgeDist every gen isBetter (pop,b) network =
+let LOST_KS_WT = 0.1 // percentage of pop that is randomly assigned a KS that was pushed out
+
+let rec kdLoop allKSSet every gen isBetter (pop,b) network =
     let nrmlzdFit = CAUtils.normalizePopFitness (0.,1.) isBetter pop
+    let avgPopFit = Array.average nrmlzdFit
     let ksFit = pop |> PSeq.map(fun indv -> indv.KS, nrmlzdFit.[indv.Id]) |> PSeq.groupBy fst
-    let ksFit = ksFit |> PSeq.map(fun (ks,kss) -> ks, kss |> Seq.sumBy snd) |> Map.ofSeq
-    let ksTotal = (0.,ksFit) ||> Map.fold(fun acc k v -> acc + v)
-    let nrmlzdKdFit = ksFit |> Map.map (fun k v -> v / ksTotal)
+    let ksFit = ksFit |> PSeq.map(fun (ks,kss) -> ks, kss |> Seq.sumBy snd) |> PSeq.toArray
+    let ksWheel = Probability.createWheel ksFit                      // weighted spin wheel
+    let ksMap = dict ksWheel //ks weight lookup dictionary
     let pop =
         if  gen % every = 0 then
-            pop |> Array.Parallel.map (wmDist pop network nrmlzdKdFit)
+            let pop = pop |> Array.Parallel.map (wmDist pop network ksMap ksWheel)
+            let missingKS = pop |> Array.Parallel.map (fun i -> i.KS) |> set |> Set.difference allKSSet
+            for ks in missingKS do
+                for _ in 0 .. (float pop.Length * LOST_KS_WT |> int) do
+                    let indx = CAUtils.rnd.Value.Next(pop.Length)
+                    //mutate local copy of pop array
+                    pop.[indx] <- {pop.[indx] with KS = ks}
+            pop
         else
             pop
-    pop,b,KD(knowledgeDist every (gen + 1) isBetter)
+
+    pop,b,KD(kdLoop allKSSet every (gen + 1) isBetter)
+
+let knowledgeDist (pop:Population<Knowledge>) every isBetter =
+    let ksSet = (Set.empty,pop) ||> Array.fold (fun acc indv -> Set.add indv.KS acc)
+    kdLoop ksSet every 0 isBetter

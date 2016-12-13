@@ -38,7 +38,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 49 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 50 true
 
 let kdIpdCA vmx f c p  = 
     let b = bsp f p c
@@ -54,7 +54,7 @@ let kdlWeightedCA f c p =
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c) CARunner.baseInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c pop) CARunner.baseInfluence
 
 let cts = new System.Threading.CancellationTokenSource()
 let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
@@ -65,12 +65,14 @@ let obsDsp,fpDsp = Observable.createObservableAgent<int*float> cts.Token
 
 let sqr x = x * x
 
+//dispersion between parms of two individuals
 let disp (p1:Parm[]) (p2:Parm[]) =
     let p1 = p1 |> Array.map parmToFloat
     let p2 = p2 |> Array.map parmToFloat
     (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
     |> sqrt
 
+//pop dispersion 
 let dispPop (pop:Population<_>) (network:Network<_>) =
     let n = network pop 0
     let esum = 
@@ -83,11 +85,11 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-let startCA = kdIpdCA vmx fitness comparator parms
-//let startCA = kdWeightedCA fitness comparator parms
+//let startCA = kdIpdCA vmx fitness comparator parms
+let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
-let pKS (x:obj) =
+let primarkyKS (x:obj) =
     match x with 
     | :? (Knowledge * Map<Knowledge,float>) as ks -> fst ks
     | :? Knowledge as k -> k
@@ -111,17 +113,17 @@ let run startStep =
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]; m.X,m.Y|]
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dData =
                 st.Value.CA.Population
-                |> Array.filter (fun i -> pKS i.KS = Domain)
+                |> Array.filter (fun i -> primarkyKS i.KS = Domain)
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let eData =
                 st.Value.CA.Population
-                |> Array.filter (fun i -> pKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.filter (fun i -> primarkyKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))

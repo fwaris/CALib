@@ -84,7 +84,7 @@ let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 tr
 
 //kd construction
 let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
-let wtdMajorityKdist   c = KD(KDWeightedMajority.knowledgeDist 3 0 c)
+let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 3 c)
 let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
 let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
@@ -100,7 +100,7 @@ let kdSimpleCA   f c p  =
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c) CARunner.baseInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c pop) CARunner.baseInfluence
 
 let kdlWeightedCA f c p = 
     let bsp = bsp f p c
