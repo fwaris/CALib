@@ -45,6 +45,5 @@ let rec kdLoop allKSSet every gen isBetter (pop,b) network =
 
     pop,b,KD(kdLoop allKSSet every (gen + 1) isBetter)
 
-let knowledgeDist (pop:Population<Knowledge>) every isBetter =
-    let ksSet = (Set.empty,pop) ||> Array.fold (fun acc indv -> Set.add indv.KS acc)
-    kdLoop ksSet every 0 isBetter
+let knowledgeDist allKSSet every isBetter =
+    kdLoop allKSSet every 0 isBetter

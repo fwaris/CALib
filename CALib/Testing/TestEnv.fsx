@@ -99,8 +99,9 @@ let kdSimpleCA   f c p  =
 
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
+    let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c pop) CARunner.baseInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
 
 let kdlWeightedCA f c p = 
     let bsp = bsp f p c

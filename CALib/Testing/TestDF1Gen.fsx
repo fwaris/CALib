@@ -31,8 +31,8 @@ let comparator  = CAUtils.Maximize
 
 let termination d maxCone step = 
     let (f,_) = best step 
-    let c1 = step.Count > 500 
-    let c2 = abs (f - maxCone.H) < 0.0001
+    let c1 = step.Count > 2500 
+    let c2 = abs (f - maxCone.H) < 0.01
     if c1 then printfn "no solution %s - tg %A" d maxCone
     if c2 then printfn "sol %s %d" d step.Count
     c1 || c2
@@ -45,15 +45,16 @@ let tk s = s |> Seq.truncate 100 |> Seq.toList
 *)
 
 let runT  vmx (l,m,f) = 
+    let l = "ipd " + l
     let t = kdIpdCA vmx f comparator parms |> CARunner.run l (termination l m) 2
     l,m,best t
 
 let ipdsT vmx = fits |> List.map (runT vmx)
 
-let ipds = ipdsT  (0.2, 0.9)
+//let ipds = ipdsT  (0.2, 0.9)
 
-(*
 let runW (l,m,f) = 
+    let l = "wtd " + l
     let t = kdWeightedCA f comparator parms |> CARunner.run l (termination l m) 2
     l,m,best t
 
@@ -62,7 +63,7 @@ let runW (l,m,f) =
 let stats =
     seq {
         for i in 1 .. 100 do
-        let ipds = ipdsT (0.1, 0.5) 
+        let ipds = ipdsT (0.2, 0.9)
         let wtdsT = fits |> List.map runW
         yield! (ipds |> List.map (fun (l,m,f) -> "ipd",l,m,f))
         yield! (wtdsT |> List.map (fun (l,m,f) -> "wtd",l,m,f))
@@ -75,6 +76,7 @@ let ipd = scores |> List.filter (fun (a,b,c)->a="ipd")
 let wtdg = wtd |> List.groupBy (fun (a,b,c)->b) 
 let ipdg = ipd |> List.groupBy (fun (a,b,c)->b)
 let wtda = wtdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c))
-let ipda = ipdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c))
+let ipda = ipdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c));;
+(*
 
-    *)
+*)

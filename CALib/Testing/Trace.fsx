@@ -53,8 +53,9 @@ let kdlWeightedCA f c p =
 
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
+    let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c pop) CARunner.baseInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
 
 let cts = new System.Threading.CancellationTokenSource()
 let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
