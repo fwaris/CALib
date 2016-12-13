@@ -6,10 +6,11 @@ let private wmDist pop network (ksMap:System.Collections.Generic.IDictionary<Kno
     let nhbrs = network pop indv.Id
     let directKS = Probability.spinWheel ksWheel  //wtd. prob. determined direct KS 
     let ksCounts = nhbrs |> Array.map (fun i -> i.KS,1) |> Array.append [|directKS,1|]
+    let getWeight ks = match ksMap.TryGetValue ks with (true,x) -> x | _ -> 0.
     let wtdKSCnts =    //weighted sum of ks counts for indv + neighbors
         ksCounts 
         |> Array.groupBy fst 
-        |> Array.map (fun (ks,xs) -> ks,(xs |> Array.sumBy snd  |> float) * ksMap.[ks])
+        |> Array.map (fun (ks,xs) -> ks,(xs |> Array.sumBy snd  |> float) * getWeight ks)
     let kd,_ = wtdKSCnts |> Array.maxBy snd
     let possibleConflicts = wtdKSCnts  |> Array.filter (fun (n,c)->n=kd)
     let kd = 
