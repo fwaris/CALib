@@ -31,7 +31,7 @@ let comparator  = CAUtils.Maximize
 
 let termination d maxCone step = 
     let (f,_) = best step 
-    let c1 = step.Count > 2500 
+    let c1 = step.Count > 500 
     let c2 = abs (f - maxCone.H) < 0.01
     if c1 then printfn "no solution %s - tg %A" d maxCone
     if c2 then printfn "sol %s %d" d step.Count
@@ -63,12 +63,26 @@ let runW (l,m,f) =
 let stats =
     seq {
         for i in 1 .. 100 do
-        let ipds = ipdsT (0.2, 0.9)
-        let wtdsT = fits |> List.map runW
-        yield! (ipds |> List.map (fun (l,m,f) -> "ipd",l,m,f))
-        yield! (wtdsT |> List.map (fun (l,m,f) -> "wtd",l,m,f))
+            printfn "**starting run %d" i
+            let ipds = ipdsT (0.2, 0.9)
+            let wtdsT = fits |> List.map runW
+            yield! (ipds |> List.map (fun (l,m,f) -> "ipd",l,m,f))
+            yield! (wtdsT |> List.map (fun (l,m,f) -> "wtd",l,m,f))
         }
     |> Seq.toList
+
+let sqr x = x * x
+let std mean xs = (xs |> List.map (fun x -> mean - x |> sqr) |> List.sum) / float xs.Length |> sqrt
+
+let calcstds grp cs =
+    cs 
+    |> List.map (fun (l,mean) -> 
+        l,mean,
+        (grp 
+         |> List.pick (fun (g,xs) -> if g = l then Some xs else None))
+         |> List.map (fun (_,_,v) -> v)
+         |> std mean
+         )
 
 let scores = stats |> List.map (fun (a,b,_,c) -> a,b,c)
 let wtd = scores |> List.filter (fun (a,b,c)->a="wtd")
@@ -77,6 +91,11 @@ let wtdg = wtd |> List.groupBy (fun (a,b,c)->b)
 let ipdg = ipd |> List.groupBy (fun (a,b,c)->b)
 let wtda = wtdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c))
 let ipda = ipdg |> List.map (fun (g,xs) -> g, xs |> List.averageBy (fun (a,b,c) -> c));;
+
+wtdg.[1] |> snd |> List.iter (fun (a,b,c) -> printfn "%f" c)
+
+let wtdas = calcstds wtdg wtda
+let ipdas = calcstds ipdg ipda
 (*
 
 *)

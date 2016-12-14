@@ -89,6 +89,7 @@
     <None Include="Testing\Trace.fsx" />
     <None Include="Testing\IPDLogAnalysis.fsx" />
     <None Include="Testing\ObservableExt.fs" />
+    <None Include="Testing\DispIndex.fsx" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
