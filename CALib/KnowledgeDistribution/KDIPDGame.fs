@@ -70,7 +70,7 @@ let isExploitative = function Domain  -> true | _ -> false
 
 let KS_ATTRACTION_COFF      = 1.0 //attraction between exploitative and explorative KS
 let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
-let LOW_KS_COUNT_EXPONENT   = 3.5 //factor to prevent a low count KS from being pushed out
+let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
 let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
 let STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
 let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
@@ -206,7 +206,8 @@ let createState gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdK
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     let ksc = 
         pop 
-        |> Seq.collect(fun i-> let ({KS=ks;Level=l},m) = i.KS in (ks,l)::(Map.toList m))  
+//        |> Seq.collect(fun i-> let ({KS=ks;Level=l},m) = i.KS in (ks,l)::(Map.toList m))  
+        |> Seq.map(fun i-> let pks = prmryKS i.KS in pks,1.0)  
         |> Seq.groupBy fst 
         |> Seq.map (fun (k,xs)->k, xs |>Seq.sumBy snd)
     let totalKsc = ksc |> Seq.sumBy snd
