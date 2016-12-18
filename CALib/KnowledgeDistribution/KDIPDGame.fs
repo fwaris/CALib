@@ -23,13 +23,9 @@ let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox ->
 
 let NEW_KS_LEVEL            = 1.0 //influence level for a new primary KS
 let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks 
-let KS_ADJUST               = 0.8 //adjustment down to influence level if indiv keeps same KS next gen
-let KS_ATTRACTION_COFF      = 1.0 //attraction from one KS type to another
-let IMPROVE_DEFECT_COFF     = -1. //reduction in cooperation with others due to improved fit from last gen
-let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
-let ATTRACTION_WEIGHT       = 2.0 //weighting given to the attraction term in cooperation
-let STABILITY_WEIGHT        = 0.7 //weighting given to stability (same KS from gen-to-gen) factor in cooperation
-let SCNRY_EXPL_KS_BOOST     = 2.0 //aggressiveness boost for secondary exploitative KS
+let KS_ADJUST               = 0.8 //adjustment mutliplier to influence level if indiv keeps same KS next gen
+let SCNRY_EXPL_KS_BOOST     = 0.9 //aggressiveness boost for secondary exploitative KS
+let MIN_INFLUENCE_LEVEL     = 0.001 //floor for influence level
 
 type PrimaryKS = {KS:Knowledge; Level:float}
 type IpdKS = PrimaryKS * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
@@ -72,6 +68,14 @@ let sampleAvgDiversity (pop:Population<_>) =
 let isExplorative = function Situational | Historical | Normative -> true | _ -> false
 let isExploitative = function Domain  -> true | _ -> false
 
+let KS_ATTRACTION_COFF      = 1.0 //attraction between exploitative and explorative KS
+let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
+let LOW_KS_COUNT_EXPONENT   = 3.5 //factor to prevent a low count KS from being pushed out
+let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
+let STABILITY_WEIGHT        = 0.02 //weight for stability (of same KS from gen-to-gen) factor in cooperation
+let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
+
+
 let cooperation 
     state
     neighbor 
@@ -89,9 +93,12 @@ let cooperation
         let attraction = (fNbr - fI) // |> max 0.
         let defectCoof =  if isExploitative ksI && (fI > pf1I) then IMPROVE_DEFECT_COFF else 0.
         let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
+        let sameKSDefection = if ksI = ksN then -2.0 else 0.
         let kslow = nKSC ** LOW_KS_COUNT_EXPONENT
-        let attr = (attraction * ATTRACTION_WEIGHT)
-        let c = ksCompatibility  + defectCoof  + kslow + attr + (STABILITY_WEIGHT * stability * d)
+        let fitattraction = (attraction * FIT_ATTRACTION_WEIGHT)
+        let diversity = d * DIVERSITY_WEIGHT
+        let stability = stability * STABILITY_WEIGHT
+        let c = ksCompatibility  + defectCoof  + kslow + fitattraction + stability + diversity + sameKSDefection
 //        {id1=indv.Id; id2=neighbor.Id; attr=attr; 
 //         def=defectCoof; kscom=ksCompatibility;
 //         kslow=kslow; dv=d; gen=state.Gen; coop=c;
@@ -160,7 +167,7 @@ let crtWthKS st (indv:Individual<IpdKS>) primary secondary =
     let ({KS=newKS;Level=_},secondary) = (primary, removePrimaryKS primary.KS secondary |> removeSituationalKS) |> promoteDomainKS
     let primary =
         if newKS = oldKS then
-            {KS=newKS; Level= oldLvl * KS_ADJUST}
+            {KS=newKS; Level= oldLvl * KS_ADJUST |> max MIN_INFLUENCE_LEVEL}
         else
             {KS=newKS; Level=NEW_KS_LEVEL}
     let ks = primary,secondary
@@ -178,6 +185,8 @@ let updateIndv st (vmin,vmax) cmprtr (pop:Population<IpdKS>) (indv:Individual<Ip
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (pks,_):IpdKS = nhbr.KS
+            let (oldPks,_) = indv.KS
+            if (pks.KS = oldPks.KS) then printfn "same ks %A" pks.KS
             crtWthKS st indv pks Map.empty
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)

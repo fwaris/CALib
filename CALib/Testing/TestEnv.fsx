@@ -7,11 +7,11 @@
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS2.fs"
-#load "../KnowledgeDistribution/KDSimpleMajority.fs"
+//#load "../KnowledgeDistribution/KDSimpleMajority.fs"
+//#load "../KnowledgeDistribution/KDGame.fs"
+//#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
+//#load "../KnowledgeDistribution/KDHedonicGame.fs"
 #load "../KnowledgeDistribution/KDWeightedMajority.fs"
-#load "../KnowledgeDistribution/KDGame.fs"
-#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
-#load "../KnowledgeDistribution/KDHedonicGame.fs"
 #load "../KnowledgeDistribution/KDContinousStrategyGame.fs"
 #load "../KnowledgeDistribution/KDIpDGame.fs"
 #load "../CARunner.fs"
@@ -83,19 +83,19 @@ let inline bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comp
 let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 true
 
 //kd construction
-let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
+//let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
 let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 3 c)
-let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
-let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
-let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
+//let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
+//let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
+//let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
 let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
 
 
 //CA construction
-let kdSimpleCA   f c p  = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp simpleMajorityKDist CARunner.baseInfluence
+//let kdSimpleCA   f c p  = 
+//    let bsp = bsp f p c
+//    let pop = createPop bsp p CAUtils.baseKsInit
+//    makeCA f c pop bsp simpleMajorityKDist CARunner.baseInfluence
 
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
@@ -103,21 +103,21 @@ let kdWeightedCA f c p  =
     let pop = createPop bsp p CAUtils.baseKsInit
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
 
-let kdlWeightedCA f c p = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
+//let kdlWeightedCA f c p = 
+//    let bsp = bsp f p c
+//    let pop = createPop bsp p CAUtils.baseKsInit
+//    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
 
-let kdGame2PlayerCA f c p = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (gameKdist c pop) CARunner.baseInfluence
+//let kdGame2PlayerCA f c p = 
+//    let bsp = bsp f p c
+//    let pop = createPop bsp p CAUtils.baseKsInit
+//    makeCA f c pop bsp (gameKdist c pop) CARunner.baseInfluence
 
-let kdHedonicCA f c p = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.ksSetInit
-    let kd = hedonicKdist c pop 
-    makeCA f c pop bsp kd KDHedonicGame.setInfluence
+//let kdHedonicCA f c p = 
+//    let bsp = bsp f p c
+//    let pop = createPop bsp p CAUtils.ksSetInit
+//    let kd = hedonicKdist c pop 
+//    makeCA f c pop bsp kd KDHedonicGame.setInfluence
 
 let kdIpdCA vmx f c p  = 
     let bsp = bsp f p c

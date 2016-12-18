@@ -47,10 +47,10 @@ let kdIpdCA vmx f c p  =
     let kd = ipdKdist vmx c pop 
     makeCA f c pop b kd KDIPDGame.ipdInfluence
 
-let kdlWeightedCA f c p = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
+//let kdlWeightedCA f c p = 
+//    let bsp = bsp f p c
+//    let pop = createPop bsp p CAUtils.baseKsInit
+//    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
 
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
@@ -62,6 +62,7 @@ let cts = new System.Threading.CancellationTokenSource()
 let obsAll,fpAll = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsKSCounts,fpKSCounts = Observable.createObservableAgent<(string*float) seq> cts.Token
 let obsDomain,fpDomain = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsSecDmn,fpSecDmn = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsSituational,fpSituational = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
@@ -99,6 +100,12 @@ let primarkyKS (x:obj) =
     | :? Knowledge as k -> k
     | _-> failwithf "not handled"
 
+let secondaryKS (x:obj) =
+    match x with 
+    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> snd ks |> Some
+    | :? Knowledge as k -> None
+    | _-> failwithf "not handled"
+
 let st = ref startStep
 
 let run startStep =
@@ -109,7 +116,7 @@ let run startStep =
             st := step !st
             let (bfit,gb) = best !st
             let gb = gb |> Array.map parmToFloat
-            if abs(bfit - m.H) < 0.01 then 
+            if abs(bfit - m.H) < 0.001 then 
                 go := false
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             let dAll =  
@@ -146,6 +153,13 @@ let run startStep =
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let dSecDmn =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> secondaryKS i.KS |> Option.exists (fun m->m.ContainsKey Domain))// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.map (fun i -> 
+                    let p = i.Parms |> Array.map parmToFloat 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let ksCounts =
                 st.Value.CA.Population
                 |> Seq.map (fun i -> i.KS :> obj)
@@ -167,6 +181,7 @@ let run startStep =
             do fpKSCounts ksCounts
             do fpDomain dDomain
             do fpSituational dSituational
+            do fpSecDmn dSecDmn
             do fpNorm dNorm
             do fpHist dHist
             do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
@@ -183,14 +198,15 @@ container
     chPoints None "Historical" obsHist
     chCounts obsKSCounts
     ];;
+Async.Start(run startStep, cts.Token);;
 
 (*
 chDisp "KS Counts" obsDispersion
+chPoints None "Ind with Secondary Domain" obsSecDmn
 *)
 
 (*
 m
-Async.Start(run startStep, cts.Token)
 cts.Cancel()
 KDIPDGame.KS_ATTRACTION_COFF <- 12.
 KDIPDGame.IMPROVE_DEFECT_COFF <- -1.0
