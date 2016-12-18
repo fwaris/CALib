@@ -60,8 +60,8 @@ let ipdDataCollector s =
     best s, 
     s.CA.Population 
     |> Seq.collect (fun p-> 
-        let (k,m) = p.KS
-        ([k,1.0],m) ||> Map.fold (fun acc k v -> (k,v)::acc)
+        let ({KDIPDGame.KS=ks;KDIPDGame.Level=lvl},m) = p.KS
+        ([ks,lvl],m) ||> Map.fold (fun acc k v -> (k,v)::acc)
         ) 
     |> Seq.groupBy fst
     |> Seq.map (fun (k,vs) -> k, vs |> Seq.map snd |> Seq.sum)

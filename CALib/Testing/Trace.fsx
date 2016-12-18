@@ -1,6 +1,7 @@
 ﻿#load "TestEnv.fsx"
 #load "..\DF1.fs"
 #load "ObservableExt.fs"
+#load "TraceCharts.fsx"
 open CAUtils
 open TestEnv
 open CA
@@ -14,8 +15,8 @@ let parms =
     |]
 
 let landscape = 
-//    "1.01", @"../../Landscapes/test_cone1.01.csv"
-    "2.0", @"../../Landscapes/test_cone2.0.csv"
+    "1.01", @"../../Landscapes/test_cone1.01.csv"
+//    "2.0", @"../../Landscapes/test_cone2.0.csv"
 //    "3.35", @"../../Landscapes/test_cone3.35.csv"
 //    "3.5", @"../../Landscapes/test_cone3.5.csv"
 //    "3.99", @"../../Landscapes/test_cone3.99.csv"
@@ -58,11 +59,13 @@ let kdWeightedCA f c p  =
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
 
 let cts = new System.Threading.CancellationTokenSource()
-let obsvblI,fPostI = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsvblK,fPostK = Observable.createObservableAgent<(string*float) seq> cts.Token
-let obsvblD,fPostD = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsvblE,fPostE = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsDsp,fpDsp = Observable.createObservableAgent<int*float> cts.Token
+let obsAll,fpAll = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsKSCounts,fpKSCounts = Observable.createObservableAgent<(string*float) seq> cts.Token
+let obsDomain,fpDomain = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsSituational,fpSituational = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
 
 let sqr x = x * x
 
@@ -86,13 +89,13 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-//let startCA = kdIpdCA vmx fitness comparator parms
-let startCA = kdWeightedCA fitness comparator parms
+let startCA = kdIpdCA vmx fitness comparator parms
+//let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
     match x with 
-    | :? (Knowledge * Map<Knowledge,float>) as ks -> fst ks
+    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
     | :? Knowledge as k -> k
     | _-> failwithf "not handled"
 
@@ -109,22 +112,36 @@ let run startStep =
             if abs(bfit - m.H) < 0.01 then 
                 go := false
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
-            let data =  
+            let dAll =  
                 st.Value.CA.Population
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dData =
+            let dDomain =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Domain)
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let eData =
+            let dSituational =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.map (fun i -> 
+                    let p = i.Parms |> Array.map parmToFloat 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let dNorm =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> primarkyKS i.KS = Normative)// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.map (fun i -> 
+                    let p = i.Parms |> Array.map parmToFloat 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let dHist =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> primarkyKS i.KS = Historical)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
                     let p = i.Parms |> Array.map parmToFloat 
                     (p.[0],p.[1]))
@@ -134,9 +151,11 @@ let run startStep =
                 |> Seq.map (fun i -> i.KS :> obj)
                 |> Seq.collect (
                     function 
-                    | :? (Knowledge * Map<Knowledge,float>) as ks -> 
-                        let (k,m) = ks
-                        List.append [k,1.0] (Map.toList m)
+                    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> 
+                        let (pk,m) = ks
+                        let k = pk.KS
+                        let lvl = pk.Level
+                        List.append [k,lvl] (Map.toList m)
                     | :? Knowledge as k -> [k,1.0]
                     | _-> failwithf "not handled"
                     )
@@ -144,42 +163,31 @@ let run startStep =
                 |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
                 |> Seq.sortBy fst
                 |> Seq.toList
-            do fPostI data
-            do fPostK ksCounts
-            do fPostD dData
-            do fPostE eData
-            do fpDsp (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+            do fpAll dAll
+            do fpKSCounts ksCounts
+            do fpDomain dDomain
+            do fpSituational dSituational
+            do fpNorm dNorm
+            do fpHist dHist
+            do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
     }
 
-open FSharp.Charting
-open System.Windows.Forms.DataVisualization
-let grid = ChartTypes.Grid(Interval=0.1)
-let ls = ChartTypes.LabelStyle(TruncatedLabels=true)
-LiveChart.FastPoint(obsvblI, Title="Live Pop. Coords.") 
-|> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
-|> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
-|> Chart.WithSeries.DataPoint(Label=l)
-|> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
-|> withBackground background
 ;;
-LiveChart.FastPoint(obsvblD, Title="Domain") 
-|> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
-|> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
-|> Chart.WithStyling(Color=System.Drawing.Color.Turquoise)
-|> Chart.WithSeries.DataPoint(Label=l)
-|> withBackground background
-;;
-LiveChart.FastPoint(obsvblE, Title="Situational") 
-|> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=grid, LabelStyle=ls)
-|> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=grid)
-|> Chart.WithStyling(Color=System.Drawing.Color.Chocolate)
-|> Chart.WithSeries.DataPoint(Label=l)
-;;
-LiveChart.Column(obsvblK, Title="Live KS Counts") 
-|> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
-;;
-LiveChart.FastLineIncremental(obsDsp,Title="Dispersion 1.01  IPD")
-;;
+open TraceCharts;;
+container
+    [ 
+    chPoints (Some background) "All" obsAll
+    chPoints (Some background) "Domain" obsDomain
+    chPoints None "Situational" obsSituational
+    chPoints None "Normative" obsNorm
+    chPoints None "Historical" obsHist
+    chCounts obsKSCounts
+    ];;
+
+(*
+chDisp "KS Counts" obsDispersion
+*)
+
 (*
 m
 Async.Start(run startStep, cts.Token)

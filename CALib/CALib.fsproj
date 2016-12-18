@@ -76,6 +76,9 @@
     <None Include="Landscapes\test_cone3.5.csv" />
     <None Include="Landscapes\test_cone3.99.csv" />
     <None Include="Landscapes\Backgrounds.fsx" />
+    <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\TraceCharts.fsx" />
     <None Include="Testing\TestIPDPerf.fsx" />
     <None Include="Testing\TestDF1.fsx" />
     <None Include="Testing\TestDF1Gen.fsx" />
@@ -85,8 +88,6 @@
     <None Include="Testing\TestNormative.fsx" />
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
-    <None Include="Testing\TestEnv.fsx" />
-    <None Include="Testing\Trace.fsx" />
     <None Include="Testing\IPDLogAnalysis.fsx" />
     <None Include="Testing\ObservableExt.fs" />
     <None Include="Testing\DispIndex.fsx" />
