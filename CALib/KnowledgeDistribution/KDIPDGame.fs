@@ -23,7 +23,7 @@ let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox ->
 
 let NEW_KS_LEVEL            = 1.0 //influence level for a new primary KS
 let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks 
-let KS_ADJUST               = 0.8 //adjustment mutliplier to influence level if indiv keeps same KS next gen
+let KS_ADJUST               = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
 let SCNRY_EXPL_KS_BOOST     = 0.9 //aggressiveness boost for secondary exploitative KS
 let MIN_INFLUENCE_LEVEL     = 0.001 //floor for influence level
 
@@ -72,7 +72,7 @@ let KS_ATTRACTION_COFF      = 1.0 //attraction between exploitative and explorat
 let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
 let LOW_KS_COUNT_EXPONENT   = 3.5 //factor to prevent a low count KS from being pushed out
 let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
-let STABILITY_WEIGHT        = 0.02 //weight for stability (of same KS from gen-to-gen) factor in cooperation
+let STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
 let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
 
 
@@ -93,7 +93,7 @@ let cooperation
         let attraction = (fNbr - fI) // |> max 0.
         let defectCoof =  if isExploitative ksI && (fI > pf1I) then IMPROVE_DEFECT_COFF else 0.
         let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
-        let sameKSDefection = if ksI = ksN then -2.0 else 0.
+        let sameKSDefection = if ksI = ksN then -3.0 else 0.
         let kslow = nKSC ** LOW_KS_COUNT_EXPONENT
         let fitattraction = (attraction * FIT_ATTRACTION_WEIGHT)
         let diversity = d * DIVERSITY_WEIGHT
