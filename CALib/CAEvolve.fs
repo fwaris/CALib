@@ -2,18 +2,18 @@
 open CA
 open CAUtils
 
-let slideUp s sg p = 
+let slideUp influenceLevel sigma p = 
     let z = zsample()
-    let z' = z * s * sg |> abs
+    let z' = z * influenceLevel * sigma |> abs
     match p with
     | F (v,mn,mx)   -> toVF (v + z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v + z') mn mx
     | I (v,mn,mx)   -> toVI (float v + z') mn mx
     | I64 (v,mn,mx) -> toVI64 (float v + z') mn mx
 
-let slideDown s sg p =
+let slideDown influenceLevel sigma p =
     let z = zsample()
-    let z' = z * s * sg |> abs
+    let z' = z * influenceLevel * sigma |> abs
     match p with
     | F (v,mn,mx)   -> toVF (v - z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
@@ -40,9 +40,9 @@ let slideDown s sg p =
 //    else 
 //        i64V + 1L 
 
-let evolveS s sg p = 
+let evolveS influenceLevel sigma p = 
     let z = zsample()
-    let z' = z * s * sg
+    let z' = z * influenceLevel * sigma
     match p with
     | F (v,mn,mx)   -> toVF (v - z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
@@ -51,23 +51,23 @@ let evolveS s sg p =
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)
-let influenceParm s sa influenced influencer =
+let influenceParm influenceLevel sigma influenced influencer =
     match influencer,influenced with
-    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(unifrmF s iV pV mn mx, mn,mx)
-    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(unifrmF s pV iV mn mx, mn,mx)
-    | F(_),fInd                              -> evolveS s sa fInd
+    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(unifrmF influenceLevel iV pV mn mx, mn,mx)
+    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(unifrmF influenceLevel pV iV mn mx, mn,mx)
+    | F(_),fInd                              -> evolveS influenceLevel sigma fInd
 
-    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(unifrmF32 s iV pV mn mx,mn,mx)
-    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(unifrmF32 s pV iV mn mx,mn,mx)
-    | F32(_),fInd                            -> evolveS s sa fInd
+    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(unifrmF32 influenceLevel iV pV mn mx,mn,mx)
+    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(unifrmF32 influenceLevel pV iV mn mx,mn,mx)
+    | F32(_),fInd                            -> evolveS influenceLevel sigma fInd
 
-    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(unifrmI s iV pV mn mx,mn,mx)
-    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(unifrmI s pV iV mn mx,mn,mx)
-    | I(_),fInd                              -> evolveS s sa fInd
+    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(unifrmI influenceLevel iV pV mn mx,mn,mx)
+    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(unifrmI influenceLevel pV iV mn mx,mn,mx)
+    | I(_),fInd                              -> evolveS influenceLevel sigma fInd
 
-    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(unifrmI64 s iV pV mn mx,mn,mx)
-    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(unifrmI64 s pV iV mn mx,mn,mx)
-    | I64(_),fInd                            -> evolveS s sa fInd
+    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(unifrmI64 influenceLevel iV pV mn mx,mn,mx)
+    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(unifrmI64 influenceLevel pV iV mn mx,mn,mx)
+    | I64(_),fInd                            -> evolveS influenceLevel sigma fInd
 
     | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
 

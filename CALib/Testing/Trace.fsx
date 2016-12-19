@@ -39,7 +39,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 50 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 true
 
 let kdIpdCA vmx f c p  = 
     let b = bsp f p c
@@ -56,7 +56,7 @@ let kdWeightedCA f c p  =
     let bsp = bsp f p c
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
 
 let cts = new System.Threading.CancellationTokenSource()
 let obsAll,fpAll = Observable.createObservableAgent<(float*float) seq> cts.Token
@@ -116,7 +116,7 @@ let run startStep =
             st := step !st
             let (bfit,gb) = best !st
             let gb = gb |> Array.map parmToFloat
-            if abs(bfit - m.H) < 0.001 then 
+            if abs(bfit - m.H) < 0.01 then 
                 go := false
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             let dAll =  

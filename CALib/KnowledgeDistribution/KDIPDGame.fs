@@ -166,7 +166,7 @@ let crtWthKS st (indv:Individual<IpdKS>) primary secondary =
     let {KS=oldKS;Level=oldLvl} = fst indv.KS
     let ({KS=newKS;Level=_},secondary) = (primary, removePrimaryKS primary.KS secondary |> removeSituationalKS) |> promoteDomainKS
     let primary =
-        if newKS = oldKS then
+        if newKS = oldKS && isExploitative newKS then
             {KS=newKS; Level= oldLvl * KS_ADJUST |> max MIN_INFLUENCE_LEVEL}
         else
             {KS=newKS; Level=NEW_KS_LEVEL}

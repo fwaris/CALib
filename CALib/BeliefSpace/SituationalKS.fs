@@ -97,12 +97,12 @@ let create isBetter maxExemplars =
         let state = {Exemplars=explrs; SpinWheel=wheel}
         voters, create state acceptance fInfluence
     
-    let influence state s (ind:Individual<_>) =
+    let influence state influenceLevel (ind:Individual<_>) =
         match state.Exemplars with
         | [||] -> ind
         | x -> 
             let i = Probability.spinWheel state.SpinWheel
             let choosen = x.[i]
 //            printfn "sit i = %d %A" i choosen
-            {ind with Parms=choosen.Parms |> Array.map (evolveS s eSigma)}      
+            {ind with Parms=choosen.Parms |> Array.map (evolveS influenceLevel eSigma)}      
     create {Exemplars=[||];SpinWheel=[||]} acceptance influence

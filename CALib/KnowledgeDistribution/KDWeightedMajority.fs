@@ -22,7 +22,7 @@ let private wmDist pop network (ksMap:System.Collections.Generic.IDictionary<Kno
 //    printfn "win kd %A" kd
     {indv with KS = kd}
 
-let LOST_KS_WT = 0.1 // percentage of pop that is randomly assigned a KS that was pushed out
+let LOST_KS_WT = 0.20 // percentage of pop that is randomly assigned a KS that was pushed out
 
 let rec kdLoop allKSSet every gen isBetter (pop,b) network =
     let nrmlzdFit = CAUtils.normalizePopFitness (0.,1.) isBetter pop
@@ -48,3 +48,22 @@ let rec kdLoop allKSSet every gen isBetter (pop,b) network =
 
 let knowledgeDist allKSSet every isBetter =
     kdLoop allKSSet every 0 isBetter
+
+let influenceLevels =
+    dict
+        [
+            Domain, 0.3
+            Normative, 1.0
+            Situational, 1.0
+            Historical, 1.0
+        ]
+
+let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
+ 
+let wtdMajorityInfluence beliefSpace pop =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let pop =
+        pop
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence (il p.KS) p)
+    pop
+

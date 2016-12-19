@@ -89,15 +89,15 @@ let create isBetter fitness maxExemplars =
             )
         {ind with Parms=parms}
 
-    let influence (exemplars,gBestSlope) s (ind:Individual<_>) =
+    let influence (exemplars,gBestSlope) influenceLevel (ind:Individual<_>) =
         let slopes = slopes isBetter fitness ind.Fitness ind.Parms
         let parms =
             ind.Parms
             |> Array.mapi (fun i p ->
                 let (dir,mag) = slopes.[i]
                 match dir with
-                | Up   -> slideUp (s*mag) eSigma p
-                | Down -> slideDown (s*mag) eSigma p
+                | Up   -> slideUp (influenceLevel*mag) eSigma p
+                | Down -> slideDown (influenceLevel*mag) eSigma p
                 | Flat -> p//evolveS s eSigma p
             )
         {ind with Parms=parms}
