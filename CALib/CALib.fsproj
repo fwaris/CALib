@@ -79,6 +79,8 @@
     <None Include="Testing\TestEnv.fsx" />
     <None Include="Testing\Trace.fsx" />
     <None Include="Testing\TraceCharts.fsx" />
+    <None Include="Testing\DispIndex.fsx" />
+    <None Include="Testing\IPD_Weighted_Comparo.fsx" />
     <None Include="Testing\TestIPDPerf.fsx" />
     <None Include="Testing\TestDF1.fsx" />
     <None Include="Testing\TestDF1Gen.fsx" />
@@ -90,7 +92,6 @@
     <None Include="Testing\TestSituational.fsx" />
     <None Include="Testing\IPDLogAnalysis.fsx" />
     <None Include="Testing\ObservableExt.fs" />
-    <None Include="Testing\DispIndex.fsx" />
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

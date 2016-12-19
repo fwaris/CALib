@@ -9,10 +9,13 @@ let df1_2d (rnd:System.Random) n (hbase,hrange) (rbase,rrange) =
     let xi = [|for i in 1..n -> -1.0 + 2.0 * rnd.NextDouble()|]
     let yi = [|for i in 1..n -> -1.0 + 2.0 * rnd.NextDouble()|]
     let nList = [for i in 0 .. n-1 -> i]
+    let (maxH,i,_) = ((0.,0,0),hs) ||> Array.fold (fun (mx,mxi,i) h -> if mx > h then (mx,mxi,i+1) else (h,i,i+1))
+    let cone = maxH,(xi.[i],yi.[i])
     let f x y =
         let maxF m i = max m (hs.[i] - rs.[i] * sqrt (sqr (x - xi.[i]) + sqr (y - yi.[i])))
         (System.Double.MinValue,nList) ||> List.fold maxF
-    f
+    f,cone
+
 (*
 let testDfi = df1_2d (System.Random()) 5 (3.,3.) (5.,5.)
 let landscape = 

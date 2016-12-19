@@ -35,24 +35,20 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 999 true
+let inline createPop bsp parms init size = CAUtils.createPop (init bsp) parms size true
 
-let kdIpdCA vmx f c p  = 
+let kdIpdCA vmx f c p size = 
     let b = bsp f p c
-    let pop = createPop b p CAUtils.baseKsInit |> KDIPDGame.initKS
+    let pop = createPop b p CAUtils.baseKsInit size |> KDIPDGame.initKS
     let kd = ipdKdist vmx c pop 
     makeCA f c pop b kd KDIPDGame.ipdInfluence
 
-let kdlWeightedCA f c p = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
-
-let kdWeightedCA f c p  = 
+let kdWeightedCA f c p size = 
     let bsp = bsp f p c
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
+    let pop = createPop bsp p CAUtils.baseKsInit size
+    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
+
 
 let cts = new System.Threading.CancellationTokenSource()
 let obsvbl,fPost = Observable.createObservableAgent<(string*string*int*float)> cts.Token
@@ -84,13 +80,13 @@ let step kd (l,c,st) =
     l,c,st
 
 let vmx = (0.2, 0.9)
-let ipdCA fitness = kdIpdCA vmx fitness comparator parms
-let wtdCA fitness = kdWeightedCA fitness comparator parms
+let ipdCA fitness = kdIpdCA vmx fitness comparator parms 1000
+let wtdCA fitness = kdWeightedCA fitness comparator parms 1000
 let startStep ca = {CA=ca; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
     match x with 
-    | :? (Knowledge * Map<Knowledge,float>) as ks -> fst ks
+    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
     | :? Knowledge as k -> k
     | _-> failwithf "not handled"
 
