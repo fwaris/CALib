@@ -41,7 +41,7 @@ let rnd = System.Random()
 let coneSizes = [100; 500; 1000]
 let popSizes = [100; 250; 1000]
 let startStep ca = {CA=ca; Best=[]; Count=0; Progress=[]}
-let startCAs = 
+let startCAs() = 
     [
         for c in coneSizes do
             for sz in popSizes do
@@ -54,13 +54,13 @@ let startCAs =
 
 type Step<'a> = SolFound of int | Cont of 'a | MaxCountReached
 
-let max_count = 500
+let max_count = 2500
 
 let step (desc,maxCone,st) = 
     let st = CARunner.step st 2
     //printfn "%s %d" desc st.Count
     let (h,(_,_)) = maxCone
-    if st.Best.[0].Fitness - h |> abs < 0.01 then SolFound st.Count
+    if st.Best.[0].Fitness - h |> abs < 0.001 then SolFound st.Count
     elif st.Count > max_count then MaxCountReached
     else Cont (desc,maxCone,st)
 
@@ -73,7 +73,7 @@ let rec run st =
 let data = 
     [for i in 1 .. 50 -> i] 
     |> List.collect (fun _ -> 
-        startCAs |> List.map (fun (ipd,wtd) -> 
+        startCAs() |> List.map (fun (ipd,wtd) -> 
             let (dipd,_,_) = ipd
             let (dwtd,_,_) = wtd
             let ripd = run ipd
@@ -82,5 +82,30 @@ let data =
             (dipd,ripd),(dwtd,rwtd)
             ))
     
+let ipd = data |> List.map fst |> List.map (fun (a,b) ->a, float b)
+let wtd = data |> List.map snd |> List.map (fun (a,b) ->a, float b)
 
+let gipd = ipd |> List.groupBy fst
+let gwtd = wtd |> List.groupBy fst
 
+let ipdMeans = gipd |> List.map (fun (g,xs) -> g, xs |> List.averageBy snd) |> Map.ofList
+let wtdMeans = gwtd |> List.map (fun (g,xs) -> g, xs |> List.averageBy snd) |> Map.ofList
+
+let sqr x = x * x
+let sigma mu xs = (xs |> List.sumBy (fun (_,x) -> sqr (mu - x))) / float xs.Length |> sqrt
+
+let ipdSigmas = gipd |> List.map (fun (g,xs)->let mu = ipdMeans.[g] in g,mu, sigma mu xs)
+let wtdSigmas = gwtd |> List.map (fun (g,xs)->let mu = wtdMeans.[g] in g,mu, sigma mu xs)
+;;
+ipdSigmas |> List.iter (fun (a,b,c)  -> printfn "%s;%f;%f" a b c);;
+wtdSigmas |> List.iter (fun (a,b,c)  -> printfn "%s;%f;%f" a b c);;
+;;
+ipd |> List.iter (fun (a,b) -> printfn "%s; %f" a b);;
+wtd |> List.iter (fun (a,b) -> printfn "%s; %f" a b);;
+
+let dmp = List.iter (fun (a,b) -> printfn "%s;%f" a b)
+for (g,xs) in  gipd do printfn "*%s" g; dmp xs
+for (g,xs) in  gwtd do printfn "*%s" g; dmp xs
+
+let gdata = data |> List.groupBy (fst>>fst)
+for (g,xs) in gdata do printfn "*%s" g; xs |> List.iter (fun ((_,i),(_,w)) -> printfn "%d;%d" i w)
