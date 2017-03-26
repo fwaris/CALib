@@ -1,6 +1,9 @@
 ﻿module HistoricalKS
 open CA
 open CAUtils
+open CAEvolve
+
+let eSigma = 3.0
 
 //determine direction of change
 let dir newParm prevParm = 
@@ -25,17 +28,21 @@ let parmAvg count = function
     | I(v,_,_)      -> float v / float count
     | I64(v,_,_)    -> float v / float count
 
-type ChangeEvent = {Best:Individual; Direction:Dir array}
-type History = 
+let isSignificantlyDifferent i1 i2 =
+    (i1.Parms,i2.Parms) 
+    ||> Array.exists2 (fun p1 p2 -> parmToFloat p1 - parmToFloat p2 |> abs > 0.001)
+
+type ChangeEvent<'k> = {Best:Individual<'k>; Direction:Dir array}
+type History<'k> = 
     {
         Window      : int
         Distance    : Parm array
         Direction   : Dir array
-        Events      : ChangeEvent list
+        Events      : ChangeEvent<'k> list
     }
 
 let create isBetter window =
-    let create history fAccept fInfluence : KnowledgeSource =
+    let create history fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Historical
             Accept      = fAccept fInfluence history
@@ -45,18 +52,19 @@ let create isBetter window =
     let rec acceptance 
         fInfluence 
         ({Window=win; Events=events} as history)
-        (inds:Individual array) =
-        match inds with
-        | [||] -> [||],create history acceptance fInfluence
+        (voters:Individual<_> array) =
+        match voters with
+        | [||] -> voters,create history acceptance fInfluence
         | inds ->
             let rBest = inds.[0] //assume best individual is first 
             let nBest = 
                 match events with
                 | []                                                -> Some rBest
-                | b::_ when isBetter rBest.Fitness b.Best.Fitness   -> Some rBest
+                | b::_ when isBetter rBest.Fitness b.Best.Fitness
+                       && isSignificantlyDifferent rBest b.Best     -> Some rBest
                 | _                                                 -> None
             match nBest with
-            | None -> [||], create history acceptance fInfluence
+            | None -> voters, create history acceptance fInfluence
             | Some nBest ->
                 let pBest = match events with [] -> nBest | b::_ -> b.Best
                 let eventDirection  = (pBest.Parms,nBest.Parms) ||> Array.map2 dir
@@ -72,14 +80,14 @@ let create isBetter window =
                         Direction   = direction
                         Events      = events
                     }
-                [|nBest|], create updatedHistory acceptance fInfluence
+                voters, create updatedHistory acceptance fInfluence
     
-    let influence {Events=events} (ind:Individual) =
-        let ev = events.[rnd.Value.Next(0,events.Length-1)]
+    let influence {Events=events} s (ind:Individual<_>) =
+        let ev = events.[rnd.Value.Next(0,events.Length)]
         if isBetter ev.Best.Fitness ind.Fitness then
-            ev.Best |> influenceInd ind
+            ev.Best |> influenceInd s eSigma ind
         else
-            evolveInd ind
+            evolveInd s eSigma ind
 
     let initialHistory = {Window=window; Distance=[||]; Direction=[||]; Events=[]}
        

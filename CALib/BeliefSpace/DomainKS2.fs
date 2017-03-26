@@ -1,6 +1,9 @@
-﻿module DomainKS
+﻿module DomainKS2
 open CA
 open CAUtils
+open CAEvolve
+
+let eSigma = 0.003
 
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
@@ -9,13 +12,25 @@ let rateOfImprovement oldFitness newFitness isBetter epsilon =
     if oldFitness = newFitness then 
         Flat,0.
     elif isBetter newFitness oldFitness then
-        Up, (abs newFitness-oldFitness) / denominator
+        Up, (abs (newFitness-oldFitness)) / denominator
     else
-        Down,(abs newFitness-oldFitness) / denominator
+        Down,(abs (newFitness-oldFitness)) / denominator
+
+let slopes isBetter fitness oldFit parms =
+    let parms = Array.copy parms
+    parms
+    |> Array.mapi (fun i p -> 
+        let e = epsilonM p
+        let p' =  parmAdd p e
+        parms.[i] <- p'
+        let newFit = fitness parms
+        let partialSlope = rateOfImprovement oldFit newFit isBetter e
+        parms.[i] <- p
+        partialSlope)
 
 let maxSlope isBetter fitness oldFitness parms  =
     let parms    = Array.copy parms
-    let epsilons = parms |> Array.map epsilon
+    let epsilons = parms |> Array.map epsilonM
     let mutable maxS = Flat,0.
     let mutable maxI = 0
     for i in 0..parms.Length - 1 do
@@ -33,7 +48,7 @@ let maxSlope isBetter fitness oldFitness parms  =
     {Index=maxI; Magnitude=snd maxS; Direction=fst maxS},parms    
 
 let create isBetter fitness maxExemplars =
-    let create state fAccept fInfluence : KnowledgeSource =
+    let create state fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Domain
             Accept      = fAccept fInfluence state
@@ -42,10 +57,10 @@ let create isBetter fitness maxExemplars =
 
     let rec acceptance 
         fInfluence 
-        (prevExemplars : Individual list, pBestSlope) 
-        (newBestInds : Individual array) =
-        match newBestInds with
-        | [||] -> newBestInds, create (prevExemplars,pBestSlope) acceptance fInfluence
+        (prevExemplars : Individual<_> list, pBestSlope) 
+        (voters : Individual<_> array) =
+        match voters with
+        | [||] -> voters, create (prevExemplars,pBestSlope) acceptance fInfluence
         | inds ->
             let rBest = inds.[0] //assume best individual is first
             let nBest =
@@ -57,24 +72,34 @@ let create isBetter fitness maxExemplars =
             | Some nBest ->
                 let slope,_ = maxSlope isBetter fitness nBest.Fitness nBest.Parms
                 let exemplars = nBest::prevExemplars |> List.truncate maxExemplars
-                [|nBest|], create (exemplars,slope) acceptance fInfluence
+                voters, create (exemplars,slope) acceptance fInfluence
             | None -> 
-                [||], create (prevExemplars,pBestSlope) acceptance fInfluence
+                voters, create (prevExemplars,pBestSlope) acceptance fInfluence
 
-    let influence (exemplars,gBestSlope) (ind:Individual) =
-        let (slope,parms) = maxSlope isBetter fitness ind.Fitness ind.Parms
-        let maxParm = parms.[slope.Index]
-        //printfn "maxParm: %A" maxParm
-        let parm =
-            match slope.Direction with
-            | Up   -> slideUp maxParm
-            | Down -> slideDown maxParm
-            | Flat -> 
-                match gBestSlope.Direction with
-                | Up    -> slideUp parms.[slope.Index]
-                | Down  -> slideDown parms.[slope.Index]
-                | Flat  -> evolveS(parms.[slope.Index])
-        parms.[slope.Index] <- parm
+    let influenceOld (exemplars,gBestSlope) s (ind:Individual<_>) =
+        let slopes = slopes isBetter fitness ind.Fitness ind.Parms
+        let parms =
+            ind.Parms
+            |> Array.mapi (fun i p ->
+                let (dir,mag) = slopes.[i]
+                match dir with
+                | Up   -> slideUp s eSigma p
+                | Down -> slideDown s eSigma p
+                | Flat -> evolveS s eSigma p
+            )
+        {ind with Parms=parms}
+
+    let influence (exemplars,gBestSlope) influenceLevel (ind:Individual<_>) =
+        let slopes = slopes isBetter fitness ind.Fitness ind.Parms
+        let parms =
+            ind.Parms
+            |> Array.mapi (fun i p ->
+                let (dir,mag) = slopes.[i]
+                match dir with
+                | Up   -> slideUp (influenceLevel*mag) eSigma p
+                | Down -> slideDown (influenceLevel*mag) eSigma p
+                | Flat -> p//evolveS s eSigma p
+            )
         {ind with Parms=parms}
        
     create ([],{Index=0; Direction=Flat; Magnitude=0.}) acceptance influence

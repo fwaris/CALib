@@ -1,6 +1,9 @@
 ﻿module NormativeKS
 open CA
 open CAUtils
+open CAEvolve
+
+let eSigma = 2.0
 
 type ParmRange =
     | Fr    of float
@@ -89,33 +92,33 @@ let updateNorms isBetter norms highPerfInd =
             }
     )
 
-let normalizeParm {ParmLo=pLo; ParmHi=pHi} parm = 
-    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS parm
+let normalizeParm s {ParmLo=pLo; ParmHi=pHi} parm = 
+    if isLower (pLo,parm) && isHigher(pHi,parm) then evolveS s eSigma parm
     else
         match parm,pLo,pHi with
-        | F(_,mn,mx),Fr(l),Fr(h)        -> F(   randF l h ,mn,mx)
-        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32( randF32 l h ,mn,mx)
-        | I(_,mn,mx),Ir(l),Ir(h)        -> I(   randI l h ,mn,mx)
-        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64( randI64 l h ,mn,mx)
+        | F(_,mn,mx),Fr(l),Fr(h)        -> F(unifrmF s l h mn mx,mn,mx)
+        | F32(_,mn,mx),Fr32(l),Fr32(h)  -> F32(unifrmF32 s l h mn mx,mn,mx)
+        | I(_,mn,mx),Ir(l),Ir(h)        -> I(unifrmI s l h mn mx,mn,mx)
+        | I64(_,mn,mx),Ir64(l),Ir64(h)  -> I64(unifrmI64 s l h mn mx,mn,mx)
         | a,b,c -> failwithf "Normative: norm-parameter type mismatch %A,%A,%A" a b c
 
 let create parms isBetter =
-    let create (norms:Norm array) fAccept fInfluence : KnowledgeSource =
+    let create (norms:Norm array) fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Normative
             Accept      = fAccept fInfluence norms
             Influence   = fInfluence norms
         }
 
-    let rec acceptance fInfluence norms (inds:Individual array) =
+    let rec acceptance fInfluence norms (voters:Individual<_> array) =
         //assumes that individuals are sorted best fitness first
-        let updatedNorms = inds |> Array.fold (updateNorms isBetter) norms
+        let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
-        inds,create updatedNorms acceptance fInfluence 
+        voters,create updatedNorms acceptance fInfluence 
     
-    let influence (norms:Norm array) (ind:Individual) =
+    let influence (norms:Norm array) s (ind:Individual<_>) =
         {ind with
-            Parms = (norms,ind.Parms) ||> Array.map2 normalizeParm
+            Parms = (norms,ind.Parms) ||> Array.map2 (normalizeParm s)
         }
         
     let initialNorms = parms |> Array.map (fun p -> 

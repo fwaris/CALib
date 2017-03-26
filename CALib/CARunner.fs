@@ -5,10 +5,10 @@ open FSharp.Collections.ParallelSeq
 ///create the belief space structure that is normally used in CAs
 let defaultBeliefSpace parms minmax fitness =
     Roots [ 
-        Node (SituationalKS.create minmax 2,
+        Node (SituationalKS.create minmax 15,
             [
-                Leaf (HistoricalKS.create minmax 20)
-                Leaf (DomainKS.create minmax fitness 2)
+                Leaf (HistoricalKS.create minmax 100)
+                Leaf (DomainKS2.create minmax fitness 2)
             ])
         Leaf (NormativeKS.create parms minmax)
         ]
@@ -16,14 +16,12 @@ let defaultBeliefSpace parms minmax fitness =
 ///evaluate the finess of the population
 let evaluate fitness pop = 
     let pop =
-        pop 
-        |> PSeq.map (fun (ind:Individual) -> {ind with Fitness=fitness ind.Parms})
-        |> PSeq.toArray
-    Array.sortInPlaceBy(fun p->p.Id) pop
+        pop
+        |> Array.Parallel.map (fun (ind:Individual<_>) -> {ind with Fitness=fitness ind.Parms})
     pop
 
 ///default acceptance function used in most CAs
-let acceptance take minmax beliefSpace (pop:Population) =
+let acceptance take minmax beliefSpace (pop:Population<_>) =
     let sign = if minmax 2. 1. then -1. else +1. 
     let topInds = 
         pop 
@@ -46,15 +44,12 @@ let update beliefSpace bestInds =
     update bestInds beliefSpace
 
 ///default population influence function
-let influence beliefSpace pop =
+let baseInfluence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> PSeq.map (fun p -> (p,p.KS) ||> Set.fold (fun p k -> ksMap.[k].Influence p))
-        |> PSeq.toArray
-    Array.sortInPlaceBy(fun i->i.Id) pop
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
     pop
-
 
 ///single step CA
 let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
@@ -83,12 +78,16 @@ let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     }
 
 ///run till termination
-let run termination maxBest ca =
+let run desc termination maxBest ca =
     let rec loop stp = 
         let stp = step stp maxBest
         let best = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
-        printfn "step %i. fitness=%A" stp.Count best
-        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
+        match stp.Progress.Length with
+        | 0 -> printfn "starting '%s'" desc
+        | 1 -> printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+        | _ when stp.Progress.[0] = stp.Progress.[1] |> not -> 
+            printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+        | _ -> ()
         if termination stp then
             stp
         else
@@ -96,7 +95,7 @@ let run termination maxBest ca =
     loop {CA=ca; Best=[]; Count=0; Progress=[]}
 
 
-let ``terminate if no improvement in 5 generations`` (step:TimeStep) =
+let ``terminate if no improvement in 5 generations`` (step:TimeStep<_>) =
     match step.Progress with
     | f1::f2::f3::f4::f5::_ when f1=f2 && f2=f3 && f3=f4 && f4=f5 -> true
     | _ -> false

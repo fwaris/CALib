@@ -9,40 +9,41 @@ type Parm =
     | I64 of    v:int64     * min:int64     * max:int64
 
 type Id = int
+type Temp = float
 type Topology   = LBest | Global
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain | Other of string
-type Individual = {Id:Id; Parms:Parm array; Fitness:float; KS:Set<Knowledge>}
+type Individual<'k> = {Id:Id; Parms:Parm array; Fitness:float; KS:'k}
 and Fitness     = Parm array -> float
 and Comparator  = float -> float -> bool //compare two fitness values - true when 1st 'is better than' 2nd
-and Population  = Individual array
-and Network     = Population -> Id -> Individual array
-and BeliefSpace = KnowledgeSource Tree
-and Acceptance  = BeliefSpace -> Population -> Individual array
-and Influence   = BeliefSpace -> Population -> Population
-and Update      = BeliefSpace -> Individual array -> BeliefSpace
-and KnowledgeDist   = KD of ((Population*BeliefSpace) -> Network -> (Population*BeliefSpace*KnowledgeDist))
+and Population<'k>  = Individual<'k> array
+and Network<'k>     = Population<'k> -> Id -> Individual<'k> array
+and BeliefSpace<'k> = KnowledgeSource<'k> Tree
+and Acceptance<'k>  = BeliefSpace<'k> -> Population<'k> -> Individual<'k> array
+and Influence<'k>   = BeliefSpace<'k> -> Population<'k> -> Population<'k>
+and Update<'k>      = BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
+and KnowledgeDist<'k>   = KD of ((Population<'k>*BeliefSpace<'k>) -> Network<'k> -> (Population<'k>*BeliefSpace<'k>*KnowledgeDist<'k>))
 
-and KnowledgeSource = 
+and KnowledgeSource<'k> = 
     {
         Type        : Knowledge
-        Accept      : Individual array -> Individual array * KnowledgeSource
-        Influence   : Individual -> Individual
+        Accept      : Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
+        Influence   : Temp -> Individual<'k> -> Individual<'k>
     }
 
-type CA =
+type CA<'k> =
     {
-        Population              : Population
-        Network                 : Network
-        KnowlegeDistribution    : KnowledgeDist
-        BeliefSpace             : BeliefSpace
-        Acceptance              : Acceptance
-        Influence               : Influence
-        Update                  : Update
+        Population              : Population<'k>
+        Network                 : Network<'k>
+        KnowlegeDistribution    : KnowledgeDist<'k>
+        BeliefSpace             : BeliefSpace<'k>
+        Acceptance              : Acceptance<'k>
+        Influence               : Influence<'k>
+        Update                  : Update<'k>
         Fitness                 : Fitness
         Comparator              : Comparator
     }
 
-type TimeStep = {CA:CA ; Best:Individual list; Progress:float list; Count:int}
-type TerminationCondition = TimeStep -> bool
+type TimeStep<'k> = {CA:CA<'k> ; Best:Individual<'k> list; Progress:float list; Count:int}
+type TerminationCondition<'k> = TimeStep<'k> -> bool
 
             

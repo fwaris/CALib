@@ -1,20 +1,13 @@
 ﻿module CAUtils
 open CA
+open FSharp.Collections.ParallelSeq
 
-module Probability =
-    open System
-    open System.Threading
-    let RNG =
-        // Create master seed generator and thread local value
-        let seedGenerator = new Random()
-        let localGenerator = new ThreadLocal<Random>(fun _ -> 
-            lock seedGenerator (fun _ -> 
-            let seed = seedGenerator.Next()
-            new Random(seed)))
-        localGenerator
-   
-     
+
 let rnd = Probability.RNG
+
+let gaussian mean sigma = Probability.GAUSS mean sigma
+
+let zsample = Probability.ZSample
 
 let inline yourself x = x
 
@@ -39,118 +32,53 @@ let flatten tree =
         | Leaf(leaf)        -> leaf::acc
     loop [] tree
         
-let randI min max = rnd.Value.Next(min,max)
-let randF32 (min:float32) (max:float32) =  min + (float32 ((rnd.Value.NextDouble()) * float (max - min)))
-let randF  min max = min + (rnd.Value.NextDouble() * (max - min))
-let randI64 min max =  min + (int64 ((rnd.Value.NextDouble()) * float (max - min)))
-(*
-let rnd = System.Random()
-[for i in 1..100 -> randI 1 1000]
-[for i in 1..100 -> randF32 1.f 1000.f]
-[for i in 1..100 -> randF 1000. 1000000.]
-[for i in 1..100 -> randI64 1000L 1000000L]
-*)   
-
-//Marsaglia polar method
-let gaussian mean sigma = 
-    let mutable v1 = 0.
-    let mutable v2 = 0.
-    let mutable s = 2.
-    while s >= 1. || s = 0. do
-        v1 <- 2. * rnd.Value.NextDouble() - 1.
-        v2 <- 2. * rnd.Value.NextDouble() - 1.
-        s <- v1 * v1 + v2 * v2
-    let polar = sqrt(-2.*log(s) / s)
-    v1*polar*sigma + mean
-(*
-let rnd = System.Random()
-[for i in 0..100 -> gaussian (float 50.) 1.]
-*)
-
-let randomize = function
-    | F (v,mn,mx)   -> F (randF mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 mn mx, mn, mx)
-
-let slideUp = function
-    | F (v,mn,mx)   -> F (randF v mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 v mx, mn, mx)
-    | I (v,mn,mx)   -> I(randI v mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 v mx, mn, mx)
-
-let slideDown = function
-    | F (v,mn,mx)   -> F (randF mn v, mn, mx)
-    | F32 (v,mn,mx) -> F32 (randF32 mn v, mn, mx)
-    | I (v,mn,mx)   -> I(randI mn v, mn, mx)
-    | I64 (v,mn,mx) -> I64(randI64 mn v, mn, mx)
-
 let clamp mn mx x = max (min x mx) mn
 
-let evolveInt iV =
-    let v = float iV
-    let v' = gaussian v 3.
-    if abs (v' - v) > 1. then 
-        int v' 
-    elif v'<v then 
-        iV - 1 
-    else 
-        iV + 1 
+let clampP = function
+    | F(v,mn,mx)    -> F(clamp mn mx v,mn,mx)
+    | F32(v,mn,mx)  -> F32(clamp mn mx v,mn,mx)
+    | I(v,mn,mx)    -> I(clamp mn mx v,mn,mx)
+    | I64(v,mn,mx)  -> I64(clamp mn mx v,mn,mx)
+    
+let unifrmI (s:float) frmV toV mn mx = 
+    frmV + (int ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-let evolveInt64 i64V =
-    let v  = float i64V
-    let v' = gaussian v 3.
-    if abs (v' - v) > 1. then 
-        int64 v' 
-    elif v' < v then 
-        i64V - 1L
-    else 
-        i64V + 1L 
+let unifrmF32 s (frmV:float32) (toV:float32) mn mx = 
+    frmV + (float32 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-let evolveS = function
-    | F (v,mn,mx)    -> F   (gaussian v 1.                      |> clamp mn mx, mn, mx)
-    | F32 (v,mn,mx)  -> F32 (gaussian (float v) 1. |> float32   |> clamp mn mx, mn, mx)
-    | I (v,mn,mx)    -> I   (evolveInt v                        |> clamp mn mx, mn, mx)
-    | I64 (v,mn,mx)  -> I64 (evolveInt64 v                      |> clamp mn mx, mn, mx)
+let unifrmF s frmV toV mn mx = 
+    frmV + (rnd.Value.NextDouble() * s * (toV - frmV))
+    |> clamp mn mx
 
-///Use values from the 2nd parm to influence 1st parm
-///(randomly move towards 2nd parm value)
-let influenceParm influenced influencer =
-    match influencer,influenced with
-    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(randF iV pV,mn,mx)
-    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(randF pV iV,mn,mx)
-    | F(_),fInd                              -> evolveS fInd
+let unifrmI64 s frmV toV mn mx =  
+    frmV + (int64 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    |> clamp mn mx
 
-    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(randF32 iV pV,mn,mx)
-    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(randF32 pV iV,mn,mx)
-    | F32(_),fInd                            -> evolveS fInd
+let gaussI (s:int) sg = gaussian (float s) sg |> int
 
-    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(randI iV pV,mn,mx)
-    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(randI pV iV,mn,mx)
-    | I(_),fInd                              -> evolveS fInd
+let gaussF32 (s:float32) sg = gaussian (float s) sg |> float32
 
-    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(randI64 iV pV,mn,mx)
-    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(randI64 pV iV,mn,mx)
-    | I64(_),fInd                            -> evolveS fInd
+let gaussF s sg = gaussian s sg
 
-    | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
+let gaussI64 (s:int64) sg = gaussian (float s) sg |> int64
 
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
-let influenceInd influenced influencer =
-    {influenced with
-        Parms = (influenced.Parms,influencer.Parms) ||> Array.map2 influenceParm
-    }
+let randomize = function
+    | F (v,mn,mx)   -> F (unifrmF 1.0 mn mx mn mx, mn, mx)
+    | F32 (v,mn,mx) -> F32 (unifrmF32 1.0 mn mx mn mx, mn, mx)
+    | I (v,mn,mx)   -> I(unifrmI 1.0 mn mx mn mx, mn, mx)
+    | I64 (v,mn,mx) -> I64(unifrmI64 1.0 mn mx mn mx, mn, mx)
 
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
-let evolveInd individual =
-    {individual with
-        Parms = individual.Parms |> Array.map evolveS
-    }
-
-let createPop parms size beliefSpace randomizeAll =
+let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
+    fun i -> kss.[i % kss.Length].Type
+
+let ksSetInit beliefSpace = 
+    let kss = flatten beliefSpace |> List.toArray
+    fun i -> set[kss.[i % kss.Length].Type]
+
+let createPop ksInitializer parms size randomizeAll =
     let rnd = System.Random()
     [|
         for i in 1..size do
@@ -165,8 +93,7 @@ let createPop parms size beliefSpace randomizeAll =
                     Id      = i-1
                     Parms   = parms
                     Fitness = System.Double.MinValue
-                    KS      = set [kss.[i % kss.Length].Type]
-
+                    KS      = ksInitializer i
                 }
     |]
 
@@ -191,20 +118,6 @@ let parmDiff newParm oldParm  =
     | a,b -> failwithf "CAUtils: invalid combination of types for parmDiff %A,%A" a b
 
 //Effectively numerator / denominator
-let parmDiv numerator denominator  = 
-    try
-        let r = 
-            match numerator, denominator with
-            | F(n,_,_),F(d,_,_)        -> n / d
-            | F32(n,_,_),F32(d,_,_)    -> float n / float d
-            | I(n,_,_),I(d,_,_)        -> float n / float d
-            | I64(n,_,_),I64(d,_,_)    -> float n / float d
-            | a,b -> failwithf "CAUtils: invalid combination of types for parmDiv %A,%A" a b
-        Some r
-    with :? System.DivideByZeroException ->
-        None
-
-//Effectively numerator / denominator
 let parmToFloat = function
     | F(v,_,_)   -> v
     | F32(v,_,_) -> float v
@@ -217,7 +130,13 @@ let epsilon = function
     | I(_,mn,mx)    -> I(1,mn,mx)
     | I64(_,mn,mx)  -> I64(1L,mn,mx)
 
-let lBestNetwork (pop:Population) id = //return 2 'friends' from the ring
+let epsilonM = function
+    | F(_,mn,mx)    -> F(0.000001,mn,mx)
+    | F32(_,mn,mx)  -> F32(0.000001f,mn,mx)
+    | I(_,mn,mx)    -> I(1,mn,mx)
+    | I64(_,mn,mx)  -> I64(1L,mn,mx)
+
+let lBestNetwork (pop:Population<'k>) id = //return 2 'friends' from the ring
     let m1 = id - 1
     let m1 = if m1 < 0 then pop.Length + m1 else m1
     let p1 = id + 1 
@@ -231,7 +150,7 @@ let parms = [|F(1.,1.,10.)|]
 let pop= [|for i in 1..100 -> {Id=i;Parms=parms;Fitness=0.;KS=Normative}|]
 let net = pop |> Array.mapi (fun i _ -> lBestNetwork pop i)       
 *)
-let l4BestNetwork (pop:Population) id = //return 4 'friends' from the ring
+let l4BestNetwork (pop:Population<'k>) id = //return 4 'friends' from the ring
     let m2 = id - 2
     let m2 = if m2 < 0 then pop.Length + m2 else m2
     let m1 = id - 1
@@ -243,6 +162,54 @@ let l4BestNetwork (pop:Population) id = //return 4 'friends' from the ring
 //    printfn "id=%d, m1=%d, m2=%d, p1=%d, p2=%d" id m1 m2 p1 p2
     [|pop.[m2]; pop.[m1]; pop.[p1]; pop.[p2] |]
 
+//let squareNetwork (pop:Population<'k>) id = 
+//    //assume pop is in a square grid with wrap around for indv at the edges or outside the perfect square
+//    let h = float pop.Length |> sqrt |> int
+//    let w = h
+//    let (r,c) =
+//        let row = id / w
+//        let col = id % h
+//        row,col
+//    let idx (r,c) =
+//        let r = if r < 0 then (h - 1) elif r > h-1 then 0 else r
+//        let c = if c < 0 then (w - 1) elif c > w-1 then 0 else c 
+//        r * h + c
+//    [|
+//        pop.[idx (r,c-1)] //left
+//        pop.[idx (r-1,c)] //top
+//        pop.[idx (r,c+1)] //right
+//        pop.[idx (r+1,c)] //bottom        
+//    |]
+//
+let hexagonNetwork (pop:Population<'k>) id =
+    let sz = pop.Length
+    [|
+        for i in -3 .. 1 .. 3 do
+            if i <> 0 then
+                let idx = (id + i) % sz
+                let idx = if idx < 0 then idx + sz else idx
+                yield pop.[idx]
+    |]
+
+let squareNetwork (pop:Population<'k>) id =
+    let sz = pop.Length
+    [|
+        for i in -2 .. 1 .. 2 do
+            if i <> 0 then
+                let idx = (id + i) % sz
+                let idx = if idx < 0 then idx + sz else idx
+                yield pop.[idx]
+    |]
+(*
+#load "CA.fs"
+#load "Probability.fs"
+#load "CAUtils.fs"
+open CA
+open CAUtils
+let pop = [|for i in 0 .. 100 -> {Individual.Id=i; Parms=[||]; KS=Domain; Fitness=1.; } |]
+squareNetwork pop 25
+*)
+
 let Maximize a b = a > b
 let Minimize a b = a < b
 
@@ -251,4 +218,15 @@ let vF32 = function F32(v,_,_) -> v | _ -> failwith "invalid type"
 let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"
 let vI64 = function I64(v,_,_) -> v | _ -> failwith "invalid type"
 
+let toVF (v:float) mn mx = F(clamp mn mx v, mn, mx)
+let toVI (v:float) mn mx = I(clamp mn mx (int v), mn, mx)
+let toVF32 (v:float) mn mx = F32(clamp mn mx (float32 v), mn, mx)
+let toVI64 (v:float) mn mx = I64(clamp mn mx (int64 v), mn, mx)
 
+let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
+    let sign = if cmprtr 2. 1. then 1. else -1.
+    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
+    let minFit = currentFit |> PSeq.min
+    let maxFit = currentFit |> PSeq.max
+    let scaler = scaler target (minFit,maxFit) 
+    currentFit |> Array.Parallel.map scaler  //scale fitness to target range

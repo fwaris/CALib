@@ -1,0 +1,5 @@
+NUGET
+  remote: https://www.nuget.org/api/v2
+    FSharp.Charting (0.90.14)
+    FSharp.Collections.ParallelSeq (1.0.2)
+    FsRandom (1.3.3)

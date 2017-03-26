@@ -53,35 +53,48 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DF1.fs" />
+    <Compile Include="Probability.fs" />
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
-    <Compile Include="BeliefSpace\DomainKS.fs" />
+    <Compile Include="CAEvolve.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
-    <Compile Include="KnowledgeDistribution\KDBase.fs" />
+    <Compile Include="BeliefSpace\DomainKS2.fs" />
+    <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDGame.fs" />
     <Compile Include="KnowledgeDistribution\KDHedonicGame.fs" />
+    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
+    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
-    <None Include="Script.fsx" />
-    <Content Include="packages.config" />
+    <None Include="Landscapes\test_cone1.01.csv" />
+    <None Include="Landscapes\test_cone2.0.csv" />
+    <None Include="Landscapes\test_cone3.35.csv" />
+    <None Include="Landscapes\test_cone3.5.csv" />
+    <None Include="Landscapes\test_cone3.99.csv" />
+    <None Include="Landscapes\Backgrounds.fsx" />
+    <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\TraceCharts.fsx" />
+    <None Include="Testing\DispIndex.fsx" />
+    <None Include="Testing\IPD_Weighted_Comparo.fsx" />
+    <None Include="Testing\TestIPDPerf.fsx" />
+    <None Include="Testing\TestDF1.fsx" />
+    <None Include="Testing\TestDF1Gen.fsx" />
     <None Include="Testing\TestCA3D.fsx" />
     <None Include="Testing\TestDomain.fsx" />
     <None Include="Testing\TestHistorical.fsx" />
     <None Include="Testing\TestNormative.fsx" />
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
+    <None Include="Testing\IPDLogAnalysis.fsx" />
+    <None Include="Testing\ObservableExt.fs" />
+    <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Charting">
-      <HintPath>..\packages\FSharp.Charting.0.90.14\lib\net40\FSharp.Charting.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FSharp.Collections.ParallelSeq">
-      <HintPath>..\packages\FSharp.Collections.ParallelSeq.1.0.2\lib\net40\FSharp.Collections.ParallelSeq.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
@@ -97,4 +110,37 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
+      <ItemGroup>
+        <Reference Include="FSharp.Charting">
+          <HintPath>..\packages\FSharp.Charting\lib\net40\FSharp.Charting.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
+      <ItemGroup>
+        <Reference Include="FSharp.Collections.ParallelSeq">
+          <HintPath>..\packages\FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
+      <ItemGroup>
+        <Reference Include="FsRandom">
+          <HintPath>..\packages\FsRandom\lib\net40\FsRandom.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
 </Project>
