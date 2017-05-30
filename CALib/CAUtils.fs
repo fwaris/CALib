@@ -39,9 +39,12 @@ let clampP = function
     | F32(v,mn,mx)  -> F32(clamp mn mx v,mn,mx)
     | I(v,mn,mx)    -> I(clamp mn mx v,mn,mx)
     | I64(v,mn,mx)  -> I64(clamp mn mx v,mn,mx)
+
+let dz f = if f > 0. then max 1.0 f else min -1.0 f
     
 let unifrmI (s:float) frmV toV mn mx = 
-    frmV + (int ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    let d = (rnd.Value.NextDouble()) * s * float (toV - frmV) |> dz
+    frmV + (int d)
     |> clamp mn mx
 
 let unifrmF32 s (frmV:float32) (toV:float32) mn mx = 
@@ -53,7 +56,8 @@ let unifrmF s frmV toV mn mx =
     |> clamp mn mx
 
 let unifrmI64 s frmV toV mn mx =  
-    frmV + (int64 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
+    let d = (rnd.Value.NextDouble()) * s * float (toV - frmV) |> dz
+    frmV + (int64 d)
     |> clamp mn mx
 
 let gaussI (s:int) sg = gaussian (float s) sg |> int

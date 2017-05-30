@@ -122,7 +122,8 @@ let kdWeightedCA f c p  =
 let kdIpdCA vmx f c p  = 
     let bsp = bsp f p c
     let pop = createPop bsp p CAUtils.baseKsInit |> KDIPDGame.initKS
-    let kd = ipdKdist vmx c pop 
+    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let kd = ipdKdist ada vmx c pop 
     makeCA f c pop bsp kd KDIPDGame.ipdInfluence
 
 #r @"..\..\packages\FSharp.Charting\lib\net40\FSharp.Charting.dll"

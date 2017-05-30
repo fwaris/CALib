@@ -93,7 +93,7 @@ let create isBetter maxExemplars =
 //        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
 //        printfn ""
         let weights = fitweights isBetter explrs |> Array.mapi (fun i x -> i,x)
-        let wheel = Probability.createWheel weights
+        let _,wheel = Probability.createWheel weights
         let state = {Exemplars=explrs; SpinWheel=wheel}
         voters, create state acceptance fInfluence
     

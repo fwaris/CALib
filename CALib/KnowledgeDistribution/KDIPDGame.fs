@@ -23,7 +23,7 @@ let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox ->
 
 let NEW_KS_LEVEL            = 1.0 //influence level for a new primary KS
 let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks 
-let KS_ADJUST               = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
+//let KS_ADJUST               = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
 let SCNRY_EXPL_KS_BOOST     = 0.9 //aggressiveness boost for secondary exploitative KS
 let MIN_INFLUENCE_LEVEL     = 0.001 //floor for influence level
 
@@ -32,6 +32,11 @@ type IpdKS = PrimaryKS * Map<Knowledge,float> //each indv has a primary ks and p
 type W = Set<Id> * float
 type Action = W list
 type Payout = Action
+
+type Ada =
+    | Fixed of float
+    | Geometric of (float*float) // multiplier (1.0-0.0) * minimum
+    | Linear of (float*float)    // decrement * minimum
 
 type IpdState = 
     {
@@ -43,6 +48,7 @@ type IpdState =
         P1Fit           : float array
         Stability       : float array
         KSCount         : Map<Knowledge,float>
+        KSAdjust        : Ada 
         }
 
 let parmDiversity p1 p2 = 
@@ -162,12 +168,17 @@ let logI st newKs indv =
     let pksNew = prmryKS newKs
     {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=pksNew; ksp=pksOld; gen=st.Gen; fit=indv.Fitness;} |> MIndv |> log.Post
 
+let rate r = function 
+    | Fixed f           -> f 
+    | Geometric (mu,mn) -> r * mu |> max mn
+    | Linear (delta,mn) -> r - delta |> max mn
+
 let crtWthKS st (indv:Individual<IpdKS>) primary secondary = 
     let {KS=oldKS;Level=oldLvl} = fst indv.KS
     let ({KS=newKS;Level=_},secondary) = (primary, removePrimaryKS primary.KS secondary |> removeSituationalKS) |> promoteDomainKS
     let primary =
         if newKS = oldKS && isExploitative newKS then
-            {KS=newKS; Level= oldLvl * KS_ADJUST |> max MIN_INFLUENCE_LEVEL}
+            {KS=newKS; Level= rate oldLvl st.KSAdjust}
         else
             {KS=newKS; Level=NEW_KS_LEVEL}
     let ks = primary,secondary
@@ -202,7 +213,7 @@ let updatePop st vmx cmprtr (pop:Population<IpdKS>) (payouts:Payout array) =
     )
     pop
 
-let createState gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
+let createState ksAdjust gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     let ksc = 
         pop 
@@ -221,6 +232,7 @@ let createState gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdK
         Stability = stability
         KSCount = ksc
         Gen = gen + 1
+        KSAdjust = ksAdjust
     }
 
 let updateStability f = function
@@ -231,7 +243,7 @@ let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop' = updatePop state vmx cmprtr pop payouts
     let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (prmryKS pop'.[i].KS, prmryKS pop.[i].KS))
-    let state = createState state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
+    let state = createState state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
     pop',
     beliefSpace,
     {
@@ -250,9 +262,9 @@ let initKS (pop:Population<Knowledge>) : Population<IpdKS> =
             KS={KS=indv.KS;Level=NEW_KS_LEVEL},Map.empty
         })
 
-let game (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
+let game ksAdjust (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
     let stability = Array.zeroCreate pop.Length
-    let state = createState 0 stability None (vmin,vmax) cmprtr pop
+    let state = createState ksAdjust 0 stability None (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state
@@ -271,7 +283,7 @@ let ipdInfluence beliefSpace (pop:Population<IpdKS>) =
             p)
     pop 
 
-let knowledgeDist (vmin,vmax) comparator pop =
-    let g = game (vmin,vmax)  comparator pop
+let knowledgeDist ksAdjust (vmin,vmax) comparator pop =
+    let g = game ksAdjust (vmin,vmax)  comparator pop
     KDContinousStrategyGame.knowledgeDist comparator g
 

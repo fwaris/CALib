@@ -93,11 +93,12 @@ let createWheel (weights:('a*float)[]) = //key * weight  key must be unique
         |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
         |> Array.sortBy snd                         //arrange ascending
     let cum = (ws.[0],ws.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
-    cum
+    ws,cum
 
 let spinWheel wheel = 
     let r = RNG.Value.NextDouble()
     wheel |> Array.pick(fun (k,w) -> if w > r then Some k else None)
+
    
 (*
 #load "Probability.fs"
@@ -107,7 +108,8 @@ let rs = Async.Parallel reqs |> Async.RunSynchronously
 let reqs2 =  [for i in 1 .. 1000 -> async{return ZSample()}]
 let rs2 = Async.Parallel reqs2 |> Async.RunSynchronously
 
-[for i in 0..100 ->(spinWheel [|2.; 1.|])] |> List.countBy (fun x->x)
+let m,w = createWheel [|'a',2.; 'b',1.|]
+[for i in 0..100 ->(spinWheel w),1] |> List.groupBy fst |> List.map (fun (x,ys)->x,List.sumBy snd ys)
 
 let rng = System.Random()// 
 let rng = XorshiftPRNG()

@@ -8,8 +8,8 @@ let slideUp influenceLevel sigma p =
     match p with
     | F (v,mn,mx)   -> toVF (v + z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v + z') mn mx
-    | I (v,mn,mx)   -> toVI (float v + z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v + z') mn mx
+    | I (v,mn,mx)   -> toVI (float v + dz z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v + dz z') mn mx
 
 let slideDown influenceLevel sigma p =
     let z = zsample()
@@ -17,28 +17,8 @@ let slideDown influenceLevel sigma p =
     match p with
     | F (v,mn,mx)   -> toVF (v - z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
-    | I (v,mn,mx)   -> toVI (float v - z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - z') mn mx
-
-//let evolveInt s sg iV =
-//    let v = float iV
-//    let v' = gaussian v (s * sg)
-//    if abs (v' - v) > 1. then 
-//        int v' 
-//    elif v'<v then 
-//        iV - 1 
-//    else 
-//        iV + 1 
-//
-//let evolveInt64 s sg i64V =
-//    let v  = float i64V
-//    let v' = gaussian v (s * sg)
-//    if abs (v' - v) > 1. then 
-//        int64 v' 
-//    elif v' < v then 
-//        i64V - 1L
-//    else 
-//        i64V + 1L 
+    | I (v,mn,mx)   -> toVI (float v - dz z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - dz z') mn mx
 
 let evolveS influenceLevel sigma p = 
     let z = zsample()
@@ -46,8 +26,8 @@ let evolveS influenceLevel sigma p =
     match p with
     | F (v,mn,mx)   -> toVF (v - z') mn mx
     | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
-    | I (v,mn,mx)   -> toVI (float v - z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - z') mn mx
+    | I (v,mn,mx)   -> toVI (float v - dz z') mn mx
+    | I64 (v,mn,mx) -> toVI64 (float v - dz z') mn mx
 
 ///Use values from the 2nd parm to influence 1st parm
 ///(randomly move towards 2nd parm value)

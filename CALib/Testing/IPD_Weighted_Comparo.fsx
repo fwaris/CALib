@@ -28,7 +28,8 @@ let inline createPop bsp parms init size = CAUtils.createPop (init bsp) parms si
 let kdIpdCA vmx f c p size = 
     let b = bsp f p c
     let pop = createPop b p CAUtils.baseKsInit size |> KDIPDGame.initKS
-    let kd = ipdKdist vmx c pop 
+    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let kd = ipdKdist ada vmx c pop 
     makeCA f c pop b kd KDIPDGame.ipdInfluence
 
 let kdWeightedCA f c p size = 

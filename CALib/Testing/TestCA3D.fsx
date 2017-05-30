@@ -32,26 +32,14 @@ let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
 
 let tk s = s |> Seq.take 50 |> Seq.toList
 
-let kdSimpleCA      = kdSimpleCA fitness comparator parms
 let kdWeightedCA    = kdWeightedCA fitness comparator parms
-let kdlWeightedCA   = kdlWeightedCA fitness comparator parms
-let kdGame2PlayerCA = kdGame2PlayerCA fitness comparator parms
-let kdHedonicCA     = kdHedonicCA fitness comparator parms
-let kdIpdCA         = kdIpdCA fitness comparator parms
+let kdIpdCA         = kdIpdCA (0.2, 0.9) fitness comparator parms
 
-let kdSimple        = kdSimpleCA |> runCollect dataCollector 2 |> tk
 let kdWeigthed      = kdWeightedCA |> runCollect dataCollector 2 |> tk
-let kdlWeigthed     = kdlWeightedCA |> runCollect dataCollector 2 |> tk
-let kdGame2Player   = kdGame2PlayerCA |> runCollect dataCollector 2 |> tk
-let kdHedonic       = kdHedonicCA |> runCollect setDataClctr 2 |> tk
 let kdIpd           = kdIpdCA |> runCollect ipdDataCollector 2 |> tk
 //
 
-plotResults "Simple Majority" kdSimple
 plotResults "Weigted Majority" kdWeigthed
-plotResults "Locally Weigted Majority" kdlWeigthed
-plotResults "Hawk-Dove" kdGame2Player
-plotResults "Hedonic Game" kdHedonic
 plotResults "IPD Game" kdIpd
 
 

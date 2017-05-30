@@ -1,3 +1,4 @@
 FSharp.Charting
 FSharp.Collections.ParallelSeq
 FsRandom
+MathNet.Numerics.FSharp
