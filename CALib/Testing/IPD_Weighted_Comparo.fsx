@@ -25,10 +25,10 @@ let comparator  = CAUtils.Maximize
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
 let inline createPop bsp parms init size = CAUtils.createPop (init bsp) parms size true
 
-let kdIpdCA vmx f c p size = 
+let kdIpdCA ada vmx  f c p size = 
     let b = bsp f p c
     let pop = createPop b p CAUtils.baseKsInit size |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let ada = KDIPDGame.Geometric(ada)
     let kd = ipdKdist ada vmx c pop 
     makeCA f c pop b kd KDIPDGame.ipdInfluence
 
@@ -42,13 +42,15 @@ let rnd = System.Random()
 let coneSizes = [100; 500; 1000]
 let popSizes = [100; 250; 1000]
 let startStep ca = {CA=ca; Best=[]; Count=0; Progress=[]}
+let ada = (0.7, 0.1) //(0.9, 0.2)
+let vmx = (0.2, 0.9)//(0.85,0.15)
 let startCAs() = 
     [
         for c in coneSizes do
             for sz in popSizes do
                 let df1,maxCone = DF1.df1_2d rnd c (5.,20.) (10., 40.)
                 let fit = fitness df1
-                let ipdCA = (sprintf "ipd,%d,%d" c sz),maxCone,kdIpdCA (0.2, 0.9) fit comparator parms sz |> startStep
+                let ipdCA = (sprintf "ipd,%d,%d" c sz),maxCone,kdIpdCA ada vmx fit comparator parms sz |> startStep
                 let wtdCA = (sprintf "wtd,%d,%d" c sz),maxCone,kdWeightedCA fit comparator parms sz |> startStep
                 yield ipdCA, wtdCA
     ]
@@ -70,6 +72,35 @@ let rec run st =
     | SolFound x -> x
     | MaxCountReached -> max_count
     | Cont st -> run st
+
+let hyperPSearch() =
+    let grid =  [for g in 0.9 .. -0.1 .. 0.5 do for m in 0.5 .. -0.1 .. 0.1 do yield g,m]
+    let runAda ada = 
+        let scapes = 
+            [
+                for c in coneSizes do
+                    for sz in popSizes do
+                        let df1,maxCone = DF1.df1_2d rnd c (5.,20.) (10., 40.)
+                        let fit = fitness df1
+                        let ipdCA = (sprintf "ipd,%d,%d" c sz),maxCone,kdIpdCA ada vmx fit comparator parms sz |> startStep
+                        yield ipdCA
+            ]
+        let runs =
+            [for i in 1 .. 5 -> i] 
+            |> List.collect(fun _ ->
+                scapes 
+                |> List.map (fun scape ->
+                    let (s,_,_) = scape
+                    let (dipd,_,_) = scape
+                    let ripd = run scape
+                    printfn "%A" (ada,dipd,ripd)
+                    dipd,ripd))
+        ada,runs
+    let g = grid |> List.map runAda  
+    let gg = g |> List.groupBy fst |> List.map (fun (x,xs)->x,xs|>List.sumBy (fun (x,ys) -> ys|> List.sumBy snd))
+    let gmin = gg |> List.sortBy snd
+    //best 3 =   [((0.6, 0.1), 10918); ((0.7, 0.1), 13963); ((0.6, 0.3), 14504);
+    g
 
 let data = 
     [for i in 1 .. 50 -> i] 
@@ -108,5 +139,37 @@ let dmp = List.iter (fun (a,b) -> printfn "%s;%f" a b)
 for (g,xs) in  gipd do printfn "*%s" g; dmp xs
 for (g,xs) in  gwtd do printfn "*%s" g; dmp xs
 
+
 let gdata = data |> List.groupBy (fst>>fst)
 for (g,xs) in gdata do printfn "*%s" g; xs |> List.iter (fun ((_,i),(_,w)) -> printfn "%d;%d" i w)
+
+Seq.zip ipdMeans wtdMeans |> Seq.iter (printfn "%A")
+Seq.zip ipdSigmas wtdSigmas |> Seq.iter (printfn "%A")
+
+
+(*
+ada = (0.9,02)
+([ipd,100,100, 691.94], [wtd,100,100, 1225.72])
+([ipd,100,1000, 21.38], [wtd,100,1000, 203.72])
+([ipd,100,250, 229.56], [wtd,100,250, 455.9])
+([ipd,1000,100, 1253.94], [wtd,1000,100, 1624.16])
+([ipd,1000,1000, 803.62], [wtd,1000,1000, 896.52])
+([ipd,1000,250, 1103], [wtd,1000,250, 1090.74])
+([ipd,500,100, 848.5], [wtd,500,100, 1637.18])
+([ipd,500,1000, 472.26], [wtd,500,1000, 494.04])
+([ipd,500,250, 823.12], [wtd,500,250, 1102.96])
+val it : unit = ()
+
+> 
+(("ipd,100,100", 691.94, 984.4655486), ("wtd,100,100", 1225.72, 1077.161604))
+(("ipd,100,250", 229.56, 522.283186), ("wtd,100,250", 455.9, 871.6661345))
+(("ipd,100,1000", 21.38, 43.11792667), ("wtd,100,1000", 203.72, 530.2306683))
+(("ipd,500,100", 848.5, 1026.950383), ("wtd,500,100", 1637.18, 1020.855145))
+(("ipd,500,250", 823.12, 1025.703498), ("wtd,500,250", 1102.96, 1091.053234))
+(("ipd,500,1000", 472.26, 838.530782), ("wtd,500,1000", 494.04, 835.3013099))
+(("ipd,1000,100", 1253.94, 1120.275313), ("wtd,1000,100", 1624.16, 1093.66747))
+(("ipd,1000,250", 1103.0, 1143.728167), ("wtd,1000,250", 1090.74, 1086.001893))
+(("ipd,1000,1000", 803.62, 1032.896566), ("wtd,1000,1000", 896.52, 1052.432634))
+val it : unit = ()
+
+*)
