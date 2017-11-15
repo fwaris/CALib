@@ -1,26 +1,10 @@
-﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
-#load "../CA.fs"
-#load "../Probability.fs"
-#load "../CAUtils.fs"
-#load "../CAEvolve.fs"
-#load "../BeliefSpace/SituationalKS.fs"
-#load "../BeliefSpace/NormativeKS.fs"
-#load "../BeliefSpace/HistoricalKS.fs"
-#load "../BeliefSpace/DomainKS2.fs"
-//#load "../KnowledgeDistribution/KDSimpleMajority.fs"
-//#load "../KnowledgeDistribution/KDGame.fs"
-//#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
-//#load "../KnowledgeDistribution/KDHedonicGame.fs"
-#load "../KnowledgeDistribution/KDWeightedMajority.fs"
-#load "../KnowledgeDistribution/KDContinousStrategyGame.fs"
-#load "../KnowledgeDistribution/KDIpDGame.fs"
-#load "../CARunner.fs"
-
+﻿#load "SetupEnv.fsx"
 open CA
 open CAUtils
 
 //let defaultNetwork = CAUtils.l4BestNetwork
-let defaultNetwork = CAUtils.hexagonNetwork
+//let defaultNetwork = CAUtils.hexagonNetwork
+let defaultNetwork = CAUtils.hexagonNetworkViz
 
 let inline makeCA fitness comparator pop bspace kd influence =
         {
@@ -80,7 +64,7 @@ let runCollect data maxBest ca =
 
 let inline bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
 
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 1000 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 900 true
 
 //kd construction
 //let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
@@ -89,6 +73,8 @@ let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 8 c)
 //let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 //let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
 let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
+let rule1 = Schelling.r1 0.4
+let schKdist      c p    = Schelling.knowledgeDist rule1 c p
 
 
 //CA construction
@@ -102,6 +88,11 @@ let kdWeightedCA f c p  =
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
+
+let kdSchelligCA f c p  = 
+    let bsp = bsp f p c
+    let pop = createPop bsp p CAUtils.baseKsInit
+    makeCA f c pop bsp (schKdist c pop) CARunner.baseInfluence
 
 //let kdlWeightedCA f c p = 
 //    let bsp = bsp f p c
@@ -176,7 +167,6 @@ let plotResults title kd =
     |> Chart.WithLegend(Enabled=true) 
     |> Chart.WithTitle(Text=title)
     |> Chart.WithArea.AxisX(Title="Generation")
-
 
 
 

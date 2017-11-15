@@ -89,10 +89,14 @@ let createWheel (weights:('a*float)[]) = //key * weight  key must be unique
     if s = 0. then failwithf "weights cannot sum to 0 %A" s
     let ws = 
         weights 
-        |> Array.filter (fun (_,w) -> w > 0.) 
+        |> Array.filter (fun (_,w) -> w > 0. && w <> nan) 
         |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
         |> Array.sortBy snd                         //arrange ascending
-    let cum = (ws.[0],ws.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
+    let cum = 
+        if weights.Length <= 1 then
+            ws
+        else
+            (ws.[0],ws.[1..])||>Array.scan (fun (_,acc) (k,w) -> k,acc + w)
     ws,cum
 
 let spinWheel wheel = 

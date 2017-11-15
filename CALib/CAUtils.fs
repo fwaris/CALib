@@ -195,6 +195,22 @@ let hexagonNetwork (pop:Population<'k>) id =
                 yield pop.[idx]
     |]
 
+let hexagonNetworkViz (pop:Population<'k>) id =
+    let rowCount = sqrt (float pop.Length)
+    let rowLen = int rowCount
+    let r = id / rowLen
+    let c = id % rowLen
+    let idxs = 
+        [|
+            r * rowLen + c-1
+            (r-1) * rowLen + c
+            r * rowLen + c+1
+            (r+1) * rowLen +  c-1
+            (r+1) * rowLen + c
+            (r+1) * rowLen + c+1
+        |]
+    idxs |> Array.map (fun i-> pop.[if i < 0 then pop.Length+i else i % pop.Length])
+
 let squareNetwork (pop:Population<'k>) id =
     let sz = pop.Length
     [|

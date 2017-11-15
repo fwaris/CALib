@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\build\OpenCvSharp3-AnyCPU.props" Condition="Exists('..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\build\OpenCvSharp3-AnyCPU.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -14,6 +15,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Name>CALib</Name>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -74,15 +77,20 @@
     <Compile Include="KnowledgeDistribution\KDHedonicGame.fs" />
     <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
     <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
+    <Compile Include="KnowledgeDistribution\Schelling.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
+    <Compile Include="Utilities\Viz.fs" />
     <None Include="Landscapes\test_cone1.01.csv" />
     <None Include="Landscapes\test_cone2.0.csv" />
     <None Include="Landscapes\test_cone3.35.csv" />
     <None Include="Landscapes\test_cone3.5.csv" />
     <None Include="Landscapes\test_cone3.99.csv" />
     <None Include="Landscapes\Backgrounds.fsx" />
+    <None Include="Testing\SetupEnv.fsx" />
+    <None Include="Testing\SetupVideo.fsx" />
     <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\TestViz.fsx" />
     <None Include="Testing\Trace.fsx" />
     <None Include="Testing\TraceCharts.fsx" />
     <None Include="Testing\DispIndex.fsx" />
@@ -100,12 +108,28 @@
     <None Include="Testing\ObservableExt.fs" />
     <None Include="Testing\IPDWTDRun.xlsx" />
     <None Include="Testing\IPDStats.fsx" />
+    <None Include="Testing\CecBenchmark.fsx" />
+    <None Include="Testing\L-Shade.fsx" />
     <None Include="paket.references" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
+    <Reference Include="OpenCvSharp">
+      <HintPath>..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\lib\net46\OpenCvSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenCvSharp.Blob">
+      <HintPath>..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\lib\net46\OpenCvSharp.Blob.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenCvSharp.Extensions">
+      <HintPath>..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\lib\net46\OpenCvSharp.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenCvSharp.UserInterface">
+      <HintPath>..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\lib\net46\OpenCvSharp.UserInterface.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -913,4 +937,10 @@
       </ItemGroup>
     </When>
   </Choose>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\build\OpenCvSharp3-AnyCPU.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenCvSharp3-AnyCPU.3.2.0.20171112\build\OpenCvSharp3-AnyCPU.props'))" />
+  </Target>
 </Project>

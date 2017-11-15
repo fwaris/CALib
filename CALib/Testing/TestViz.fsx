@@ -1,9 +1,12 @@
 ﻿#load "TestEnv.fsx"
+#load "SetupVideo.fsx"
+#load "..\Utilities\Viz.fs"
 #load "..\DF1.fs"
 open TestEnv
 open CA
 open CAUtils
 open DF1
+open TestEnv
 
 let parms = 
     [|
@@ -38,24 +41,27 @@ let kdWeightedCA    = kdWeightedCA fitness comparator parms
 //let kdHedonicCA     = kdHedonicCA fitness comparator parms
 //let kdIpdCA         = kdIpdCA (0.5,1.9) fitness comparator parms 
 let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms 
-let kdSchCA         = kdSchelligCA fitness comparator parms
+let kdSchCA         = kdSchelligCA fitness comparator parms 
 
-//let kdSimple        = kdSimpleCA |> runCollect dataCollector 2 |> tk
-let kdWeigthed      = kdWeightedCA |> runCollect dataCollector 2 |> tk
-//let kdlWeigthed     = kdlWeightedCA |> runCollect dataCollector 2 |> tk
-//let kdGame2Player   = kdGame2PlayerCA |> runCollect dataCollector 2 |> tk
-//let kdHedonic       = kdHedonicCA |> runCollect setDataClctr 2 |> tk
-let kdIpd           = kdIpdCA |> runCollect ipdDataCollector 2 |> tk
-let kdSch           = kdSchCA |> runCollect dataCollector 2 |> tk
-//
+let enc = Viz.encoder @"D:\repodata\calib\m1.mp4" 30. (512,512)
+let runCollect data maxBest (ca:CA<Schelling.SchKs>) =
+    let m = Viz.visualizePop6 512 ca.Network ca.Population
+    for i in 1 .. 10 do enc.Frame m
+    m.Release()
+    let loop stp = 
+        let stp = CARunner.step stp maxBest
+        let m = Viz.visualizePop6 512 stp.CA.Network stp.CA.Population
+        enc.Frame m
+        m.Release()
+//        printfn "step %i. fitness=%A" stp.Count (best stp)
+//        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
+        stp
+    let step = {CA=ca; Best=[]; Count=0; Progress=[]}
+    step 
+    |> Seq.unfold (fun s -> let s = loop s in (data s,s)  |> Some ) 
 
-let (!!) s = sprintf "%s - %f" s maxCone.H
-;;
-//plotResults !!"Simple Majority" kdSimple;;
-plotResults !!"Weigted Majority" kdWeigthed;;
-//plotResults !!"Locally Weigted Majority" kdlWeigthed;;
-//plotResults !!"Hawk-Dove" kdGame2Player;;
-//plotResults !!"Hedonic Game" kdHedonic;;
-plotResults !!"IPD Game" kdIpd;;
-plotResults !!"Schelling" kdSch
-maxCone;;
+let _ = runCollect (fun x->()) 2 kdWeightedCA |> Seq.take 1000 |> Seq.toArray
+enc.Release()
+
+//let mat = Viz.visualizePop6 512 kdSchCA.Network kdSchCA.Population
+//Viz.win "mat" mat
