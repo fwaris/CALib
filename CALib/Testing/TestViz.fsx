@@ -7,6 +7,7 @@ open CA
 open CAUtils
 open DF1
 open TestEnv
+open OpenCvSharp
 
 let parms = 
     [|
@@ -43,25 +44,39 @@ let kdWeightedCA    = kdWeightedCA fitness comparator parms
 let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms 
 let kdSchCA         = kdSchelligCA fitness comparator parms 
 
-let enc = Viz.encoder @"D:\repodata\calib\m1.mp4" 30. (512,512)
-let runCollect data maxBest (ca:CA<Schelling.SchKs>) =
-    let m = Viz.visualizePop6 512 ca.Network ca.Population
-    for i in 1 .. 10 do enc.Frame m
-    m.Release()
-    let loop stp = 
-        let stp = CARunner.step stp maxBest
-        let m = Viz.visualizePop6 512 stp.CA.Network stp.CA.Population
-        enc.Frame m
+Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge
+Viz.createVid @"D:\repodata\calib\wtd.mp4"  512 1000 kdWeightedCA Viz.clrKnowledge
+
+let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+Viz.createVid @"D:\repodata\calib\game.mp4"  512 1000 kdIpdCA ipdClr
+
+let createVid ouput size (ca:CA<_>) clrF = 
+    let enc = Viz.encoder ouput 30. (size,size)
+    let runCollect data maxBest (ca:CA<_>) =
+        let m = Viz.visualizePopHex clrF size ca.Network ca.Population
+        for i in 1 .. 10 do enc.Frame m
         m.Release()
-//        printfn "step %i. fitness=%A" stp.Count (best stp)
-//        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
-        stp
-    let step = {CA=ca; Best=[]; Count=0; Progress=[]}
-    step 
-    |> Seq.unfold (fun s -> let s = loop s in (data s,s)  |> Some ) 
+        let loop stp = 
+            let stp = CARunner.step stp maxBest
+            let m = Viz.visualizePopHex clrF 512 stp.CA.Network stp.CA.Population
+            enc.Frame m
+            m.Release()
+            stp
+        let step = {CA=ca; Best=[]; Count=0; Progress=[]}
+        step 
+        |> Seq.unfold (fun s -> let s = loop s in (data s,s)  |> Some ) 
 
-let _ = runCollect (fun x->()) 2 kdWeightedCA |> Seq.take 1000 |> Seq.toArray
-enc.Release()
+    let _ = runCollect (fun x->()) 2 kdSchCA |> Seq.take 1000 |> Seq.toArray
+    enc.Release()
 
-//let mat = Viz.visualizePop6 512 kdSchCA.Network kdSchCA.Population
-//Viz.win "mat" mat
+let mat = Viz.visualizePopTest 0 512 kdSchCA.Network kdSchCA.Population
+let mat2 = Viz.visualizePopTest 255 512 kdSchCA.Network kdSchCA.Population
+Viz.win "mat4" mat2
+let rL = kdSchCA.Population.Length |> float |> sqrt |> int
+let rc xs = xs |> Array.map (fun i -> i / rL, i % rL)
+let net59 = kdSchCA.Network kdSchCA.Population 59 |> Array.map (fun p->p.Id) |> Array.append [|59|]
+let rc59 = rc net59
+let net60 = kdSchCA.Network kdSchCA.Population 60 |> Array.map (fun p->p.Id) |> Array.append [|60|]
+let rc60 = rc net60
+
+

@@ -73,7 +73,7 @@ let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 8 c)
 //let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 //let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
 let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
-let rule1 = Schelling.r1 0.4
+let rule1 = Schelling.r1 0.2
 let schKdist      c p    = Schelling.knowledgeDist rule1 c p
 
 

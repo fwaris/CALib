@@ -200,14 +200,15 @@ let hexagonNetworkViz (pop:Population<'k>) id =
     let rowLen = int rowCount
     let r = id / rowLen
     let c = id % rowLen
+    let evnCol = if c % 2 = 0 then 1 else -1
     let idxs = 
         [|
             r * rowLen + c-1
-            (r-1) * rowLen + c
             r * rowLen + c+1
-            (r+1) * rowLen +  c-1
+            (r-1) * rowLen + c
             (r+1) * rowLen + c
-            (r+1) * rowLen + c+1
+            (r+evnCol) * rowLen + (c-1)
+            (r+evnCol) * rowLen + (c+1)
         |]
     idxs |> Array.map (fun i-> pop.[if i < 0 then pop.Length+i else i % pop.Length])
 
