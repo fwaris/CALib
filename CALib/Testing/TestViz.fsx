@@ -44,14 +44,17 @@ let kdWeightedCA    = kdWeightedCA fitness comparator parms
 let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms 
 let kdSchCA         = kdSchelligCA fitness comparator parms 
 
-let m1 = Viz.visualizePopHex Viz.clrKnowledge 512 kdSchCA.Network kdSchCA.Population
-Viz.win "m1" m1
+let testSingle() =
+    let m = new Mat(Size(512,512), MatType.CV_8UC3)
+    m |> Viz.visualizePopHex 512 Viz.clrKnowledge  kdSchCA.Network kdSchCA.Population
+    Viz.win "m1" m
 
-Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge
-Viz.createVid @"D:\repodata\calib\wtd.mp4"  512 1000 kdWeightedCA Viz.clrKnowledge
+let genViz() =
+    Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge
+    Viz.createVid @"D:\repodata\calib\wtd.mp4"  512 1000 kdWeightedCA Viz.clrKnowledge
 
-let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
-Viz.createVid @"D:\repodata\calib\game.mp4"  512 1000 kdIpdCA ipdClr
+    let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+    Viz.createVid @"D:\repodata\calib\game.mp4"  512 1000 kdIpdCA ipdClr
 
 (*
 let mat = Viz.visualizePopTest 0 512 kdSchCA.Network kdSchCA.Population
