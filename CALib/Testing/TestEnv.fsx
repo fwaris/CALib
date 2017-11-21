@@ -73,7 +73,7 @@ let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 8 c)
 //let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 //let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
 let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
-let rule1 = Schelling.r1 0.2
+let rule1 = Schelling.r1 0.3
 let schKdist      c p    = Schelling.knowledgeDist rule1 c p
 
 
@@ -141,7 +141,13 @@ let colors =
         ]
 
 let toColor (r,g,b) = System.Drawing.Color.FromArgb(1,r,g,b)
-let ks = function Domain -> "Domain" | Historical -> "Historical" | Situational -> "Situational" | Normative -> "Normative" | _ -> failwith "shoud not happen"
+let ks = function 
+    | Domain        -> "Domain" 
+    | Historical    -> "Historical" 
+    | Situational   -> "Situational" 
+    | Normative     -> "Normative" 
+    | Topgraphical  -> "Topographical"
+    | _             -> failwith "shoud not happen"
 
 let withBackground image (c:FSharp.Charting.ChartTypes.GenericChart) = 
     c.ApplyToChart (fun c -> 

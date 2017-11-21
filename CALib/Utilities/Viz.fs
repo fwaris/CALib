@@ -49,7 +49,7 @@ let colors =
         ]
 
 let brgColors = colors|> List.map (fun (r,g,b) -> Scalar(float b, float r, float g))
-let ks = function Domain -> 0 | Historical -> 1 | Situational -> 2 | Normative -> 3| _ -> failwith "shoud not happen"
+let ks = function Domain -> 0 | Historical -> 1 | Situational -> 2 | Normative -> 3 | Topgraphical -> 4| _ -> failwith "shoud not happen"
 
 let clrKnowledge (k:Knowledge) = brgColors.[ks k]
 
@@ -77,11 +77,12 @@ let visualizePopHex<'t> (fc:'t->Scalar) width (network:Network<'t>) (pop:Populat
         let ctr = Point(int x, int y)
         Cv2.Circle(!> mat,ctr,rad,clr,Cv2.FILLED)
     //pop |> Array.iter(fun p->draw p.Id brgColors.[2])
-    pop |> Array.iter (fun p ->
-        let i = p.Id
-        draw i (fc p.KS)
-        let ns = network pop p.Id
-        for n in ns do draw n.Id (fc p.KS))
+    pop |> Array.iter (fun p -> draw p.Id (fc p.KS))
+    //pop |> Array.iter (fun p ->
+    //    let i = p.Id
+    //    draw i (fc p.KS)
+    //    let ns = network pop p.Id
+    //    for n in ns do draw n.Id (fc p.KS))
     mat
 
 let visualizePopTest<'t> id width (network:Network<'t>) (pop:Population<'t>) =

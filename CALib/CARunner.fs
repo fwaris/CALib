@@ -11,6 +11,7 @@ let defaultBeliefSpace parms minmax fitness =
                 Leaf (DomainKS2.create minmax fitness 2)
             ])
         Leaf (NormativeKS.create parms minmax)
+        Leaf (TopographicKS.create parms minmax fitness)
         ]
 
 ///evaluate the finess of the population

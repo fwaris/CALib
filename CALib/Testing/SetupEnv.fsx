@@ -7,6 +7,8 @@
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS2.fs"
+#load "../BeliefSpace/KMeans.fs"
+#load "../BeliefSpace/TopographicKS.fs"
 //#load "../KnowledgeDistribution/KDSimpleMajority.fs"
 //#load "../KnowledgeDistribution/KDGame.fs"
 //#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
