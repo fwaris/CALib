@@ -109,8 +109,7 @@ let spinWheel wheel =
 open Probability
 let reqs =  [for i in 1 .. 1000 -> async{return (GAUSS 10. 3.)}]
 let rs = Async.Parallel reqs |> Async.RunSynchronously
-let reqs2 =  [for i in 1 .. 1000 -> async{return ZSample()}]
-let rs2 = Async.Parallel reqs2 |> Async.RunSynchronously
+let reqs2 =  [for i in 1 .. 1000 -> async{return ZSample()}] |> Async.Parallel |> Async.RunSynchronously
 
 let m,w = createWheel [|'a',2.; 'b',1.|]
 [for i in 0..100 ->(spinWheel w),1] |> List.groupBy fst |> List.map (fun (x,ys)->x,List.sumBy snd ys)

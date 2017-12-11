@@ -2,18 +2,19 @@
 
 type Tree<'a> = Leaf of 'a | Node of 'a * Tree<'a> list | Roots of Tree<'a> list
 
+let inline parms (x:^T) = (^T:(member Parms:float []) x) //get parameters from compatible structures
+
 type Parm = 
     | F of      v:float     * min:float     * max:float 
-    | F32 of    v:float32   * min:float32   * max:float32
     | I of      v:int       * min:int       * max:int
-    | I64 of    v:int64     * min:int64     * max:int64
+
 
 type Id = int
 type Temp = float
 type Topology   = LBest | Global
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain | Other of string
-type Individual<'k> = {Id:Id; Parms:Parm array; Fitness:float; KS:'k}
-and Fitness     = Parm array -> float
+type Individual<'k> = {Id:Id; Parms:float array; Fitness:float; KS:'k}
+and Fitness     = float array -> float
 and Comparator  = float -> float -> bool //compare two fitness values - true when 1st 'is better than' 2nd
 and Population<'k>  = Individual<'k> array
 and Network<'k>     = Population<'k> -> Id -> Individual<'k> array
@@ -32,6 +33,7 @@ and KnowledgeSource<'k> =
 
 type CA<'k> =
     {
+        ParmDefs                : Parm array
         Population              : Population<'k>
         Network                 : Network<'k>
         KnowlegeDistribution    : KnowledgeDist<'k>

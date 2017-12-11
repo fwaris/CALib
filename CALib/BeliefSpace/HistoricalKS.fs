@@ -4,44 +4,37 @@ open CAUtils
 open CAEvolve
 
 let eSigma = 3.0
+let th_significance = 0.001
 
 //determine direction of change
-let dir newParm prevParm = 
-    match prevParm,newParm with
-    | F(prevV,_,_),F(newV,_,_)  when newV > prevV       -> Up
-    | F(prevV,_,_),F(newV,_,_)  when newV < prevV       -> Down
-    | F(prevV,_,_),F(newV,_,_)                          -> Flat
-    | F32(prevV,_,_),F32(newV,_,_)  when newV > prevV   -> Up
-    | F32(prevV,_,_),F32(newV,_,_)  when newV < prevV   -> Down
-    | F32(prevV,_,_),F32(newV,_,_)                      -> Flat
-    | I(prevV,_,_),I(newV,_,_)  when newV > prevV       -> Up
-    | I(prevV,_,_),I(newV,_,_)  when newV < prevV       -> Down
-    | I(prevV,_,_),I(newV,_,_)                          -> Flat
-    | I64(prevV,_,_),I64(newV,_,_)  when newV > prevV   -> Up
-    | I64(prevV,_,_),I64(newV,_,_)  when newV < prevV   -> Down
-    | I64(prevV,_,_),I64(newV,_,_)                      -> Flat
-    | a,b -> failwithf "HistoricalKS: invalid combination of types for dir %A,%A" a b
+let dir (parmDefs:Parm[]) i prevVal newVal  = 
+    match parmDefs.[i],prevVal,newVal with 
+    | F(_,_,_),pV,iV when pV > iV   -> Up 
+    | F(_,_,_),pV,iV when pV < iV   -> Down 
+
+    | I(_,mn,mx),pV,iV when pV > iV -> Up
+    | I(_,mn,mx),pV,iV when pV < iV -> Down
+    | _                             -> Flat
 
 let parmAvg count = function
     | F(v,_,_)      -> float v / float count
-    | F32(v,_,_)    -> float v / float count
     | I(v,_,_)      -> float v / float count
-    | I64(v,_,_)    -> float v / float count
 
 let isSignificantlyDifferent i1 i2 =
     (i1.Parms,i2.Parms) 
-    ||> Array.exists2 (fun p1 p2 -> parmToFloat p1 - parmToFloat p2 |> abs > 0.001)
+    ||> Array.exists2 (fun p1 p2 ->  p1 - p2 |> abs > th_significance)
 
 type ChangeEvent<'k> = {Best:Individual<'k>; Direction:Dir array}
-type History<'k> = 
+
+type HistoryState<'k> = 
     {
         Window      : int
-        Distance    : Parm array
+        Distance    : float array
         Direction   : Dir array
         Events      : ChangeEvent<'k> list
     }
 
-let create isBetter window =
+let create (parmDefs:Parm[]) isBetter window =
     let create history fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Historical
@@ -67,12 +60,12 @@ let create isBetter window =
             | None -> voters, create history acceptance fInfluence
             | Some nBest ->
                 let pBest = match events with [] -> nBest | b::_ -> b.Best
-                let eventDirection  = (pBest.Parms,nBest.Parms) ||> Array.map2 dir
+                let eventDirection  = (pBest.Parms,nBest.Parms) ||> Array.mapi2 (dir parmDefs)
                 let changeEvent     = {Best=nBest; Direction=eventDirection}
                 let events          = changeEvent::events |> List.truncate win
                 let earliestEvent = events.[events.Length - 1]
-                let distance      = (nBest.Parms,earliestEvent.Best.Parms) ||> Array.map2 parmDiff
-                let direction     = (nBest.Parms,earliestEvent.Best.Parms) ||> Array.map2 dir
+                let distance      = (nBest.Parms,earliestEvent.Best.Parms) ||> Array.map2 (fun p n -> abs ( p - n))
+                let direction     = (nBest.Parms,earliestEvent.Best.Parms) ||> Array.mapi2 (dir parmDefs)
                 let updatedHistory =
                     {
                         Window      = win
@@ -85,9 +78,9 @@ let create isBetter window =
     let influence {Events=events} s (ind:Individual<_>) =
         let ev = events.[rnd.Value.Next(0,events.Length)]
         if isBetter ev.Best.Fitness ind.Fitness then
-            ev.Best |> influenceInd s eSigma ind
+            ev.Best |> influenceInd parmDefs s eSigma ind
         else
-            evolveInd s eSigma ind
+            evolveInd parmDefs s eSigma ind
 
     let initialHistory = {Window=window; Distance=[||]; Direction=[||]; Events=[]}
        

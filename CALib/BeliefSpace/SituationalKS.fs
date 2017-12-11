@@ -18,7 +18,7 @@ let fitweights isBetter (exemplars:Individual<_> array) =
 
 let parmDiversity p1 p2 = 
     (p1,p2)
-    ||> Array.map2 (fun a b -> parmDiff a b |> parmToFloat |> abs) 
+    ||> Array.map2 (fun a b -> a - b |> abs)
     |> Array.sum
 
 let makeBins (mn:float) mx bins = 
@@ -77,7 +77,7 @@ let pickExamplars isBetter prevE voters =
         |> Seq.toList
     best::(clct [] binned [])    
 
-let create isBetter maxExemplars =
+let create (parmDefs:Parm[]) isBetter maxExemplars =
     let create state fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Situational
@@ -104,5 +104,7 @@ let create isBetter maxExemplars =
             let i = Probability.spinWheel state.SpinWheel
             let choosen = x.[i]
 //            printfn "sit i = %d %A" i choosen
-            {ind with Parms=choosen.Parms |> Array.map (evolveS influenceLevel eSigma)}      
+            ind.Parms |> Array.iteri (fun i p -> evolveP influenceLevel eSigma ind.Parms i parmDefs.[i] p)
+            ind
+
     create {Exemplars=[||];SpinWheel=[||]} acceptance influence

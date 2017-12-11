@@ -7,63 +7,59 @@ let slideUp influenceLevel sigma p =
     let z' = z * influenceLevel * sigma |> abs
     match p with
     | F (v,mn,mx)   -> toVF (v + z') mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v + z') mn mx
     | I (v,mn,mx)   -> toVI (float v + dz z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v + dz z') mn mx
 
 let slideDown influenceLevel sigma p =
     let z = zsample()
     let z' = z * influenceLevel * sigma |> abs
     match p with
     | F (v,mn,mx)   -> toVF (v - z') mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
     | I (v,mn,mx)   -> toVI (float v - dz z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - dz z') mn mx
 
-let evolveS influenceLevel sigma p = 
+let evolveS' influenceLevel sigma v = 
+    assert (influenceLevel > 0.0 && influenceLevel <= 1.0)
+    assert (sigma > 0.0 && sigma <= 1.0)
     let z = zsample()
     let z' = z * influenceLevel * sigma
-    match p with
-    | F (v,mn,mx)   -> toVF (v - z') mn mx
-    | F32 (v,mn,mx) -> toVF32 (float v - z') mn mx
-    | I (v,mn,mx)   -> toVI (float v - dz z') mn mx
-    | I64 (v,mn,mx) -> toVI64 (float v - dz z') mn mx
+    v - z'
 
-///Use values from the 2nd parm to influence 1st parm
-///(randomly move towards 2nd parm value)
-let influenceParm influenceLevel sigma influenced influencer =
-    match influencer,influenced with
-    | F(pV,mn,mx),F(iV,_,_) when pV > iV     -> F(unifrmF influenceLevel iV pV mn mx, mn,mx)
-    | F(pV,mn,mx),F(iV,_,_) when pV < iV     -> F(unifrmF influenceLevel pV iV mn mx, mn,mx)
-    | F(_),fInd                              -> evolveS influenceLevel sigma fInd
+let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV =
+    //mutation
+    match parm,pV,iV with 
+    | F(_,_,_),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV
+    | F(_,_,_),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV       //TODO: scaling not symmetrical in both directions
+    | F(_,mn,mx),pV,_             -> influenced.[i] <- evolveS' influenceLevel sigma pV   |> clamp mn mx
 
-    | F32(pV,mn,mx),F32(iV,_,_) when pV > iV -> F32(unifrmF32 influenceLevel iV pV mn mx,mn,mx)
-    | F32(pV,mn,mx),F32(iV,_,_) when pV < iV -> F32(unifrmF32 influenceLevel pV iV mn mx,mn,mx)
-    | F32(_),fInd                            -> evolveS influenceLevel sigma fInd
+    | I(_,mn,mx),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV     |> clampI mn mx
+    | I(_,mn,mx),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV     |> clampI mn mx
+    | I(_,mn,mx),pV,_               -> influenced.[i] <- evolveS' influenceLevel sigma pV |> clampI mn mx
 
-    | I(pV,mn,mx),I(iV,_,_) when pV > iV     -> I(unifrmI influenceLevel iV pV mn mx,mn,mx)
-    | I(pV,mn,mx),I(iV,_,_) when pV < iV     -> I(unifrmI influenceLevel pV iV mn mx,mn,mx)
-    | I(_),fInd                              -> evolveS influenceLevel sigma fInd
+let evolveP influenceLevel sigma (indv:float[]) i parm pV =
+    //mutation
+    match parm with
+    | F(_,mn,mx)   -> indv.[i] <- evolveS' influenceLevel sigma pV |> clamp mn mx
+    | I(_,mn,mx)   -> indv.[i] <- evolveS' influenceLevel sigma pV |> clampI mn mx
 
-    | I64(pV,mn,mx),I64(iV,_,_) when pV > iV -> I64(unifrmI64 influenceLevel iV pV mn mx,mn,mx)
-    | I64(pV,mn,mx),I64(iV,_,_) when pV < iV -> I64(unifrmI64 influenceLevel pV iV mn mx,mn,mx)
-    | I64(_),fInd                            -> evolveS influenceLevel sigma fInd
-
-    | a,b -> failwithf "two pop individual parameters not matched %A %A" a b
+let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =
+    //mutation
+    match parm with
+    | F(_,mn,mx) -> indv.[i] <- unifrmF influeceLevel pLo pHi 
+    | I(_,mn,mx) -> indv.[i] <- unifrmF influeceLevel pLo pHi |> clampI mn mx
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let influenceInd s sa influenced influencer =
-    {influenced with
-        Parms = (influenced.Parms,influencer.Parms) ||> Array.map2  (influenceParm s sa)
-    }
+let influenceInd caParms influenceLevel sigma (influenced:Individual<_>) (influencer:Individual<_>) = 
+    let pId = influenced.Parms
+    let pIr = influencer.Parms
+    caParms |> Array.iteri (fun i p -> influenceInd' pId influenceLevel sigma i p pId.[i] pIr.[i])
+    influenced
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let evolveInd s sg individual =
-    {individual with
-        Parms = individual.Parms |> Array.map (evolveS s sg)
-    }
+let evolveInd caParms influenceLevel sigma (individual:Individual<_>) =
+    let prms = individual.Parms
+    caParms |> Array.iteri (fun i p -> evolveP influenceLevel sigma prms i p prms.[i])
+    individual
 
 (*
 #load "CA.fs"

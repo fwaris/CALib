@@ -2,7 +2,6 @@
 open CA
 open FSharp.Collections.ParallelSeq
 
-
 let rnd = Probability.RNG
 
 let gaussian mean sigma = Probability.GAUSS mean sigma
@@ -32,47 +31,63 @@ let flatten tree =
         | Leaf(leaf)        -> leaf::acc
     loop [] tree
         
-let clamp mn mx x = max (min x mx) mn
+let clamp mn mx x = max (min x mx) mn                   //floats
+let clampI mn mx x = max (min (int x) mx) mn |> float   //ints
 
 let clampP = function
     | F(v,mn,mx)    -> F(clamp mn mx v,mn,mx)
-    | F32(v,mn,mx)  -> F32(clamp mn mx v,mn,mx)
     | I(v,mn,mx)    -> I(clamp mn mx v,mn,mx)
-    | I64(v,mn,mx)  -> I64(clamp mn mx v,mn,mx)
+
+let clampP' v = function
+    | F(_,mn,mx) -> clamp mn mx v 
+    | I(_,mn,mx) -> clampI mn mx v
 
 let dz f = if f > 0. then max 1.0 f else min -1.0 f
     
-let unifrmI (s:float) frmV toV mn mx = 
-    let d = (rnd.Value.NextDouble()) * s * float (toV - frmV) |> dz
-    frmV + (int d)
-    |> clamp mn mx
+let unifrmF scale frmV toV = 
+    frmV + (rnd.Value.NextDouble() * scale * (toV - frmV))
 
-let unifrmF32 s (frmV:float32) (toV:float32) mn mx = 
-    frmV + (float32 ((rnd.Value.NextDouble()) * s * float (toV - frmV)))
-    |> clamp mn mx
-
-let unifrmF s frmV toV mn mx = 
-    frmV + (rnd.Value.NextDouble() * s * (toV - frmV))
-    |> clamp mn mx
-
-let unifrmI64 s frmV toV mn mx =  
-    let d = (rnd.Value.NextDouble()) * s * float (toV - frmV) |> dz
-    frmV + (int64 d)
-    |> clamp mn mx
+let unifrmI (scale:float) frmV toV = 
+    let v = unifrmF scale (float frmV) (float toV)
+    int v 
 
 let gaussI (s:int) sg = gaussian (float s) sg |> int
 
-let gaussF32 (s:float32) sg = gaussian (float s) sg |> float32
-
 let gaussF s sg = gaussian s sg
 
-let gaussI64 (s:int64) sg = gaussian (float s) sg |> int64
-
 let randomize = function
-    | F (v,mn,mx)   -> F (unifrmF 1.0 mn mx mn mx, mn, mx)
-    | F32 (v,mn,mx) -> F32 (unifrmF32 1.0 mn mx mn mx, mn, mx)
-    | I (v,mn,mx)   -> I(unifrmI 1.0 mn mx mn mx, mn, mx)
-    | I64 (v,mn,mx) -> I64(unifrmI64 1.0 mn mx mn mx, mn, mx)
+    | F (v,mn,mx)   -> F (unifrmF 1.0 mn mx, mn, mx)
+    | I (v,mn,mx)   -> I (unifrmI 1.0 mn mx, mn, mx)
+
+type Dir = Up | Down | Flat
+
+//add two parms
+let parmAdd p1 p2 = 
+    match p1, p2 with
+    | F(prevV,_,_),F(newV,mn,mx)        -> F(prevV + newV   ,mn,mx)
+    | I(prevV,_,_),I(newV,mn,mx)        -> I(prevV + newV   ,mn,mx)
+    | a,b -> failwithf "CAUtils: invalid combination of types for parmSum %A,%A" a b
+
+//Effectively newParm - oldParm
+let parmDiff newParm oldParm  = 
+    match oldParm, newParm with
+    | F(prevV,_,_),F(newV,mn,mx)        -> F(newV - prevV   ,mn,mx)
+    | I(prevV,_,_),I(newV,mn,mx)        -> I(newV - prevV   ,mn,mx)
+    | a,b -> failwithf "CAUtils: invalid combination of types for parmDiff %A,%A" a b
+
+//Effectively numerator / denominator
+let parmToFloat = function
+    | F(v,_,_)   -> v
+    | I(v,_,_)   -> float v
+
+let epsilon = function
+    | F(_,mn,mx)    -> F(System.Double.Epsilon,mn,mx)
+    | I(_,mn,mx)    -> I(1,mn,mx)
+
+let epsilonM = function
+    | F(_,mn,mx)    -> F(0.000001,mn,mx)
+    | I(_,mn,mx)    -> I(1,mn,mx)
+
 
 let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
@@ -81,6 +96,7 @@ let baseKsInit beliefSpace =
 let ksSetInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
     fun i -> set[kss.[i % kss.Length].Type]
+
 
 let createPop ksInitializer parms size randomizeAll =
     let rnd = System.Random()
@@ -95,50 +111,12 @@ let createPop ksInitializer parms size randomizeAll =
             yield
                 {
                     Id      = i-1
-                    Parms   = parms
+                    Parms   = parms |> Array.map randomize |> Array.map parmToFloat
                     Fitness = System.Double.MinValue
                     KS      = ksInitializer i
                 }
     |]
 
-type Dir = Up | Down | Flat
-
-//add two parms
-let parmAdd p1 p2 = 
-    match p1, p2 with
-    | F(prevV,_,_),F(newV,mn,mx)        -> F(prevV + newV   ,mn,mx)
-    | F32(prevV,_,_),F32(newV,mn,mx)    -> F32(prevV + newV ,mn,mx)
-    | I(prevV,_,_),I(newV,mn,mx)        -> I(prevV + newV   ,mn,mx)
-    | I64(prevV,_,_),I64(newV,mn,mx)    -> I64(prevV + newV ,mn,mx)
-    | a,b -> failwithf "CAUtils: invalid combination of types for parmSum %A,%A" a b
-
-//Effectively newParm - oldParm
-let parmDiff newParm oldParm  = 
-    match oldParm, newParm with
-    | F(prevV,_,_),F(newV,mn,mx)        -> F(newV - prevV   ,mn,mx)
-    | F32(prevV,_,_),F32(newV,mn,mx)    -> F32(newV - prevV ,mn,mx)
-    | I(prevV,_,_),I(newV,mn,mx)        -> I(newV - prevV   ,mn,mx)
-    | I64(prevV,_,_),I64(newV,mn,mx)    -> I64(newV - prevV ,mn,mx)
-    | a,b -> failwithf "CAUtils: invalid combination of types for parmDiff %A,%A" a b
-
-//Effectively numerator / denominator
-let parmToFloat = function
-    | F(v,_,_)   -> v
-    | F32(v,_,_) -> float v
-    | I(v,_,_)   -> float v
-    | I64(v,_,_) -> float v
-
-let epsilon = function
-    | F(_,mn,mx)    -> F(System.Double.Epsilon,mn,mx)
-    | F32(_,mn,mx)  -> F32(System.Single.Epsilon,mn,mx)
-    | I(_,mn,mx)    -> I(1,mn,mx)
-    | I64(_,mn,mx)  -> I64(1L,mn,mx)
-
-let epsilonM = function
-    | F(_,mn,mx)    -> F(0.000001,mn,mx)
-    | F32(_,mn,mx)  -> F32(0.000001f,mn,mx)
-    | I(_,mn,mx)    -> I(1,mn,mx)
-    | I64(_,mn,mx)  -> I64(1L,mn,mx)
 
 let lBestNetwork (pop:Population<'k>) id = //return 2 'friends' from the ring
     let m1 = id - 1
@@ -235,14 +213,10 @@ let Maximize a b = a > b
 let Minimize a b = a < b
 
 let vF   = function F(v,_,_) -> v   | _ -> failwith "invalid type"
-let vF32 = function F32(v,_,_) -> v | _ -> failwith "invalid type"
 let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"
-let vI64 = function I64(v,_,_) -> v | _ -> failwith "invalid type"
 
 let toVF (v:float) mn mx = F(clamp mn mx v, mn, mx)
 let toVI (v:float) mn mx = I(clamp mn mx (int v), mn, mx)
-let toVF32 (v:float) mn mx = F32(clamp mn mx (float32 v), mn, mx)
-let toVI64 (v:float) mn mx = I64(clamp mn mx (int64 v), mn, mx)
 
 let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
     let sign = if cmprtr 2. 1. then 1. else -1.
