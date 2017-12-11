@@ -1,5 +1,4 @@
-﻿#r @"..\..\packages\FSharp.Charting\lib\net40\FSharp.Charting.dll"
-#r "System.Windows.Forms.DataVisualization"
+﻿module TraceCharts
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 open System.Windows.Forms
@@ -19,11 +18,14 @@ let applyBg imageOpt (c:FSharp.Charting.ChartTypes.GenericChart) =
     | None -> c
 
 let chGrid = ChartTypes.Grid(Interval=0.1)
-let ls = ChartTypes.LabelStyle(TruncatedLabels=true)
+let ls = ChartTypes.LabelStyle(TruncatedLabels=true, Interval=0.2, Format="{0:F1}")
+
+let round' x = System.Math.Round((x:float),2)
 
 let chPoints bg title obs =
     let ch =
-        LiveChart.FastPoint(obs, Title=title) 
+        LiveChart.Point(obs , Title=title) 
+        |> Chart.WithTitle(Color=System.Drawing.Color.Gold)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
         |> applyBg bg

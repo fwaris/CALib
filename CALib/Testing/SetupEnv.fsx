@@ -1,6 +1,8 @@
 ﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
 #r @"..\..\packages\FSharp.Charting\lib\net45\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
+#r "System.Windows"
+#r "System.Drawing"
 #load "../CA.fs"
 #load "../Probability.fs"
 #load "../CAUtils.fs"

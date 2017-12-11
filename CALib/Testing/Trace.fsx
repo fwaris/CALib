@@ -1,12 +1,13 @@
 ﻿#load "TestEnv.fsx"
 #load "..\DF1.fs"
 #load "ObservableExt.fs"
-#load "TraceCharts.fsx"
+#load "..\Utilities\TraceCharts.fs"
 open CAUtils
 open TestEnv
 open CA
 open DF1
 open System.IO
+open TraceCharts
 
 let parmDefs = 
     [|
@@ -67,9 +68,12 @@ let obsSecDmn,fpSecDmn = Observable.createObservableAgent<(float*float) seq> cts
 let obsSituational,fpSituational = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
+let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
 
-let sqr x = x * x
+let rounded xs = xs |> Observable.map (fun xs -> xs |> Seq.map (fun (x,y)->round' x, round' y))
+
+let inline sqr x = x * x
 
 //dispersion between parms of two individuals
 let disp (p1:float[]) (p2:float[]) =
@@ -89,8 +93,8 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-let startCA = kdIpdCA vmx fitness comparator parmDefs
-//let startCA = kdWeightedCA fitness comparator parms
+//let startCA = kdIpdCA vmx fitness comparator parmDefs
+let startCA = kdWeightedCA fitness comparator parmDefs
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
@@ -151,6 +155,13 @@ let run startStep =
                     let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+            let dTopo =
+                st.Value.CA.Population
+                |> Array.filter (fun i -> primarkyKS i.KS = Topgraphical)// && snd i.KS |> (Map.isEmpty>>not))
+                |> Array.map (fun i -> 
+                    let p = i.Parms 
+                    (p.[0],p.[1]))
+                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dSecDmn =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> secondaryKS i.KS |> Option.exists (fun m->m.ContainsKey Domain))// && snd i.KS |> (Map.isEmpty>>not))
@@ -182,18 +193,19 @@ let run startStep =
             do fpSecDmn dSecDmn
             do fpNorm dNorm
             do fpHist dHist
+            do fpTopo dTopo
             do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
     }
 
 ;;
-open TraceCharts;;
 container
     [ 
-    chPoints (Some background) "All" obsAll
-    chPoints (Some background) "Domain" obsDomain
-    chPoints None "Situational" obsSituational
-    chPoints None "Normative" obsNorm
-    chPoints None "Historical" obsHist
+    chPoints (Some background) "All" (rounded obsAll)
+    chPoints (Some background) "Domain" (rounded obsDomain)
+    chPoints (Some background) "Situational" (rounded obsSituational)
+    chPoints (Some background) "Normative" (rounded obsNorm)
+    chPoints (Some background) "Historical" (rounded obsHist)
+    chPoints (Some background) "Topographical" (rounded obsTopo)
     chCounts obsKSCounts
     ];;
 Async.Start(run startStep, cts.Token);;
