@@ -56,6 +56,7 @@ let influenceLevels =
             Normative, 1.0
             Situational, 1.0
             Historical, 1.0
+            Topgraphical, 1.0
         ]
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0

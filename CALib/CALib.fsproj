@@ -75,8 +75,6 @@
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDGame.fs" />
-    <Compile Include="KnowledgeDistribution\KDHedonicGame.fs" />
     <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
     <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="KnowledgeDistribution\Schelling.fs" />

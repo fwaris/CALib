@@ -1,5 +1,5 @@
 ﻿module TopographicKS
-
+//this version of TopographicalKS is based on Brainstorm Optimization method (BSO)
 open CA
 open CAUtils
 open CAEvolve
@@ -11,7 +11,7 @@ type Centroid =
     {
         Center  : float[]
         Count   : int
-        Best    : Parm[]
+        Best    : float[]
         BestFit : float
     }
 
@@ -19,10 +19,10 @@ type State<'a> =
     {
         Centroids       : Centroid list
         Individuals     : Individual<'a> array
-        ToParms         : float[] -> Parm[]
-        Fitness         : Parm[] -> float
+        Fitness         : float[] -> float
         FitScaler       : float
         SpinWheel       : (Centroid*float)[]
+        ParmDefs        : Parm[]
     }
 
 let MAX_INDVS = 1000
@@ -31,7 +31,7 @@ let cdist (x,_) y = KMeansClustering.euclidean x y
 let cavg (c,_) xs = (KMeansClustering.avgCentroid c xs),xs
 
 let toCentroid state (c,members) =
-    let lbest = members |> Seq.map (fun x -> state.ToParms x) |> Seq.maxBy (fun ps -> (state.Fitness ps) * state.FitScaler)
+    let lbest = members |> Seq.maxBy (fun ps -> (state.Fitness ps) * state.FitScaler)
     {
         Center = c
         Count  = Seq.length members
@@ -45,7 +45,7 @@ let updateClusters state voters =
         |> Seq.sortByDescending (fun i-> state.FitScaler * i.Fitness) 
         |> Seq.truncate MAX_INDVS 
         |> Seq.toArray
-    let parmsArray = vns |> Array.map(fun i->i.Parms |> Array.map parmToFloat)
+    let parmsArray = vns |> Array.map(fun i->i.Parms)
     // type CentroidsFactory<'a> = 'a seq -> int -> Centroid<'a> seq
     let k = match vns.Length with x when x < 10 -> 2 | x when x < 20 -> 4 | x when x < 100 -> 5 | x when x < 500 -> 7 | _ -> 10
     let kcntrods,_ = KMeansClustering.kmeans cdist cfact cavg  parmsArray k
@@ -53,30 +53,25 @@ let updateClusters state voters =
     let _,wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> Probability.createWheel
     { state with Centroids = cntrds; SpinWheel=wheel}
 
-let influenceIndv state temp (indv:Individual<_>) =
+let influenceIndv state s (indv:Individual<_>) =
+    //mutation
     let cntrd = Probability.spinWheel state.SpinWheel 
-    let p2 = cntrd.Best |> Array.map (evolveS temp eSigma)
-    {indv with Parms=p2}
+    let p2 = cntrd.Best
+    let updateParms = indv.Parms
+    p2 |> Array.iteri (fun i p -> evolveP s eSigma updateParms i state.ParmDefs.[i] p)
+    indv
 
-let toParm (p,f) = 
-    match p with
-    | F(_,mn,mx)  -> F(f,mn,mx)
-    | F32(_,mn,mx)-> F32(float32 f,mn,mx)
-    | I(_,mn,mx)  -> I(int f,mn,mx)
-    | I64(_,mn,mx)-> I64(int64 f,mn,mx)
-
-let initialState parms isBetter fitness =
-    let toParms point = Seq.zip parms point |> Seq.map toParm |> Seq.toArray
+let initialState parmDefs isBetter fitness =
     {
         Centroids = []
         Individuals = [||]
-        ToParms     = toParms
         Fitness     = fitness
         FitScaler   = if isBetter 1. 0. then 1. else -1.
         SpinWheel   = [||]
+        ParmDefs    = parmDefs
     }
     
-let create parms isBetter fitness =
+let create parmDefs isBetter fitness =
     let create state fAccept : KnowledgeSource<_> =
         {
             Type        = Topgraphical
@@ -88,5 +83,5 @@ let create parms isBetter fitness =
         let state = updateClusters state voters
         voters,create state acceptance 
            
-    let state = initialState parms isBetter fitness
+    let state = initialState parmDefs isBetter fitness
     create state acceptance

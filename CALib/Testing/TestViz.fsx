@@ -23,9 +23,9 @@ let parms =
 let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../../Landscapes/test_cone3.99.csv")
 
 //2d df1 
-let fitness (parms:Parm array) = 
-    let x = match parms.[0] with F(v,_,_) -> v | _ -> failwith "no match"
-    let y = match parms.[1] with F(v,_,_) -> v | _ -> failwith "no match"
+let fitness (parms:float array) = 
+    let x = parms.[0] //with F(v,_,_) -> v | _ -> failwith "no match"
+    let y = parms.[1] //with F(v,_,_) -> v | _ -> failwith "no match"
     df1 x y
 
 let comparator  = CAUtils.Maximize

@@ -23,7 +23,7 @@ let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox ->
 
 let NEW_KS_LEVEL            = 1.0 //influence level for a new primary KS
 let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks 
-//let KS_ADJUST               = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
+//let KS_ADJUST             = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
 let SCNRY_EXPL_KS_BOOST     = 0.9 //aggressiveness boost for secondary exploitative KS
 let MIN_INFLUENCE_LEVEL     = 0.001 //floor for influence level
 
@@ -53,7 +53,7 @@ type IpdState =
 
 let parmDiversity p1 p2 = 
     (p1,p2)
-    ||> Array.map2 (fun a b -> parmDiff a b |> parmToFloat |> abs) 
+    ||> Array.map2 (fun a b -> a - b |> abs) 
     |> Array.sum
 
 //est. avg diversity of pop via sampling
@@ -71,7 +71,7 @@ let sampleAvgDiversity (pop:Population<_>) =
             loop (acc + d) (c + 1)
     loop 0. 0
 
-let isExplorative = function Situational | Historical | Normative -> true | _ -> false
+let isExplorative = function Domain -> false | _ -> true // | Historical | Normative | Topgraphical -> true | _ -> false
 let isExploitative = function Domain  -> true | _ -> false
 
 let KS_ATTRACTION_COFF      = 1.0 //attraction between exploitative and explorative KS
@@ -80,7 +80,6 @@ let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being 
 let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
 let STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
 let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
-
 
 let cooperation 
     state
@@ -163,7 +162,7 @@ let removeSituationalKS m = Map.remove Situational m //Situational cannot be sec
 let promoteDomainKS : IpdKS->IpdKS = function ({KS=Domain;Level=_} as pks,_) -> (pks,Map.empty) | k -> k 
 
 let logI st newKs indv = 
-    let ps = indv.Parms |> Array.map parmToFloat
+    let ps = indv.Parms 
     let pksOld = prmryKS indv.KS
     let pksNew = prmryKS newKs
     {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=pksNew; ksp=pksOld; gen=st.Gen; fit=indv.Fitness;} |> MIndv |> log.Post
@@ -173,7 +172,7 @@ let rate r = function
     | Geometric (mu,mn) -> r * mu |> max mn
     | Linear (delta,mn) -> r - delta |> max mn
 
-let crtWthKS st (indv:Individual<IpdKS>) primary secondary = 
+let createWthKS st (indv:Individual<IpdKS>) primary secondary = 
     let {KS=oldKS;Level=oldLvl} = fst indv.KS
     let ({KS=newKS;Level=_},secondary) = (primary, removePrimaryKS primary.KS secondary |> removeSituationalKS) |> promoteDomainKS
     let primary =
@@ -191,20 +190,19 @@ let updateIndv st (vmin,vmax) cmprtr (pop:Population<IpdKS>) (indv:Individual<Ip
     let vmx = payout |> List.filter (fun (_,f) -> f >= vmax)
     let indv = 
         match vmx.Length,payout.Length with
-        | 0,0 -> crtWthKS st indv (fst indv.KS) Map.empty
-        | 0,_ -> crtWthKS st indv (fst indv.KS) (updtScndryKS pop payout indv)
+        | 0,0 -> createWthKS st indv (fst indv.KS) Map.empty
+        | 0,_ -> createWthKS st indv (fst indv.KS) (updtScndryKS pop payout indv)
         | 1,_ ->
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (pks,_):IpdKS = nhbr.KS
             let (oldPks,_) = indv.KS
             if (pks.KS = oldPks.KS) then printfn "same ks %A" pks.KS
-            crtWthKS st indv pks Map.empty
+            createWthKS st indv pks Map.empty
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)
             let nhbr = pop.[other indv.Id (fst vmx.[i])]
             let (pks,_):IpdKS = nhbr.KS
-            crtWthKS st indv pks Map.empty
-    let (p,_) = indv.KS
+            createWthKS st indv pks Map.empty
     indv
 
 let updatePop st vmx cmprtr (pop:Population<IpdKS>) (payouts:Payout array) = 

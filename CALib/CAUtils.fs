@@ -85,9 +85,8 @@ let epsilon = function
     | I(_,mn,mx)    -> I(1,mn,mx)
 
 let epsilonM = function
-    | F(_,mn,mx)    -> F(0.000001,mn,mx)
-    | I(_,mn,mx)    -> I(1,mn,mx)
-
+    | F(_,mn,mx)    -> 0.000001
+    | I(_,mn,mx)    -> 1.0
 
 let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray

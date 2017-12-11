@@ -8,7 +8,7 @@ open CA
 open DF1
 open System.IO
 
-let parms = 
+let parmDefs = 
     [|
         F(0.,-1.,1.) // x
         F(0.,-1.,1.) // y
@@ -23,9 +23,9 @@ let landscape =
 
 
 //2d df1 
-let createFtns df (parms:Parm array)  = 
-    let x = match parms.[0] with F(v,_,_) -> v | _ -> failwith "no match"
-    let y = match parms.[1] with F(v,_,_) -> v | _ -> failwith "no match"
+let createFtns df (parms:float array)  = 
+    let x = parms.[0] 
+    let y = parms.[1]
     df x y
 
 let (l,m,fitness) = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,createFtns d)
@@ -41,11 +41,12 @@ let comparator  = CAUtils.Maximize
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
 let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 true
 
-let kdIpdCA vmx f c p  = 
-    let b = bsp f p c
-    let pop = createPop b p CAUtils.baseKsInit |> KDIPDGame.initKS
-    let kd = ipdKdist vmx c pop 
-    makeCA f c pop b kd KDIPDGame.ipdInfluence
+let kdIpdCA vmx ftnss cmprtr parmDefs  = 
+    let b = bsp ftnss parmDefs cmprtr
+    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
+    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let kd = ipdKdist ada vmx cmprtr pop 
+    makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
 
 //let kdlWeightedCA f c p = 
 //    let bsp = bsp f p c
@@ -71,9 +72,7 @@ let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts
 let sqr x = x * x
 
 //dispersion between parms of two individuals
-let disp (p1:Parm[]) (p2:Parm[]) =
-    let p1 = p1 |> Array.map parmToFloat
-    let p2 = p2 |> Array.map parmToFloat
+let disp (p1:float[]) (p2:float[]) =
     (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
     |> sqrt
 
@@ -90,7 +89,7 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-let startCA = kdIpdCA vmx fitness comparator parms
+let startCA = kdIpdCA vmx fitness comparator parmDefs
 //let startCA = kdWeightedCA fitness comparator parms
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
@@ -115,49 +114,48 @@ let run startStep =
             do! Async.Sleep 250
             st := step !st
             let (bfit,gb) = best !st
-            let gb = gb |> Array.map parmToFloat
             if abs(bfit - m.H) < 0.01 then 
                 go := false
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             let dAll =  
                 st.Value.CA.Population
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dDomain =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Domain)
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dSituational =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms  
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dNorm =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Normative)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dHist =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> primarkyKS i.KS = Historical)// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let dSecDmn =
                 st.Value.CA.Population
                 |> Array.filter (fun i -> secondaryKS i.KS |> Option.exists (fun m->m.ContainsKey Domain))// && snd i.KS |> (Map.isEmpty>>not))
                 |> Array.map (fun i -> 
-                    let p = i.Parms |> Array.map parmToFloat 
+                    let p = i.Parms 
                     (p.[0],p.[1]))
                 |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
             let ksCounts =

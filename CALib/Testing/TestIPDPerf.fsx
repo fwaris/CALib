@@ -20,9 +20,9 @@ let landscapes = [
     ]
 
 //2d df1 
-let fitness df (parms:Parm array)  = 
-    let x = match parms.[0] with F(v,_,_) -> v | _ -> failwith "no match"
-    let y = match parms.[1] with F(v,_,_) -> v | _ -> failwith "no match"
+let fitness df (parms:float array)  = 
+    let x =  parms.[0] //with F(v,_,_) -> v | _ -> failwith "no match"
+    let y =  parms.[1] //with F(v,_,_) -> v | _ -> failwith "no match"
     df x y
 
 let fits = landscapes |> List.map (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,fitness d)

@@ -33,7 +33,7 @@ and KnowledgeSource<'k> =
 
 type CA<'k> =
     {
-        ParmDefs                : Parm array
+        //ParmDefs                : Parm array
         Population              : Population<'k>
         Network                 : Network<'k>
         KnowlegeDistribution    : KnowledgeDist<'k>

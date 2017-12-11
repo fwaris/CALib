@@ -3,22 +3,23 @@ open CA
 open FSharp.Collections.ParallelSeq
 
 ///create the belief space structure that is normally used in CAs
-let defaultBeliefSpace parms minmax fitness =
+let defaultBeliefSpace parmDefs minmax fitness =
     Roots [ 
-        Node (SituationalKS.create minmax 15,
+        Node (SituationalKS.create parmDefs minmax 15,
             [
-                Leaf (HistoricalKS.create minmax 100)
-                Leaf (DomainKS2.create minmax fitness 2)
+                Leaf (HistoricalKS.create parmDefs minmax 100)
+                Leaf (DomainKS2.create parmDefs minmax fitness 2)
             ])
-        Leaf (NormativeKS.create parms minmax)
-        Leaf (TopographicKS.create parms minmax fitness)
+        Leaf (NormativeKS.create parmDefs minmax)
+        Leaf (TopographicKS.create parmDefs minmax fitness)
         ]
 
 ///evaluate the finess of the population
 let evaluate fitness pop = 
     let pop =
         pop
-        |> Array.Parallel.map (fun (ind:Individual<_>) -> {ind with Fitness=fitness ind.Parms})
+        |> Array.Parallel.map (fun (ind:Individual<_>) -> 
+            {ind with Fitness=fitness ind.Parms})
     pop
 
 ///default acceptance function used in most CAs

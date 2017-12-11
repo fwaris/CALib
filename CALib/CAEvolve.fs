@@ -2,19 +2,19 @@
 open CA
 open CAUtils
 
-let slideUp influenceLevel sigma p = 
+let slideUp influenceLevel sigma parmDef v = 
     let z = zsample()
     let z' = z * influenceLevel * sigma |> abs
-    match p with
-    | F (v,mn,mx)   -> toVF (v + z') mn mx
-    | I (v,mn,mx)   -> toVI (float v + dz z') mn mx
+    match parmDef with
+    | F (_,mn,mx)   -> v + z' |> clamp mn mx
+    | I (_,mn,mx)   -> v + z' |> clampI mn mx
 
-let slideDown influenceLevel sigma p =
+let slideDown influenceLevel sigma parmDef v =
     let z = zsample()
     let z' = z * influenceLevel * sigma |> abs
-    match p with
-    | F (v,mn,mx)   -> toVF (v - z') mn mx
-    | I (v,mn,mx)   -> toVI (float v - dz z') mn mx
+    match parmDef with
+    | F (_,mn,mx)   -> v - z' |> clamp mn mx
+    | I (_,mn,mx)   -> v - z' |> clampI mn mx
 
 let evolveS' influenceLevel sigma v = 
     assert (influenceLevel > 0.0 && influenceLevel <= 1.0)

@@ -1,6 +1,7 @@
 ﻿module KDContinousStrategyGame
+// abstract definitions of Play, Payoff & Outcome functions
+// for game based Knowledge Distribution
 open CA
-open FSharp.Collections.ParallelSeq
 
 type Neighbors<'k> = Individual<'k> array
 
