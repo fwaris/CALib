@@ -4,3 +4,5 @@ nuget FSharp.Collections.ParallelSeq
 nuget FsRandom
 nuget MathNet.Numerics.FSharp
 nuget ExcelProvider
+nuget OpenCvSharp3-AnyCPU
+

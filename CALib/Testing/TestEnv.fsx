@@ -117,8 +117,6 @@ let kdIpdCA vmx f c p  =
     let kd = ipdKdist ada vmx c pop 
     makeCA f c pop bsp kd KDIPDGame.ipdInfluence
 
-#r @"..\..\packages\FSharp.Charting\lib\net40\FSharp.Charting.dll"
-#r "System.Windows.Forms.DataVisualization"
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")
 
