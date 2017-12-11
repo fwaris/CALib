@@ -71,8 +71,6 @@ let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
 
-let rounded xs = xs |> Observable.map (fun xs -> xs |> Seq.map (fun (x,y)->round' x, round' y))
-
 let inline sqr x = x * x
 
 //dispersion between parms of two individuals
@@ -93,8 +91,8 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 
 let step st = CARunner.step st 2
 let vmx = (0.2, 0.9)
-//let startCA = kdIpdCA vmx fitness comparator parmDefs
-let startCA = kdWeightedCA fitness comparator parmDefs
+let startCA = kdIpdCA vmx fitness comparator parmDefs
+//let startCA = kdWeightedCA fitness comparator parmDefs
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
@@ -111,6 +109,82 @@ let secondaryKS (x:obj) =
 
 let st = ref startStep
 
+let postObs() = 
+    let dAll =  
+        st.Value.CA.Population
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dDomain =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> primarkyKS i.KS = Domain)
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dSituational =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> primarkyKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
+        |> Array.map (fun i -> 
+            let p = i.Parms  
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dNorm =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> primarkyKS i.KS = Normative)// && snd i.KS |> (Map.isEmpty>>not))
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dHist =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> primarkyKS i.KS = Historical)// && snd i.KS |> (Map.isEmpty>>not))
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dTopo =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> primarkyKS i.KS = Topgraphical)// && snd i.KS |> (Map.isEmpty>>not))
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let dSecDmn =
+        st.Value.CA.Population
+        |> Array.filter (fun i -> secondaryKS i.KS |> Option.exists (fun m->m.ContainsKey Domain))// && snd i.KS |> (Map.isEmpty>>not))
+        |> Array.map (fun i -> 
+            let p = i.Parms 
+            (p.[0],p.[1]))
+        //|> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
+    let ksCounts =
+        st.Value.CA.Population
+        |> Seq.map (fun i -> i.KS :> obj)
+        |> Seq.collect (
+            function 
+            | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> 
+                let (pk,m) = ks
+                let k = pk.KS
+                let lvl = pk.Level
+                List.append [k,lvl] (Map.toList m)
+            | :? Knowledge as k -> [k,1.0]
+            | _-> failwithf "not handled"
+            )
+        |> Seq.groupBy (fun (k,f) -> k)
+        |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
+        |> Seq.sortBy fst
+        |> Seq.toList
+    do fpAll dAll
+    do fpKSCounts ksCounts
+    do fpDomain dDomain
+    do fpSituational dSituational
+    do fpSecDmn dSecDmn
+    do fpNorm dNorm
+    do fpHist dHist
+    do fpTopo dTopo
+    do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+
 let run startStep =
     let go = ref true
     async {
@@ -121,103 +195,37 @@ let run startStep =
             if abs(bfit - m.H) < 0.01 then 
                 go := false
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
-            let dAll =  
-                st.Value.CA.Population
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dDomain =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> primarkyKS i.KS = Domain)
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dSituational =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> primarkyKS i.KS = Situational)// && snd i.KS |> (Map.isEmpty>>not))
-                |> Array.map (fun i -> 
-                    let p = i.Parms  
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dNorm =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> primarkyKS i.KS = Normative)// && snd i.KS |> (Map.isEmpty>>not))
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dHist =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> primarkyKS i.KS = Historical)// && snd i.KS |> (Map.isEmpty>>not))
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dTopo =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> primarkyKS i.KS = Topgraphical)// && snd i.KS |> (Map.isEmpty>>not))
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let dSecDmn =
-                st.Value.CA.Population
-                |> Array.filter (fun i -> secondaryKS i.KS |> Option.exists (fun m->m.ContainsKey Domain))// && snd i.KS |> (Map.isEmpty>>not))
-                |> Array.map (fun i -> 
-                    let p = i.Parms 
-                    (p.[0],p.[1]))
-                |> Array.append [|-1.,-1.;(1.,1.);1.,-1.;-1.,1.;gb.[0],gb.[1]|]
-            let ksCounts =
-                st.Value.CA.Population
-                |> Seq.map (fun i -> i.KS :> obj)
-                |> Seq.collect (
-                    function 
-                    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> 
-                        let (pk,m) = ks
-                        let k = pk.KS
-                        let lvl = pk.Level
-                        List.append [k,lvl] (Map.toList m)
-                    | :? Knowledge as k -> [k,1.0]
-                    | _-> failwithf "not handled"
-                    )
-                |> Seq.groupBy (fun (k,f) -> k)
-                |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
-                |> Seq.sortBy fst
-                |> Seq.toList
-            do fpAll dAll
-            do fpKSCounts ksCounts
-            do fpDomain dDomain
-            do fpSituational dSituational
-            do fpSecDmn dSecDmn
-            do fpNorm dNorm
-            do fpHist dHist
-            do fpTopo dTopo
-            do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+            postObs()
     }
 
 ;;
 container
     [ 
-    chPoints (Some background) "All" (rounded obsAll)
-    chPoints (Some background) "Domain" (rounded obsDomain)
-    chPoints (Some background) "Situational" (rounded obsSituational)
-    chPoints (Some background) "Normative" (rounded obsNorm)
-    chPoints (Some background) "Historical" (rounded obsHist)
-    chPoints (Some background) "Topographical" (rounded obsTopo)
+    chPoints (Some background) "All" obsAll
+    chPoints (Some background) "Domain" obsDomain
+    chPoints (Some background) "Situational" obsSituational
+    chPoints (Some background) "Normative" obsNorm
+    chPoints (Some background) "Historical" obsHist
+    chPoints (Some background) "Topographical"  obsTopo
     chCounts obsKSCounts
     ];;
-Async.Start(run startStep, cts.Token);;
 
+let autoStep() = Async.Start(run startStep, cts.Token);;
+let singleStep() = st := step !st; postObs()
 (*
+autoStep()
+
+singleStep()
+
+cts.Cancel()
+
+
 chDisp "KS Counts" obsDispersion
 chPoints None "Ind with Secondary Domain" obsSecDmn
 *)
 
 (*
 m
-cts.Cancel()
 KDIPDGame.KS_ATTRACTION_COFF <- 12.
 KDIPDGame.IMPROVE_DEFECT_COFF <- -1.0
 TestEnv.defaultNetwork startCA.Population 10
