@@ -59,8 +59,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="DF1.fs" />
     <Compile Include="Probability.fs" />
+    <Compile Include="DF1.fs" />
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="CAEvolve.fs" />
@@ -78,8 +78,10 @@
     <Compile Include="KnowledgeDistribution\Schelling.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
+    <Compile Include="Utilities\VizUtils.fs" />
     <Compile Include="Utilities\Viz.fs" />
     <Compile Include="Utilities\TraceCharts.fs" />
+    <Compile Include="Utilities\VizLandscape.fs" />
     <None Include="Landscapes\test_cone1.01.csv" />
     <None Include="Landscapes\test_cone2.0.csv" />
     <None Include="Landscapes\test_cone3.35.csv" />
