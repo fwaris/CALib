@@ -1,5 +1,6 @@
 ﻿#load "TestEnv.fsx"
 #load "SetupVideo.fsx"
+#load "..\Utilities\VizUtils.fs"
 #load "..\Utilities\Viz.fs"
 #load "..\DF1.fs"
 open TestEnv
@@ -23,7 +24,7 @@ let parms =
 let maxCone,df1 = createDf1 (__SOURCE_DIRECTORY__ + @"../../Landscapes/test_cone3.99.csv")
 
 //2d df1 
-let fitness (parms:float array) = df1 parms
+let fitness = df1 |> ref
 
 let comparator  = CAUtils.Maximize
 
@@ -44,7 +45,7 @@ let kdSchCA         = kdSchelligCA fitness comparator parms
 let testSingle() =
     let m = new Mat(Size(512,512), MatType.CV_8UC3)
     m |> Viz.visualizePopHex 512 Viz.clrKnowledge  kdSchCA.Network kdSchCA.Population
-    Viz.win "m1" m
+    VizUtils.win "m1" m
 
 let genViz() =
     Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge

@@ -55,7 +55,7 @@ let baseInfluence beliefSpace pop =
 
 ///single step CA
 let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
-    let pop             = evaluate ca.Fitness ca.Population
+    let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
     let blSpc           = ca.Update ca.BeliefSpace topInds
     let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k

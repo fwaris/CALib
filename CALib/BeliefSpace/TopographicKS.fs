@@ -19,7 +19,7 @@ type State<'a> =
     {
         Centroids       : Centroid list
         Individuals     : Individual<'a> array
-        Fitness         : float[] -> float
+        Fitness         : Fitness
         FitScaler       : float
         SpinWheel       : (Centroid*float)[]
         ParmDefs        : Parm[]
@@ -31,12 +31,12 @@ let cdist (x,_) y = KMeansClustering.euclidean x y
 let cavg (c,_) xs = (KMeansClustering.avgCentroid c xs),xs
 
 let toCentroid state (c,members) =
-    let lbest = members |> Seq.maxBy (fun ps -> (state.Fitness ps) * state.FitScaler)
+    let lbest = members |> Seq.maxBy (fun ps -> (state.Fitness.Value ps) * state.FitScaler)
     {
         Center = c
         Count  = Seq.length members
         Best = lbest
-        BestFit = state.Fitness lbest
+        BestFit = state.Fitness.Value lbest
     }
 
 let updateClusters state voters =
@@ -71,7 +71,7 @@ let initialState parmDefs isBetter fitness =
         ParmDefs    = parmDefs
     }
     
-let create parmDefs isBetter fitness =
+let create parmDefs isBetter (fitness:Fitness) =
     let create state fAccept : KnowledgeSource<_> =
         {
             Type        = Topgraphical

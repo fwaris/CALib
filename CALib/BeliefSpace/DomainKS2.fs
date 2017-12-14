@@ -27,7 +27,7 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
         parms.[i] <- p
         partialSlope)
 
-let create parmDefs isBetter fitness maxExemplars =
+let create parmDefs isBetter (fitness:Fitness) maxExemplars =
     let create state fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Domain
@@ -57,7 +57,7 @@ let create parmDefs isBetter fitness maxExemplars =
 
     let influence exemplars influenceLevel (ind:Individual<_>) =
         //mutation
-        let slopes = slopes isBetter fitness ind.Fitness parmDefs ind.Parms
+        let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
         let parms = ind.Parms
         ind.Parms |> Array.iteri(fun i p ->
             parms.[i] <-

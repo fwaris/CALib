@@ -14,7 +14,7 @@ type Temp = float
 type Topology   = LBest | Global
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain | Other of string
 type Individual<'k> = {Id:Id; Parms:float array; Fitness:float; KS:'k}
-and Fitness     = float array -> float
+and Fitness     = (float array -> float) ref
 and Comparator  = float -> float -> bool //compare two fitness values - true when 1st 'is better than' 2nd
 and Population<'k>  = Individual<'k> array
 and Network<'k>     = Population<'k> -> Id -> Individual<'k> array
@@ -33,7 +33,6 @@ and KnowledgeSource<'k> =
 
 type CA<'k> =
     {
-        //ParmDefs                : Parm array
         Population              : Population<'k>
         Network                 : Network<'k>
         KnowlegeDistribution    : KnowledgeDist<'k>
