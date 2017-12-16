@@ -1,4 +1,5 @@
-﻿#load "..\Testing\SetupVideo.fsx"
+﻿#r @"..\..\packages\FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
+#load "..\Testing\SetupVideo.fsx"
 #load "..\Probability.fs"
 #load "..\Utilities\VizUtils.fs"
 #load "..\DF1.fs"
@@ -19,20 +20,24 @@ let landscapes = [
 
 let df1s = [for l in landscapes -> createDf1 (__SOURCE_DIRECTORY__ + "/" + snd l)]
 
-
 let test1() =
     let (c,f) = df1s.[3]
     gen(c,f) |> showLandscape
 
 let test2()=
-    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1)
+    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99)
     let (c,f) = landscape w
     gen (c,f) |> showLandscape
     updateWorld w |> landscape |> gen |> showLandscape
 
 let test3() =
-    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1)
+    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99)
     createVid @"D:\repodata\calib\landscape1.mp4" 100 w
+
+let test4() =
+    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
+    w := updateWorld !w
+    landscape !w |> gen |> showLandscape
 
 let run() =
     df1s 

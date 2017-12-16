@@ -93,6 +93,7 @@
     <None Include="Testing\TestEnv.fsx" />
     <None Include="Testing\TestViz.fsx" />
     <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\TraceDynamic.fsx" />
     <None Include="Testing\DispIndex.fsx" />
     <None Include="Testing\IPD_Weighted_Comparo.fsx" />
     <None Include="Testing\TestIPDPerf.fsx" />

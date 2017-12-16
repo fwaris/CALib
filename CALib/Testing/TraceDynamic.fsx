@@ -1,7 +1,11 @@
 ﻿#load "TestEnv.fsx"
+#load "SetupVideo.fsx"
 #load "..\DF1.fs"
 #load "ObservableExt.fs"
-#load "..\Utilities\TraceCharts.fs"
+#load @"..\Utilities\TraceCharts.fs"
+#load @"..\Utilities\VizUtils.fs"
+#load @"..\Utilities\VizLandscape.fs"
+
 open CAUtils
 open TestEnv
 open CA
@@ -15,26 +19,17 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let landscape = 
-    "1.01", @"../../Landscapes/test_cone1.01.csv"
-//    "2.0", @"../../Landscapes/test_cone2.0.csv"
-//    "3.35", @"../../Landscapes/test_cone3.35.csv"
-//    "3.5", @"../../Landscapes/test_cone3.5.csv"
-//    "3.99", @"../../Landscapes/test_cone3.99.csv"
+let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
+let m,f = DF1.landscape !w
+let fitness = ref f
+let maxCone = ref m
 
+let initBg = VizLandscape.gen (m,f)
 
-//2d df1 
-let createFtns df (parms:float array)  = 
-    df parms
-
-
-
-let (l,m,fitness) = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,ref (createFtns d))
-
-let background = 
-    let p = __SOURCE_DIRECTORY__ + (snd landscape) 
-    let fn = Path.GetFileNameWithoutExtension(p) + ".png"
-    Path.Combine(Path.GetDirectoryName(p),fn)
+let background =
+    let f=Path.GetTempFileName()
+    initBg.Save f
+    f
 
 let comparator  = CAUtils.Maximize
 
@@ -192,61 +187,53 @@ let run startStep =
             do! Async.Sleep 250
             st := step !st
             let (bfit,gb) = best !st
-            if abs(bfit - m.H) < 0.01 then 
-                go := false
+            let solFound = Array.zip gb maxCone.Value.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
+            if solFound then 
+                //go := false //don't stop for dynamic
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             postObs()
     }
 
 ;;
-
-container
-    [ 
-    chPoints (Some background) "All" obsAll
-    chPoints (Some background) "Domain" obsDomain
-    chPoints (Some background) "Situational" obsSituational
-    chPoints (Some background) "Normative" obsNorm
-    chPoints (Some background) "Historical" obsHist
-    chPoints (Some background) "Topographical"  obsTopo
-    chCounts obsKSCounts
-    ]
+let frm = 
+    container
+        [ 
+        chPoints (Some background) "All" obsAll
+        chPoints (Some background) "Domain" obsDomain
+        chPoints (Some background) "Situational" obsSituational
+        chPoints (Some background) "Normative" obsNorm
+        chPoints (Some background) "Historical" obsHist
+        chPoints (Some background) "Topographical"  obsTopo
+        chCounts obsKSCounts
+        ]
 
 let autoStep() = Async.Start(run startStep, cts.Token);;
 let singleStep() = st := step !st; postObs()
+
+let updateEnvironment() =
+    async {
+        w := updateWorld !w
+        let (c,f) = landscape !w
+        let bg = VizLandscape.gen (c,f)
+        let newBg =
+            let f = Path.GetTempFileName()
+            bg.Save f
+            f
+        updateBgForm frm newBg
+        fitness := f
+        maxCone := c
+    }
+
 (*
 autoStep()
 
 singleStep()
 
+updateEnvironment() |> Async.Start
+
 cts.Cancel()
 
 
-chDisp "KS Counts" obsDispersion
-chPoints None "Ind with Secondary Domain" obsSecDmn
 *)
 
-(*
-m
-KDIPDGame.KS_ATTRACTION_COFF <- 12.
-KDIPDGame.IMPROVE_DEFECT_COFF <- -1.0
-TestEnv.defaultNetwork startCA.Population 10
-*)
-
-(* generate df1 landscape data for excel surface plot
-
-let (mc,df1) = createDf1 (__SOURCE_DIRECTORY__ + snd landscape)
-printf "\t"
-for y in -1. .. 0.01 .. 1. do printf "%f\t" y
-printfn ""
-for x in -1. .. 0.01 .. 1. do
-    printf "%f\t" x
-    for y in -1. .. 0.01 .. 1. do
-       printf "%f \t" (df1 x y)
-    printfn ""
-
-//PRNG check for randomness 
-[for i in 1 .. 200 do
-    for j in 1.. 200 do
-        yield (rnd.Value.NextDouble(),rnd.Value.NextDouble())] |> Chart.FastPoint        
-*)
 

@@ -1,13 +1,17 @@
 ﻿module VizLandscape
 //generate contour map of 2D fitness landscape
+open System.Threading.Tasks
 
 open System.IO
 open System.Drawing
 open System.Drawing.Drawing2D
 open System.Windows.Forms
 open VizUtils
+open System.Drawing.Imaging
+open System
+open Microsoft.FSharp.NativeInterop
 
-let scaler (sMin,sMax) (vMin,vMax) (v:float) =
+let private scaler (sMin,sMax) (vMin,vMax) (v:float) =
     if v < vMin then failwith "out of min range for scaling"
     if v > vMax then failwith "out of max range for scaling"
     (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
@@ -38,7 +42,44 @@ let cI (v:float) mn mx (colorRange:Color[]) =
 
 let cb = [|Color.Lavender; Color.Lavender; Color.DarkBlue;  Color.DarkOrange; Color.Orange; Color.RosyBrown; Color.Red; Color.Maroon|]
 
+#nowarn "9"
 let genImage ((mX,mY,mZ),ftnss) =
+    let imageHeight = 1024
+    let imageWidth = 1024
+    let pH1 = imageHeight - 1
+    let pW1 = imageWidth - 1
+    let clamp x = max (min x 1023) 0  
+    let bmp = new Bitmap(imageWidth,imageHeight)
+    let data = bmp.LockBits(
+                new Rectangle(0, 0, bmp.Width, bmp.Height),
+                ImageLockMode.ReadWrite,
+                bmp.PixelFormat)
+    let ptr = data.Scan0
+    let ptr:nativeptr<byte> = NativePtr.ofNativeInt ptr
+    let channelStride = data.Stride //4 // argb
+
+    Parallel.For(0, imageHeight, fun h ->
+        let y' = scaler (-1.,1.) (0.,float pH1) (float h)
+        Parallel.For(0, imageWidth,  fun w ->
+            let x' = scaler (-1.,1.) (0.,float pW1) (float w)
+            let z' = ftnss [|x';y'|] 
+            let c = cI (max z' 13.) 13. mZ cb
+            let i = (pH1 - h) * channelStride + (w * 4)
+            NativePtr.set ptr i c.B
+            NativePtr.set ptr (i+1) c.G
+            NativePtr.set ptr (i+2) c.R
+            NativePtr.set ptr (i+3) 255uy
+            ) |> ignore
+            ) |> ignore
+    bmp.UnlockBits(data)
+    let mx = scaler (0., float pW1) (-1., 1.) mX |> int
+    let my = scaler (0., float pH1) (-1., 1.) mY |> int
+    for i in -20 .. 20 do
+        bmp.SetPixel(mx + i |> clamp, pH1 - my |> clamp, Color.Black)
+        bmp.SetPixel(mx |> clamp, pH1 - my + i |> clamp, Color.Black)        
+    bmp
+
+let genImage2 ((mX,mY,mZ),ftnss) =
     let pH = 1024
     let pH1 = pH - 1
     let pW = 1024
@@ -59,6 +100,7 @@ let genImage ((mX,mY,mZ),ftnss) =
         bm.SetPixel(mx + i |> clamp, pH1 - my |> clamp, Color.NavajoWhite)
         bm.SetPixel(mx |> clamp, pH1 - my + i |> clamp, Color.NavajoWhite)        
     bm
+
 
 let showLandscape (bmp:Bitmap) = 
     let form = new Form()

@@ -2,6 +2,7 @@
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 open System.Windows.Forms
+open System.Drawing
 
 let applyBgHost image (chh:ChartTypes.ChartControl) = 
     let ch = chh.Controls.[0] :?> System.Windows.Forms.DataVisualization.Charting.Chart
@@ -25,7 +26,7 @@ let round' x = System.Math.Round((x:float),2)
 let chPoints bg title obs =
     let ch =
         LiveChart.Point(obs , Title=title) 
-        |> Chart.WithTitle(Color=System.Drawing.Color.Gold)
+        |> Chart.WithTitle(Color=System.Drawing.Color.Purple)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
         |> applyBg bg
@@ -63,6 +64,30 @@ let container chlist =
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,50.f)) |> ignore
     grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
     grid.Dock <- DockStyle.Fill
-    chlist |> List.map containerize |> List.iter grid.Controls.Add
+    let containers = chlist |> List.map containerize 
+    containers |> List.iter grid.Controls.Add
     form.Controls.Add(grid)
     form.Show()
+    form
+
+
+    //formList.zip chlist containers
+
+let rec updateBg chlist newImage =
+    chlist |> List.iter (fun ((chart,oldIm),control) ->
+        match oldIm with
+        | Some _ -> 
+            applyBg (Some newImage) chart |> ignore
+            applyBgHost newImage control
+        | None -> ())
+
+let rec updateBgForm (parent:Control) newImage =
+    for c in parent.Controls do
+        match c with 
+        | :? ChartTypes.ChartControl as chh ->
+            let c = chh.Controls.[0] :?> DataVisualization.Charting.Chart
+            if System.String.IsNullOrWhiteSpace (c.ChartAreas.[0].BackImage) |> not then
+                //applyBgHost newImage chh 
+                let a = c.ChartAreas.[0]
+                a.BackImage <- newImage
+        | c -> if c.HasChildren then updateBgForm c newImage

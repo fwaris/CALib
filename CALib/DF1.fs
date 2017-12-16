@@ -3,6 +3,7 @@
 module DF1
 open Probability
 open System.Collections.Generic
+open FSharp.Collections.ParallelSeq
 
 let private sqr x = x * x
 type Cone = {H:float; R:float; L:float[]}
@@ -24,18 +25,65 @@ let lgstEnum a x = let s = lgst a x |> Seq.cache in s.GetEnumerator()
 
 let flip () = Probability.RNG.Value.NextDouble() < 0.5
 
-let changeLocation (enum:IEnumerator<float>) cone = 
+//copied from java code - still produces out of range values
+let changeLocation2 (enum:IEnumerator<float>) cone = 
     let newL = cone.L |> Array.map (fun l ->
-        let dl = enum.MoveNext() |> ignore; enum.Current
-        let dl = dl * cstepscale
-        let dl = if flip() then dl else dl * -1.0
-        let l  = l + dl
-        if l > 1.0 then
-            l - 2.0 * dl
-        else 
-            l)
+        let xpct = (l + 1.0) / 2.0                          //from java code; not sure why
+        let cstep = enum.MoveNext() |> ignore; enum.Current
+        let xtemp = cstep * cstepscale
+        let xtemp = if flip() then xtemp else xtemp * -1.0
+        let xpct  = xpct + xtemp
+        let xptc = 
+            if xpct > 1.0 then
+                xpct - 2.0 * xtemp
+            elif xpct < 0.0 then
+                xpct + 2.0 * xtemp
+            else 
+                xpct
+        let l = (xptc * 2.0) - 1.0
+        if (xptc > -1.0 && xptc < 1.0) |> not then failwith "cone location not between -1 and +1"
+        l
+        )
+        
     {cone with L=newL}
 
+
+let private scaler (sMin,sMax) (vMin,vMax) (v:float) =
+    if v < vMin then failwith "out of min range for scaling"
+    if v > vMax then failwith "out of max range for scaling"
+    (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
+    (*
+    scaler (0.1, 0.9) (10., 500.) 223.
+    scaler (0.1, 0.9) (10., 500.) 10.
+    scaler (0.1, 0.9) (10., 500.) 500.
+    scaler (0.1, 0.9) (-200., -100.) -110.
+    *)
+
+
+//new version changes all cones and rescales to [-1,+1] for each dimension
+let changeLocations (enum:IEnumerator<float>) cones = 
+    let locs = cones |> Array.map (fun c ->
+        c.L |> Array.map (fun l -> 
+            let cstep = enum.MoveNext() |> ignore; enum.Current
+            let step = cstep * cstepscale
+            let step = if flip() then 1. else -1. * step
+            l + step))
+    let dims = locs.[0].Length
+    let mnmxs = //min max range for each dimension
+        [for i in 0..dims-1 do
+            let mn,mx = ((1.0,-1.0), locs) ||> Array.fold (fun (mn,mx) ds ->
+                let v = ds.[i]
+                (min mn v, max mx v))
+            yield mn,mx
+        ]
+    let targetRange = (-1.0 + System.Double.Epsilon, 1.0 + System.Double.Epsilon)
+    Array.zip cones locs
+    |> Array.map (fun (c,ls) ->
+        let newLs = ls |> Array.mapi (fun i l -> 
+            let sRange = mnmxs.[i]
+            scaler targetRange sRange  l)
+        {c with L = newLs})
+       
 let changeHeight (enum:IEnumerator<float>) maxH cone =
     let dh = enum.MoveNext() |> ignore; enum.Current
     let dh = dh * Hstepscale
@@ -86,7 +134,7 @@ let updateWorld world =
         | None -> cones
     let cones =
         match world.Ac with
-        | Some enm -> cones |> Array.map (changeLocation enm)
+        | Some enm -> cones |> changeLocations enm
         | None -> cones
     {world with Cones = cones}
 
@@ -97,30 +145,29 @@ let maxF ds m c =
 let landscape world =
     let cones = world.Cones
     let maxCone = cones |> Array.maxBy (fun x -> x.H)
-    let df ds = (System.Double.MinValue,cones) ||> Array.fold (maxF ds)
+    let df ds = (System.Double.MinValue,cones) ||> PSeq.fold(maxF ds)
     maxCone,df
 
-//let df1_2d (rnd:System.Random) n (hbase,hrange) (rbase,rrange) =
-//    let hs = [|for i in 1..n -> hbase + rnd.NextDouble() * hrange|]
-//    let rs = [|for i in 1..n -> rbase + rnd.NextDouble() * rrange|]
-//    let xi = [|for i in 1..n -> -1.0 + 2.0 * rnd.NextDouble()|]
-//    let yi = [|for i in 1..n -> -1.0 + 2.0 * rnd.NextDouble()|]
-//    let nList = [for i in 0 .. n-1 -> i]
-//    let (maxH,i,_) = ((0.,0,0),hs) ||> Array.fold (fun (mx,mxi,i) h -> if mx > h then (mx,mxi,i+1) else (h,i,i+1))
-//    let cone = maxH,(xi.[i],yi.[i])
-//    let f x y =
-//        let maxF m i = max m (hs.[i] - rs.[i] * sqrt (sqr (x - xi.[i]) + sqr (y - yi.[i])))
-//        (System.Double.MinValue,nList) ||> List.fold maxF
-//    f,cone
+(*
+#load "Probability.fs"
+#r @"..\packages\FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
+#load "DF1.fs"
+open DF1
+let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
+for i in 1 .. 1000000 do
+    w := updateWorld !w
+    let valid = 
+        w.Value.Cones 
+        |> Seq.forall (fun c-> c.L |> Seq.forall (fun l -> 
+            if l >= -1.0 && l <= 1.0 then
+                true
+            else
+                printfn "%A" c
+                false
+            ))
+    if not valid then printfn "not valid"
 
-//(*
-//let testDfi = df1_2d (System.Random()) 5 (3.,3.) (5.,5.)
-//let landscape = 
-//    [for x in -1.0 .. 0.1 .. 1.0 do
-//        for y in -1.0 .. 0.1 .. 1.0 do
-//            yield (x,y,testDfi x y)]
-//*)
-
+*)
 
 open System.IO
 
