@@ -20,7 +20,10 @@ let Hstepscale = 0.33
 let Rstepscale = 0.33
 let cstepscale = 0.2 
 
-let lgst a x = seq{yield x; yield! x |> Seq.unfold(fun x -> let n = a*x*(1.0 - x) in Some(n,n))}
+//logistic sequence generator
+let lgst a x = seq{yield x; yield! x |> Seq.unfold(fun x -> let n = a*x*(1.0 - x) in Some(n,n))}  
+
+//enumerate a logistic sequence
 let lgstEnum a x = let s = lgst a x |> Seq.cache in s.GetEnumerator()
 
 let flip () = Probability.RNG.Value.NextDouble() < 0.5
@@ -61,12 +64,12 @@ let private scaler (sMin,sMax) (vMin,vMax) (v:float) =
 
 
 //new version changes all cones and rescales to [-1,+1] for each dimension
-let changeLocations (enum:IEnumerator<float>) cones = 
+let changeLocations3 (enum:IEnumerator<float>) cones = 
     let locs = cones |> Array.map (fun c ->
         c.L |> Array.map (fun l -> 
             let cstep = enum.MoveNext() |> ignore; enum.Current
             let step = cstep * cstepscale
-            let step = if flip() then 1. else -1. * step
+            let step = (if flip() then 1. else -1.) * step
             l + step))
     let dims = locs.[0].Length
     let mnmxs = //min max range for each dimension
@@ -83,6 +86,26 @@ let changeLocations (enum:IEnumerator<float>) cones =
             let sRange = mnmxs.[i]
             scaler targetRange sRange  l)
         {c with L = newLs})
+
+let changeLocations (enum:IEnumerator<float>) cones = 
+    let locs = cones |> Array.map (fun c ->
+        c.L |> Array.map (fun l -> 
+            let l = (l + 1.0) / 2.0 // scale to [0,1] from [-1,1]
+            let cstep = enum.MoveNext() |> ignore; enum.Current
+            //let cstep = 0.5 - cstep   
+            let step = cstep * cstepscale
+            let step = (if flip() then 1. else -1.) * step //some randomness for a balanced landscape
+            l + step))
+    Array.zip cones locs
+    |> Array.map (fun (c,ls) -> 
+        let ls' = 
+            ls 
+            |> Array.map (fun l -> (l * 2.0) - 1.0) //rescale to [-1,1]
+            |> Array.map (function
+                | l when l < -1.0 ->  l + 1.0         //wrap around
+                | l when l > 1.0 ->   l - 1.0
+                | l -> l)
+        {c with L = ls'})
        
 let changeHeight (enum:IEnumerator<float>) maxH cone =
     let dh = enum.MoveNext() |> ignore; enum.Current
@@ -104,6 +127,7 @@ let changeRadius (enum:IEnumerator<float>) maxR cone =
     let newR = maxR * rpct
     {cone with H=newR}
 
+//cones world is a set of cones and optional logistic enumerations for radius, height and location
 type World = 
     {
         Cones : Cone[] 
@@ -112,6 +136,7 @@ type World =
         Ac    : IEnumerator<float> option
         }
 
+//create world with given parameters 
 let createWorld n dims (hbase,hrange) (rbase,rrange) aR aH aC =
     let cones = genCones n dims (hbase,hrange) (rbase,rrange)
     {
@@ -121,6 +146,7 @@ let createWorld n dims (hbase,hrange) (rbase,rrange) aR aH aC =
         Ac    = aC |> Option.map (fun a -> lgstEnum a 0.45)
     }
 
+//update world cone parameters using logictic enumerations specified
 let updateWorld world =
     let maxH  = world.Cones |> Array.map (fun c->c.H) |> Array.max
     let maxR  = world.Cones |> Array.map (fun c->c.R) |> Array.max
@@ -138,15 +164,17 @@ let updateWorld world =
         | None -> cones
     {world with Cones = cones}
 
+//find the maximum height of the cones world at a given location
 let maxF ds m c = 
     let dist = (ds,c.L) ||> Array.map2(fun a b-> sqr (a-b)) |> Array.sum |> sqrt
     max m (c.H - c.R * dist)
 
+//get the fitness function and max hight cone for a given world
 let landscape world =
     let cones = world.Cones
     let maxCone = cones |> Array.maxBy (fun x -> x.H)
-    let df ds = (System.Double.MinValue,cones) ||> PSeq.fold(maxF ds)
-    maxCone,df
+    let fitness ds = (System.Double.MinValue,cones) ||> PSeq.fold(maxF ds)
+    maxCone,fitness
 
 (*
 #load "Probability.fs"

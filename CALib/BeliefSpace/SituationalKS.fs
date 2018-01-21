@@ -48,6 +48,7 @@ let rec clct acc l1 l2 =
 
 // clct [] ['a',[1;2]; 'b',[3;4]; 'c',[5;6]] []
 
+let log events = events |> Seq.map (fun b -> b.Parms) |> Seq.toList |> Metrics.MetricMsg.SitState |> Metrics.postAll
 
 let pickExamplars isBetter prevE voters =
     let tx = if isBetter 2. 1. then -1. else 1.
@@ -95,6 +96,11 @@ let create (parmDefs:Parm[]) isBetter maxExemplars =
         let weights = fitweights isBetter explrs |> Array.mapi (fun i x -> i,x)
         let _,wheel = Probability.createWheel weights
         let state = {Exemplars=explrs; SpinWheel=wheel}
+
+        #if _LOG_
+        log explrs
+        #endif
+
         voters, create state acceptance fInfluence
     
     let influence state influenceLevel (ind:Individual<_>) =

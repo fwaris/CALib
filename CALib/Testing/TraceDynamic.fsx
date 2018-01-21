@@ -1,7 +1,6 @@
 ﻿#load "TestEnv.fsx"
 #load "SetupVideo.fsx"
-#load "..\DF1.fs"
-#load "ObservableExt.fs"
+#load @"..\DF1.fs"
 #load @"..\Utilities\TraceCharts.fs"
 #load @"..\Utilities\VizUtils.fs"
 #load @"..\Utilities\VizLandscape.fs"
@@ -12,6 +11,7 @@ open CA
 open DF1
 open System.IO
 open TraceCharts
+open Metrics
 
 let parmDefs = 
     [|
@@ -65,6 +65,24 @@ let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
+
+let obsTopoM = 
+  Metrics.obsAll 
+  |> Observable.choose (function Metrics.TopoState s -> Some s | _ -> None)
+  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
+  |> Observable.together obsTopo
+
+let obsSituM = 
+  Metrics.obsAll 
+  |> Observable.choose (function Metrics.SitState s -> Some s | _ -> None)
+  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
+  |> Observable.together obsSituational
+
+let obsHistM = 
+  Metrics.obsAll 
+  |> Observable.choose (function Metrics.HistState s -> Some s | _ -> None)
+  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
+  |> Observable.together obsHist
 
 let inline sqr x = x * x
 
@@ -200,10 +218,10 @@ let frm =
         [ 
         chPoints (Some background) "All" obsAll
         chPoints (Some background) "Domain" obsDomain
-        chPoints (Some background) "Situational" obsSituational
+        chPoints2 (Some background) "Situational" obsSituM
         chPoints (Some background) "Normative" obsNorm
-        chPoints (Some background) "Historical" obsHist
-        chPoints (Some background) "Topographical"  obsTopo
+        chPoints2 (Some background) "Historical" obsHistM
+        chPoints2 (Some background) "Topographical"  obsTopoM
         chCounts obsKSCounts
         ]
 

@@ -45,6 +45,27 @@ let createObservableAgent<'T> (token:System.Threading.CancellationToken) =
                         lock subscribers (fun () -> 
                             subscribers := subscribers.Value.Remove(key1)) } }
     obs,agent.Post
+
+
+let together (obs1:IObservable<'a>) (obs2:IObservable<'b>) =
+    let mutable state:('a option * 'b option) = (None,None)
+    { new IObservable<'a option *'b option> with
+        member x.Subscribe(observer) =
+          obs1.Subscribe (fun a -> printfn "a: %A" a; state <-  (Some a, snd state); observer.OnNext state) |> ignore
+          obs2.Subscribe (fun b ->  printfn "b: %A" b; state <- (fst state, Some b); observer.OnNext state)
+    }
+
+let separate (obs:IObservable<'a option*'b option>) =
+    { new IObservable<'a> with
+        member x.Subscribe(observer) =
+          obs.Subscribe (function (Some a,_) ->  observer.OnNext a | _ -> () ) 
+    }
+    ,
+    { new IObservable<'b> with
+        member x.Subscribe(observer) =
+          obs.Subscribe (function (_,Some b) ->  observer.OnNext b | _ -> () )
+    }
+
 (*
 #load "ObservableExtensions.fs"
 open System

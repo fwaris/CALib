@@ -1,6 +1,5 @@
 ﻿#load "TestEnv.fsx"
-#load "..\DF1.fs"
-#load "ObservableExt.fs"
+#load @"..\DF1.fs"
 open CAUtils
 open TestEnv
 open CA

@@ -64,6 +64,8 @@
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="CAEvolve.fs" />
+    <Compile Include="Metrics\ObservableExt.fs" />
+    <Compile Include="Metrics\Metrics.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
@@ -106,7 +108,6 @@
     <None Include="Testing\TestParms.fsx" />
     <None Include="Testing\TestSituational.fsx" />
     <None Include="Testing\IPDLogAnalysis.fsx" />
-    <None Include="Testing\ObservableExt.fs" />
     <None Include="Testing\IPDWTDRun.xlsx" />
     <None Include="Testing\IPDStats.fsx" />
     <None Include="Testing\CecBenchmark.fsx" />

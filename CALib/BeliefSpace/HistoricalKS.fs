@@ -34,6 +34,8 @@ type HistoryState<'k> =
         Events      : ChangeEvent<'k> list
     }
 
+let log events = events |> List.map (fun {Best=b; Direction=_} -> b.Parms) |> Metrics.MetricMsg.HistState |> Metrics.postAll
+
 let create (parmDefs:Parm[]) isBetter window =
     let create history fAccept fInfluence : KnowledgeSource<_> =
         {
@@ -73,6 +75,11 @@ let create (parmDefs:Parm[]) isBetter window =
                         Direction   = direction
                         Events      = events
                     }
+
+                #if _LOG_
+                log events
+                #endif
+
                 voters, create updatedHistory acceptance fInfluence
     
     let influence {Events=events} s (ind:Individual<_>) =

@@ -4,11 +4,15 @@
 #load "..\Utilities\VizUtils.fs"
 #load "..\DF1.fs"
 #load "..\Utilities\VizLandscape.fs"
+#r @"..\..\packages\FSharp.Charting\lib\net45\FSharp.Charting.dll"
+
 open DF1
 open System.IO
 open System.Drawing
 open System.Drawing.Drawing2D
 open VizLandscape
+open FSharp.Charting
+fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")
 
 let landscapes = [
     "1.01", @"test_cone1.01.csv"
@@ -38,6 +42,18 @@ let test4() =
     let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
     w := updateWorld !w
     landscape !w |> gen |> showLandscape
+
+let test5() =
+    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
+    for i in 1 .. 1000 do w := updateWorld !w
+    w := updateWorld !w //single step
+    landscape !w |> gen |> showLandscape
+
+let test6() =
+    let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99)
+    let s1 = w |> Seq.unfold (fun w -> let (c,_) = landscape w in Some (c.L, updateWorld w))
+    let cs = s1 |> Seq.take 500
+    Chart.Line (cs |> Seq.map (fun xs -> xs.[0],xs.[1]))
 
 let run() =
     df1s 

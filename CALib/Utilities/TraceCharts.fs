@@ -32,6 +32,18 @@ let chPoints bg title obs =
         |> applyBg bg
     ch,bg
 
+let chPoints2 bg title obs =
+    let obs1,obs2 = obs |> Observable.separate
+    let ch =
+        [LiveChart.Point(obs1); LiveChart.Point(obs2)]
+        |> Chart.Combine 
+        |> Chart.WithTitle title
+        |> Chart.WithTitle(Color=System.Drawing.Color.Purple)
+        |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+        |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+        |> applyBg bg
+    ch,bg
+
 let chCounts obs =
     let ch =
         LiveChart.Column(obs, Title="Live KS Counts") 

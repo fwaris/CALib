@@ -30,6 +30,8 @@ let cfact xs k =  KMeansClustering.randomCentroids Probability.RNG.Value xs k |>
 let cdist (x,_) y = KMeansClustering.euclidean x y
 let cavg (c,_) xs = (KMeansClustering.avgCentroid c xs),xs
 
+let log cntrds = cntrds |> Seq.map (fun c -> c.Center) |> Seq.toList |> Metrics.MetricMsg.TopoState |> Metrics.postAll
+
 let toCentroid state (c,members) =
     let lbest = members |> Seq.maxBy (fun ps -> (state.Fitness.Value ps) * state.FitScaler)
     {
@@ -51,6 +53,11 @@ let updateClusters state voters =
     let kcntrods,_ = KMeansClustering.kmeans cdist cfact cavg  parmsArray k
     let cntrds = kcntrods |> Seq.filter (fun (_,ls)->List.isEmpty ls |> not) |> Seq.map (toCentroid state) |> Seq.toList
     let _,wheel = cntrds |> Seq.map (fun c->c,float c.Count) |> Seq.toArray |> Probability.createWheel
+
+    #if _LOG_
+    log cntrds
+    #endif
+
     { state with Centroids = cntrds; SpinWheel=wheel}
 
 let influenceIndv state s (indv:Individual<_>) =

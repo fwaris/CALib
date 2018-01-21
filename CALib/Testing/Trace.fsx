@@ -1,7 +1,6 @@
 ﻿#load "TestEnv.fsx"
-#load "..\DF1.fs"
-#load "ObservableExt.fs"
-#load "..\Utilities\TraceCharts.fs"
+#load @"..\DF1.fs"
+#load @"..\Utilities\TraceCharts.fs"
 open CAUtils
 open TestEnv
 open CA

@@ -65,7 +65,7 @@ let genImage ((mX,mY,mZ),ftnss) =
             let z' = ftnss [|x';y'|] 
             let c = cI (max z' 13.) 13. mZ cb
             let i = (pH1 - h) * channelStride + (w * 4)
-            NativePtr.set ptr i c.B
+            NativePtr.set ptr i c.B                         //assume little endian arch. BGRA 
             NativePtr.set ptr (i+1) c.G
             NativePtr.set ptr (i+2) c.R
             NativePtr.set ptr (i+3) 255uy
