@@ -35,7 +35,7 @@ let chPoints bg title obs =
 let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let ch =
-        [LiveChart.Point(obs1); LiveChart.Point(obs2)]
+        [LiveChart.Point(obs1); LiveChart.Point(obs2) |> Chart.WithStyling (Color=Color.Green)]
         |> Chart.Combine 
         |> Chart.WithTitle title
         |> Chart.WithTitle(Color=System.Drawing.Color.Purple)

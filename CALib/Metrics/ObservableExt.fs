@@ -50,9 +50,9 @@ let createObservableAgent<'T> (token:System.Threading.CancellationToken) =
 let together (obs1:IObservable<'a>) (obs2:IObservable<'b>) =
     let mutable state:('a option * 'b option) = (None,None)
     { new IObservable<'a option *'b option> with
-        member x.Subscribe(observer) =
-          obs1.Subscribe (fun a -> printfn "a: %A" a; state <-  (Some a, snd state); observer.OnNext state) |> ignore
-          obs2.Subscribe (fun b ->  printfn "b: %A" b; state <- (fst state, Some b); observer.OnNext state)
+        member x.Subscribe(observer) = //TODO: need to dispose both 
+          obs1.Subscribe (fun a -> state <-  (Some a, snd state); observer.OnNext state) |> ignore
+          obs2.Subscribe (fun b -> state <- (fst state, Some b); observer.OnNext state)
     }
 
 let separate (obs:IObservable<'a option*'b option>) =

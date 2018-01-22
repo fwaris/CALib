@@ -20,7 +20,7 @@ let inline makeCA fitness comparator pop bspace kd influence =
         }
 
 let termination step = step.Count > 1000
-let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness,stp.Best.[0].Parms else 0.0,[||]
+let best stp = if stp.Best.Length > 0 then stp.Best.[0].MFitness,stp.Best.[0].MParms else 0.0,[||]
 
 let dataCollector s = 
     best s, 
@@ -54,7 +54,7 @@ let ipdDataCollector s =
 
 let runCollect data maxBest ca =
     let loop stp = 
-        let stp = CARunner.step stp maxBest
+        let stp = CARunner.step false stp maxBest
 //        printfn "step %i. fitness=%A" stp.Count (best stp)
 //        printfn "KS = %A" (stp.CA.Population |> Seq.countBy (fun x->x.KS))
         stp

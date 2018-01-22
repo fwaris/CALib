@@ -1,5 +1,7 @@
 ﻿module CA
 
+open System.Runtime.CompilerServices
+
 type Tree<'a> = Leaf of 'a | Node of 'a * Tree<'a> list | Roots of Tree<'a> list
 
 let inline parms (x:^T) = (^T:(member Parms:float []) x) //get parameters from compatible structures
@@ -21,15 +23,16 @@ and Network<'k>     = Population<'k> -> Id -> Individual<'k> array
 and BeliefSpace<'k> = KnowledgeSource<'k> Tree
 and Acceptance<'k>  = BeliefSpace<'k> -> Population<'k> -> Individual<'k> array
 and Influence<'k>   = BeliefSpace<'k> -> Population<'k> -> Population<'k>
-and Update<'k>      = BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
+and Update<'k>      = bool -> BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
 and KnowledgeDist<'k>   = KD of ((Population<'k>*BeliefSpace<'k>) -> Network<'k> -> (Population<'k>*BeliefSpace<'k>*KnowledgeDist<'k>))
 
 and KnowledgeSource<'k> = 
     {
         Type        : Knowledge
-        Accept      : Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
+        Accept      : bool -> Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
         Influence   : Temp -> Individual<'k> -> Individual<'k>
     }
+
 
 type CA<'k> =
     {
@@ -44,7 +47,8 @@ type CA<'k> =
         Comparator              : Comparator
     }
 
-type TimeStep<'k> = {CA:CA<'k> ; Best:Individual<'k> list; Progress:float list; Count:int}
+type Marker = {MParms:float[]; MFitness:float}
+type TimeStep<'k> = {CA:CA<'k> ; Best:Marker list; Progress:float list; Count:int}
 type TerminationCondition<'k> = TimeStep<'k> -> bool
 
             

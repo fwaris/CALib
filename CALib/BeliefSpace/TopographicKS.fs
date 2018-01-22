@@ -15,10 +15,12 @@ type Centroid =
         BestFit : float
     }
 
+type CIndv = {CParms:float[]; CFitness:float}
+
 type State<'a> = 
     {
         Centroids       : Centroid list
-        Individuals     : Individual<'a> array
+        CIndvs          : Marker array
         Fitness         : Fitness
         FitScaler       : float
         SpinWheel       : (Centroid*float)[]
@@ -42,12 +44,13 @@ let toCentroid state (c,members) =
     }
 
 let updateClusters state voters =
+    let voters = voters |> Seq.map (fun indv -> toMarker indv)
     let vns = 
-        Seq.append state.Individuals voters 
-        |> Seq.sortByDescending (fun i-> state.FitScaler * i.Fitness) 
+        Seq.append state.CIndvs voters 
+        |> Seq.sortByDescending (fun i-> state.FitScaler * i.MFitness) 
         |> Seq.truncate MAX_INDVS 
         |> Seq.toArray
-    let parmsArray = vns |> Array.map(fun i->i.Parms)
+    let parmsArray = vns |> Array.map(fun i->i.MParms)
     // type CentroidsFactory<'a> = 'a seq -> int -> Centroid<'a> seq
     let k = match vns.Length with x when x < 10 -> 2 | x when x < 20 -> 4 | x when x < 100 -> 5 | x when x < 500 -> 7 | _ -> 10
     let kcntrods,_ = KMeansClustering.kmeans cdist cfact cavg  parmsArray k
@@ -70,8 +73,8 @@ let influenceIndv state s (indv:Individual<_>) =
 
 let initialState parmDefs isBetter fitness =
     {
-        Centroids = []
-        Individuals = [||]
+        Centroids   = []
+        CIndvs      = [||]
         Fitness     = fitness
         FitScaler   = if isBetter 1. 0. then 1. else -1.
         SpinWheel   = [||]
@@ -86,7 +89,8 @@ let create parmDefs isBetter (fitness:Fitness) =
             Influence   = influenceIndv state
         }
 
-    let rec acceptance state (voters:Individual<_> array) =
+    let rec acceptance state envChanged  (voters:Individual<_> array) =
+        let state = if envChanged then initialState parmDefs isBetter fitness else state
         let state = updateClusters state voters
         voters,create state acceptance 
            

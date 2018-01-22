@@ -63,6 +63,15 @@ let normalizeParm (parmDefs:Parm[]) indv s i  {ParmLo=pLo; ParmHi=pHi} parm =
     else
         distributParm s indv i parmDefs.[i] pLo pHi
 
+let createNorms parmDefs isBetter = parmDefs |> Array.map (fun p -> 
+    {
+        FitnessLo = if isBetter 1. 2. then System.Double.MaxValue else System.Double.MinValue
+        ParmLo    =  minP p
+        FitnessHi = if isBetter 1. 2. then System.Double.MaxValue else System.Double.MinValue
+        ParmHi    = maxP p
+    })
+
+
 let create parmDefs isBetter =
     let create (norms:Norm array) fAccept fInfluence : KnowledgeSource<_> =
         {
@@ -71,8 +80,9 @@ let create parmDefs isBetter =
             Influence   = fInfluence norms
         }
 
-    let rec acceptance fInfluence norms (voters:Individual<_> array) =
+    let rec acceptance fInfluence norms envChanged (voters:Individual<_> array) =
         //assumes that individuals are sorted best fitness first
+        let norms = if envChanged then createNorms parmDefs isBetter else norms
         let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
         voters,create updatedNorms acceptance fInfluence 
@@ -81,12 +91,5 @@ let create parmDefs isBetter =
         (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> normalizeParm parmDefs ind.Parms s i n p)
         ind
         
-    let initialNorms = parmDefs |> Array.map (fun p -> 
-        {
-            FitnessLo = if isBetter 1. 2. then System.Double.MaxValue else System.Double.MinValue
-            ParmLo    =  minP p
-            FitnessHi = if isBetter 1. 2. then System.Double.MaxValue else System.Double.MinValue
-            ParmHi    = maxP p
-        })
-
+    let initialNorms = createNorms parmDefs isBetter
     create initialNorms acceptance influence

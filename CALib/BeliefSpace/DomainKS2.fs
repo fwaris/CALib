@@ -27,35 +27,15 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
         parms.[i] <- p
         partialSlope)
 
-let create parmDefs isBetter (fitness:Fitness) maxExemplars =
-    let create state fAccept fInfluence : KnowledgeSource<_> =
+let create parmDefs isBetter (fitness:Fitness) =
+    let create fAccept fInfluence : KnowledgeSource<_> =
         {
             Type        = Domain
-            Accept      = fAccept fInfluence state
-            Influence   = fInfluence state
+            Accept      = fAccept
+            Influence   = fInfluence
         }
 
-    let rec acceptance 
-        fInfluence 
-        (prevExemplars : Individual<_> list) 
-        (voters : Individual<_> array) =
-        match voters with
-        | [||] -> voters, create prevExemplars acceptance fInfluence
-        | inds ->
-            let rBest = inds.[0] //assume best individual is first
-            let nBest =
-                match prevExemplars with
-                | []                                                    -> Some rBest
-                | pBest::_ when isBetter rBest.Fitness pBest.Fitness    -> Some rBest
-                | _                                                     -> None
-            match nBest with
-            | Some nBest ->
-                let exemplars = nBest::prevExemplars |> List.truncate maxExemplars
-                voters, create exemplars acceptance fInfluence
-            | None -> 
-                voters, create prevExemplars acceptance fInfluence
-
-    let influence exemplars influenceLevel (ind:Individual<_>) =
+    let influence influenceLevel (ind:Individual<_>) =
         //mutation
         let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
         let parms = ind.Parms
@@ -67,5 +47,9 @@ let create parmDefs isBetter (fitness:Fitness) maxExemplars =
                 | Down -> slideDown (influenceLevel*mag) eSigma parmDefs.[i] p
                 | Flat -> p)//evolveS s eSigma p)
         ind
+
+    let rec acceptance 
+        envChanged
+        (voters : Individual<_> array) = voters, create acceptance influence
        
-    create [] acceptance influence
+    create acceptance influence

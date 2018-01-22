@@ -7,6 +7,7 @@
 #load "../Probability.fs"
 #load "../CAUtils.fs"
 #load "../CAEvolve.fs"
+#load "../Settings.fs"
 #load "../Metrics/ObservableExt.fs"
 #load "../Metrics/Metrics.fs"
 #load "../BeliefSpace/SituationalKS.fs"

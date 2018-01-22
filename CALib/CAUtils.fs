@@ -116,6 +116,7 @@ let createPop ksInitializer parms size randomizeAll =
                 }
     |]
 
+let toMarker indv = {MParms=indv.Parms |> Array.copy; MFitness=indv.Fitness}
 
 let lBestNetwork (pop:Population<'k>) id = //return 2 'friends' from the ring
     let m1 = id - 1

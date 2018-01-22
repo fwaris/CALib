@@ -5,15 +5,17 @@ open CAEvolve
 
 let eSigma = 3.0
 
-type State<'a> = 
+type State = 
     {
-        Exemplars    :   Individual<'a> array
+        Exemplars    :   Marker array
         SpinWheel    :   (int*float)array
     }
+    with
+      static member Default = {Exemplars=[||];SpinWheel=[||]}
 
-let fitweights isBetter (exemplars:Individual<_> array) =
+let fitweights isBetter (exemplars:Marker array) =
     let tx m = if isBetter 2. 1. then m else 1.0 / m
-    let wghts = exemplars |> Array.map (fun i-> tx i.Fitness)
+    let wghts = exemplars |> Array.map (fun i-> tx i.MFitness)
     wghts 
 
 let parmDiversity p1 p2 = 
@@ -48,31 +50,32 @@ let rec clct acc l1 l2 =
 
 // clct [] ['a',[1;2]; 'b',[3;4]; 'c',[5;6]] []
 
-let log events = events |> Seq.map (fun b -> b.Parms) |> Seq.toList |> Metrics.MetricMsg.SitState |> Metrics.postAll
+let log exmplrs = exmplrs |> Seq.map (fun e -> e.MParms) |> Seq.toList |> Metrics.MetricMsg.SitState |> Metrics.postAll
 
-let pickExamplars isBetter prevE voters =
+let pickExamplars isBetter (prevE:Marker[]) (voters:Individual<_> seq) =
     let tx = if isBetter 2. 1. then -1. else 1.
+    let voters = voters |> Seq.map (fun indv -> toMarker indv)
     let ex = Seq.append prevE  voters |> Seq.toArray
-    let ex = Array.sortBy (fun (x:Individual<_>) -> tx * x.Fitness) ex
+    let ex = Array.sortBy (fun x -> tx * x.MFitness) ex
     let best = ex.[0]
-    let within10Pct = best.Fitness * 0.15
+    let within10Pct = best.MFitness * 0.15
 //    let ex = ex.[1..] |> Array.filter(fun i -> i.Fitness - best.Fitness |> abs <= within10Pct) //all others, i.e. not best
     let ex = ex.[1..] 
-    let divsM = ex |> Array.map (fun i-> i.Id, parmDiversity best.Parms i.Parms) |> Map.ofArray
+    let divsM = ex |> Array.mapi (fun i indv -> i, parmDiversity best.MParms indv.MParms) |> Map.ofArray
     let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
     let (_,mnD) = divsM |> Map.toArray |> Seq.minBy snd
     let bins = makeBins mnD (mxD + 0.0001) 5.
-    let binned = (Map.empty,ex) ||> Array.fold (fun acc indv -> 
-        let d = divsM.[indv.Id]
+    let binned = (Map.empty,ex |> Array.mapi (fun i exm ->i,exm)) ||> Array.fold (fun acc (i,exm) -> 
+        let d = divsM.[i]
         let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
         match acc |> Map.tryFind b with
-        | Some ls -> indv::ls
-        | None    -> [indv]
+        | Some ls -> exm::ls
+        | None    -> [exm]
         |> fun x -> acc |> Map.add b x
         )
     let binned = //sort each bin by decreasing order of fitness
         binned 
-        |> Map.map (fun k v -> v |> List.sortBy (fun i-> tx * i.Fitness))
+        |> Map.map (fun k v -> v |> List.sortBy (fun exm -> tx * exm.MFitness))
         |> Map.toSeq
         |> Seq.sortBy (fun ((mn,mx),_) -> mx) //sort all bins by decreasing diversity
         |> Seq.toList
@@ -89,7 +92,9 @@ let create (parmDefs:Parm[]) isBetter maxExemplars =
     let rec acceptance 
         fInfluence 
         state
+        envChanged
         (voters : Individual<_> array) =
+        let state = if envChanged then State.Default else state
         let explrs = pickExamplars isBetter state.Exemplars voters |> List.truncate maxExemplars |> List.toArray
 //        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
 //        printfn ""
@@ -113,4 +118,4 @@ let create (parmDefs:Parm[]) isBetter maxExemplars =
             ind.Parms |> Array.iteri (fun i p -> evolveP influenceLevel eSigma ind.Parms i parmDefs.[i] p)
             ind
 
-    create {Exemplars=[||];SpinWheel=[||]} acceptance influence
+    create State.Default acceptance influence

@@ -48,10 +48,9 @@ let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let influenceInd caParms influenceLevel sigma (influenced:Individual<_>) (influencer:Individual<_>) = 
+let influenceInd caParms influenceLevel sigma (influenced:Individual<_>) (parmsInfluencer:float[]) = 
     let pId = influenced.Parms
-    let pIr = influencer.Parms
-    caParms |> Array.iteri (fun i p -> influenceInd' pId influenceLevel sigma i p pId.[i] pIr.[i])
+    caParms |> Array.iteri (fun i p -> influenceInd' pId influenceLevel sigma i p pId.[i] parmsInfluencer.[i])
     influenced
 
 ///influenced indivual's parameters are modified 

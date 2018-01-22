@@ -64,6 +64,7 @@
     <Compile Include="CA.fs" />
     <Compile Include="CAUtils.fs" />
     <Compile Include="CAEvolve.fs" />
+    <Compile Include="Settings.fs" />
     <Compile Include="Metrics\ObservableExt.fs" />
     <Compile Include="Metrics\Metrics.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />

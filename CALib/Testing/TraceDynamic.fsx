@@ -23,6 +23,7 @@ let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
+let envChangedCount = ref 0
 
 let initBg = VizLandscape.gen (m,f)
 
@@ -69,20 +70,20 @@ let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts
 let obsTopoM = 
   Metrics.obsAll 
   |> Observable.choose (function Metrics.TopoState s -> Some s | _ -> None)
-  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsTopo
+  |> Observable.map (fun l ->  l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
+  //|> Observable.together obsTopo
 
 let obsSituM = 
   Metrics.obsAll 
   |> Observable.choose (function Metrics.SitState s -> Some s | _ -> None)
   |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsSituational
+  //|> Observable.together obsSituational
 
 let obsHistM = 
   Metrics.obsAll 
   |> Observable.choose (function Metrics.HistState s -> Some s | _ -> None)
-  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsHist
+  |> Observable.map (fun l -> printfn "Hist %d" l.Length; l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
+  //|> Observable.together obsHist
 
 let inline sqr x = x * x
 
@@ -102,8 +103,18 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
     let st = esum / float n.Length
     st
 
-let step st = CARunner.step st 2
+let step envChanged st = CARunner.step envChanged st 2
+
 let vmx = (0.2, 0.9)
+
+let dynmic() = 
+  let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
+  let m,f = DF1.landscape !w
+  let fitness = ref f
+  let maxCone = ref m
+  ()
+
+
 let startCA = kdIpdCA vmx fitness comparator parmDefs
 //let startCA = kdWeightedCA fitness comparator parmDefs
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
@@ -198,36 +209,18 @@ let postObs() =
     do fpTopo dTopo
     do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
 
-let run startStep =
-    let go = ref true
-    async {
-        while !go do
-            do! Async.Sleep 250
-            st := step !st
-            let (bfit,gb) = best !st
-            let solFound = Array.zip gb maxCone.Value.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
-            if solFound then 
-                //go := false //don't stop for dynamic
-                printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
-            postObs()
-    }
-
-;;
 let frm = 
     container
         [ 
         chPoints (Some background) "All" obsAll
         chPoints (Some background) "Domain" obsDomain
-        chPoints2 (Some background) "Situational" obsSituM
+        chPoints (Some background) "Situational M" obsSituM
         chPoints (Some background) "Normative" obsNorm
-        chPoints2 (Some background) "Historical" obsHistM
-        chPoints2 (Some background) "Topographical"  obsTopoM
+        chPoints (Some background) "Historical M" obsHistM
+        chPoints (Some background) "Topographical M"  obsTopoM
         chCounts obsKSCounts
         ]
-
-let autoStep() = Async.Start(run startStep, cts.Token);;
-let singleStep() = st := step !st; postObs()
-
+;;
 let updateEnvironment() =
     async {
         w := updateWorld !w
@@ -240,7 +233,35 @@ let updateEnvironment() =
         updateBgForm frm newBg
         fitness := f
         maxCone := c
+        envChangedCount := !envChangedCount + 1
     }
+
+let run startStep =
+    let go = ref true
+    async {
+        while !go do
+            do! Async.Sleep 250
+            let envCh =
+              if st.Value.Count % 100 = 0 & !envChangedCount < 3 then
+                updateEnvironment() |> Async.RunSynchronously
+                printf "env changed"
+                true
+              else 
+                false
+            st := step envCh !st
+            let (bfit,gb) = best !st
+            let solFound = Array.zip gb maxCone.Value.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
+            if solFound then 
+                //go := false //don't stop for dynamic
+                printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
+            postObs()
+    }
+
+;;
+
+let autoStep() = Async.Start(run startStep, cts.Token);;
+let singleStep() = st := step false !st; postObs()
+
 
 (*
 autoStep()

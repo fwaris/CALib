@@ -8,7 +8,7 @@ let defaultBeliefSpace parmDefs minmax fitness =
         Node (SituationalKS.create parmDefs minmax 15,
             [
                 Leaf (HistoricalKS.create parmDefs minmax 100)
-                Leaf (DomainKS2.create parmDefs minmax fitness 2)
+                Leaf (DomainKS2.create parmDefs minmax fitness)
             ])
         Leaf (NormativeKS.create parmDefs minmax)
         Leaf (TopographicKS.create parmDefs minmax fitness)
@@ -33,15 +33,15 @@ let acceptance take minmax beliefSpace (pop:Population<_>) =
     topInds
 
 ///default belief space update function
-let update beliefSpace bestInds = 
+let update envChanged beliefSpace bestInds  =          
     let rec update bestInds ksTree  =
         match ksTree with
         | Roots ksList                  ->  Roots (ksList |> List.map (update bestInds))
         | Node ({Accept=accept},ksList) ->
-                                            let inds,ks = accept bestInds
+                                            let inds,ks = accept envChanged bestInds
                                             Node (ks,ksList |> List.map (update inds))
         | Leaf {Accept=accept}          -> 
-                                            let _,ks = accept bestInds
+                                            let _,ks = accept envChanged bestInds
                                             Leaf ks
     update bestInds beliefSpace
 
@@ -53,20 +53,30 @@ let baseInfluence beliefSpace pop =
         |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
     pop
 
+let detectChange (fitness:Fitness) (best:Marker list) =
+    if not Settings.isDynamic then
+      false
+    elif List.isEmpty best then
+      false
+    else
+      let b1 = best.[0]
+      let f2 = fitness.Value b1.MParms
+      abs (f2 - b1.MFitness) > 0.00001
+
 ///single step CA
-let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
+let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
-    let blSpc           = ca.Update ca.BeliefSpace topInds
-    let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k
-    let pop,blSpc,kdist = fkdist (pop,blSpc) ca.Network
-    let pop             = ca.Influence blSpc pop
     let newBest = 
         match best,topInds with
         | _ ,[||]   -> best
-        | [],is     -> [is.[0]]
-        | b::_,is when ca.Comparator is.[0].Fitness b.Fitness -> (is.[0]::best) |> List.truncate maxBest
+        | [],is     -> [CAUtils.toMarker is.[0]]
+        | b::_,is when ca.Comparator is.[0].Fitness b.MFitness -> (CAUtils.toMarker is.[0]::best) |> List.truncate maxBest
         | _         -> best
+    let blSpc           = ca.Update envChanged ca.BeliefSpace topInds
+    let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k
+    let pop,blSpc,kdist = fkdist (pop,blSpc) ca.Network
+    let pop             = ca.Influence blSpc pop
     {
         CA =
             {ca with
@@ -75,20 +85,20 @@ let step {CA=ca; Best=best; Count=c; Progress=p} maxBest =
                 KnowlegeDistribution = kdist
             }
         Best = newBest
-        Progress = newBest.[0].Fitness::p |> List.truncate 100
+        Progress = newBest.[0].MFitness::p |> List.truncate 100
         Count = c + 1
     }
 
 ///run till termination
 let run desc termination maxBest ca =
     let rec loop stp = 
-        let stp = step stp maxBest
-        let best = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
+        let stp = step false stp maxBest
+        let best = if stp.Best.Length > 0 then stp.Best.[0].MFitness else 0.0
         match stp.Progress.Length with
         | 0 -> printfn "starting '%s'" desc
-        | 1 -> printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+        | 1 -> printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].MParms
         | _ when stp.Progress.[0] = stp.Progress.[1] |> not -> 
-            printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].Parms
+            printfn "'%s' %d %f %A" desc stp.Count stp.Progress.[0] stp.Best.[0].MParms
         | _ -> ()
         if termination stp then
             stp
