@@ -29,7 +29,7 @@ let fitness = df1 |> ref
 let comparator  = CAUtils.Maximize
 
 let termination step = step.Count > 100
-let best stp = if stp.Best.Length > 0 then stp.Best.[0].Fitness else 0.0
+let best stp = if stp.Best.Length > 0 then stp.Best.[0].MFitness else 0.0
 
 let tk s = s |> Seq.truncate 250 |> Seq.toList
 

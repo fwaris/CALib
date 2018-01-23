@@ -10,6 +10,7 @@
 #load "../Settings.fs"
 #load "../Metrics/ObservableExt.fs"
 #load "../Metrics/Metrics.fs"
+#load "../Metrics/Social.fs"
 #load "../BeliefSpace/SituationalKS.fs"
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"

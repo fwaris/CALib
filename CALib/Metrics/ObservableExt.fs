@@ -66,6 +66,15 @@ let separate (obs:IObservable<'a option*'b option>) =
           obs.Subscribe (function (_,Some b) ->  observer.OnNext b | _ -> () )
     }
 
+let withI (obs:IObservable<'a>) =
+    let mutable state = 0
+    { new IObservable<int *'a> with
+        member x.Subscribe(observer) = //TODO: need to dispose both 
+          obs.Subscribe(fun a -> state <- state + 1; observer.OnNext (state,a))
+    }
+
+
+
 (*
 #load "ObservableExtensions.fs"
 open System

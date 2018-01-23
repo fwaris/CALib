@@ -3,6 +3,7 @@
 #load @"..\DF1.fs"
 #load @"..\Utilities\TraceCharts.fs"
 #load @"..\Utilities\VizUtils.fs"
+#load "..\Utilities\Viz.fs"
 #load @"..\Utilities\VizLandscape.fs"
 
 open CAUtils
@@ -12,6 +13,7 @@ open DF1
 open System.IO
 open TraceCharts
 open Metrics
+open OpenCvSharp
 
 let parmDefs = 
     [|
@@ -19,14 +21,14 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
+let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
 let envChangedCount = ref 0
 
 let initBg = VizLandscape.gen (m,f)
-
+ 
 let background =
     let f=Path.GetTempFileName()
     initBg.Save f
@@ -36,7 +38,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 360 true
 
 let kdIpdCA vmx ftnss cmprtr parmDefs  = 
     let b = bsp ftnss parmDefs cmprtr
@@ -66,6 +68,8 @@ let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
 let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
+let obsSeg_,fpSeg = Observable.createObservableAgent<float> cts.Token
+let obsSeg = obsSeg_ |> Observable.withI
 
 let obsTopoM = 
   Metrics.obsAll 
@@ -106,14 +110,6 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
 let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
-
-let dynmic() = 
-  let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
-  let m,f = DF1.landscape !w
-  let fitness = ref f
-  let maxCone = ref m
-  ()
-
 
 let startCA = kdIpdCA vmx fitness comparator parmDefs
 //let startCA = kdWeightedCA fitness comparator parmDefs
@@ -199,6 +195,12 @@ let postObs() =
         |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
         |> Seq.sortBy fst
         |> Seq.toList
+    let dSeg = Social.segregation                                   //Schelling-like segregation measure
+                  2                                                 //radius of neighborhood
+                  (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
+                  Social.ksSegments                                 //list of segments
+                  st.Value.CA                                       //current state of CA
+                  (fun x -> Social.ksNum (fst x.KS).KS)             //funtion to return segment for each individual
     do fpAll dAll
     do fpKSCounts ksCounts
     do fpDomain dDomain
@@ -208,6 +210,7 @@ let postObs() =
     do fpHist dHist
     do fpTopo dTopo
     do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+    do fpSeg dSeg
 
 let frm = 
     container
@@ -219,9 +222,10 @@ let frm =
         chPoints (Some background) "Historical M" obsHistM
         chPoints (Some background) "Topographical M"  obsTopoM
         chCounts obsKSCounts
+        chDisp "Segregation index" obsSeg
         ]
 ;;
-let updateEnvironment() =
+let changeEnvironment() =
     async {
         w := updateWorld !w
         let (c,f) = landscape !w
@@ -241,9 +245,10 @@ let run startStep =
     async {
         while !go do
             do! Async.Sleep 250
+            //TODO: detect change from indv performance - change in fitness for same location at different gen
             let envCh =
-              if st.Value.Count % 100 = 0 & !envChangedCount < 3 then
-                updateEnvironment() |> Async.RunSynchronously
+              if st.Value.Count > 0 && st.Value.Count % 100 = 0 && !envChangedCount < 4 then
+                changeEnvironment() |> Async.RunSynchronously
                 printf "env changed"
                 true
               else 
@@ -252,7 +257,16 @@ let run startStep =
             let (bfit,gb) = best !st
             let solFound = Array.zip gb maxCone.Value.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
             if solFound then 
-                //go := false //don't stop for dynamic
+                if !envChangedCount >= 4 then
+                  go := false
+                  let m = new Mat(Size(512,512), MatType.CV_8UC3)
+                  let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+                  //let fclr = Viz.clrKnowledge
+                  let fclr = ipdClr
+                  m |> Viz.visualizePopHex 512 fclr  st.Value.CA.Network st.Value.CA.Population
+                  VizUtils.win "m1" m
+                  m.SaveImage(@"D:\repodata\calib\run1\game399.png") |> ignore
+
                 printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             postObs()
     }
@@ -271,7 +285,6 @@ singleStep()
 updateEnvironment() |> Async.Start
 
 cts.Cancel()
-
 
 *)
 

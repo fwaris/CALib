@@ -67,6 +67,7 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Metrics\ObservableExt.fs" />
     <Compile Include="Metrics\Metrics.fs" />
+    <Compile Include="Metrics\Social.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
