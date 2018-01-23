@@ -21,7 +21,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
+let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -75,19 +75,19 @@ let obsTopoM =
   Metrics.obsAll 
   |> Observable.choose (function Metrics.TopoState s -> Some s | _ -> None)
   |> Observable.map (fun l ->  l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  //|> Observable.together obsTopo
+  |> Observable.together obsTopo
 
 let obsSituM = 
   Metrics.obsAll 
   |> Observable.choose (function Metrics.SitState s -> Some s | _ -> None)
   |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  //|> Observable.together obsSituational
+  |> Observable.together obsSituational
 
 let obsHistM = 
   Metrics.obsAll 
   |> Observable.choose (function Metrics.HistState s -> Some s | _ -> None)
   |> Observable.map (fun l -> printfn "Hist %d" l.Length; l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  //|> Observable.together obsHist
+  |> Observable.together obsHist
 
 let inline sqr x = x * x
 
@@ -217,10 +217,10 @@ let frm =
         [ 
         chPoints (Some background) "All" obsAll
         chPoints (Some background) "Domain" obsDomain
-        chPoints (Some background) "Situational M" obsSituM
+        chPoints2 (Some background) "Situational" obsSituM
         chPoints (Some background) "Normative" obsNorm
-        chPoints (Some background) "Historical M" obsHistM
-        chPoints (Some background) "Topographical M"  obsTopoM
+        chPoints2 (Some background) "Historical" obsHistM
+        chPoints2 (Some background) "Topographical M"  obsTopoM
         chCounts obsKSCounts
         chDisp "Segregation index" obsSeg
         ]

@@ -26,7 +26,7 @@ let round' x = System.Math.Round((x:float),2)
 let chPoints bg title obs =
     let ch =
         LiveChart.Point(obs , Title=title) 
-        |> Chart.WithTitle(Color=System.Drawing.Color.Purple)
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
         |> applyBg bg
@@ -35,10 +35,14 @@ let chPoints bg title obs =
 let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let ch =
-        [LiveChart.Point(obs1); LiveChart.Point(obs2) |> Chart.WithStyling (Color=Color.Green)]
+        [
+          LiveChart.Point(obs1); 
+          LiveChart.Point(obs2) 
+          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+        ]
         |> Chart.Combine 
         |> Chart.WithTitle title
-        |> Chart.WithTitle(Color=System.Drawing.Color.Purple)
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
         |> applyBg bg
