@@ -70,6 +70,8 @@ let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Tok
 let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
 let obsSeg_,fpSeg = Observable.createObservableAgent<float> cts.Token
 let obsSeg = obsSeg_ |> Observable.withI
+let obsDfsn_,fbDfsn= Observable.createObservableAgent<float> cts.Token
+let obsDfsn = obsDfsn_ |> Observable.withI
 
 let obsTopoM = 
   Metrics.obsAll 
@@ -201,6 +203,7 @@ let postObs() =
                   Social.ksSegments                                 //list of segments
                   st.Value.CA                                       //current state of CA
                   (fun x -> Social.ksNum (fst x.KS).KS)             //funtion to return segment for each individual
+    let dfsn = Social.diffusion st.Value.CA
     do fpAll dAll
     do fpKSCounts ksCounts
     do fpDomain dDomain
@@ -211,6 +214,7 @@ let postObs() =
     do fpTopo dTopo
     do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
     do fpSeg dSeg
+    do fbDfsn dfsn
 
 let frm = 
     container
@@ -222,7 +226,8 @@ let frm =
         chPoints2 (Some background) "Historical" obsHistM
         chPoints2 (Some background) "Topographical M"  obsTopoM
         chCounts obsKSCounts
-        chDisp "Segregation index" obsSeg
+        chDisp "Segregation" obsSeg
+        chDisp "Diffusion" obsDfsn
         ]
 ;;
 let changeEnvironment() =
