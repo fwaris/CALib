@@ -121,7 +121,7 @@ let inline runNoStats <'a> (st:TimeStep<'a>,ws) =
         ws,false
     let st = step envCh st
     let (bfit,gb) = best st
-    let solFound = Array.zip gb ws.M.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
+    let solFound = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt < 0.001
     if solFound then 
         printfn "sol @ %d - B=%A - C=%A" st.Count (bfit,gb) ws.M
     let dffns = Social.diffusion st.CA
@@ -174,7 +174,6 @@ let runWTD() =
       let startCA = kdWeightedCA FitnessHlder comparator parmDefs
       let st = {CA=startCA; Best=[]; Count=0; Progress=[]}
       let st,ws = ((st,ws),[1..500]) ||> List.fold (fun acc i -> runNoStats acc)
-      let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
       let maxHop = st.CA.Population.Length / 36 / 2
       let segs = [1..maxHop] |> List.map (fun i -> 
         Social.segregation                                    //Schelling-like segregation measure

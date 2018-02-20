@@ -88,6 +88,10 @@ let epsilonM = function
     | F(_,mn,mx)    -> 0.000001
     | I(_,mn,mx)    -> 1.0
 
+let denominatorM = function
+    | F(_,mn,mx)    -> 0.0001
+    | I(_,mn,mx)    -> 1.0
+
 let baseKsInit beliefSpace = 
     let kss = flatten beliefSpace |> List.toArray
     fun i -> kss.[i % kss.Length].Type

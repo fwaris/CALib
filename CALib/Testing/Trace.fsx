@@ -6,6 +6,7 @@ open TestEnv
 open CA
 open DF1
 open System.IO
+open Tracing
 open TraceCharts
 
 let parmDefs = 
@@ -27,7 +28,6 @@ let createFtns df (parms:float array)  =
     df parms
 
 
-
 let (l,m,fitness) = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,ref (createFtns d))
 
 let background = 
@@ -44,7 +44,7 @@ let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 tru
 let kdIpdCA vmx ftnss cmprtr parmDefs  = 
     let b = bsp ftnss parmDefs cmprtr
     let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let ada = KDIPDGame.Geometric(0.9,0.05)
     let kd = ipdKdist ada vmx cmprtr pop 
     makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
 
@@ -58,17 +58,6 @@ let kdWeightedCA f c p  =
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
-
-let cts = new System.Threading.CancellationTokenSource()
-let obsAll,fpAll = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsKSCounts,fpKSCounts = Observable.createObservableAgent<(string*float) seq> cts.Token
-let obsDomain,fpDomain = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsSecDmn,fpSecDmn = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsSituational,fpSituational = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
 
 let inline sqr x = x * x
 
@@ -88,7 +77,7 @@ let dispPop (pop:Population<_>) (network:Network<_>) =
     let st = esum / float n.Length
     st
 
-let step st = CARunner.step st 2
+let step st = CARunner.step false st 2
 let vmx = (0.2, 0.9)
 let startCA = kdIpdCA vmx fitness comparator parmDefs
 //let startCA = kdWeightedCA fitness comparator parmDefs
@@ -174,6 +163,14 @@ let postObs() =
         |> Seq.map (fun (k,fs) -> ks k, fs |> Seq.map snd |> Seq.sum)
         |> Seq.sortBy fst
         |> Seq.toList
+    let dSeg = Social.segregation                                   //Schelling-like segregation measure
+                  2                                                 //radius of neighborhood
+                  (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
+                  Social.ksSegments                                 //list of segments
+                  st.Value.CA                                       //current state of CA
+                  //Social.baseSeg
+                  (fun x -> Social.ksNum (fst x.KS).KS)             //funtion to return segment for each individual
+    let dfsn = Social.diffusion st.Value.CA
     do fpAll dAll
     do fpKSCounts ksCounts
     do fpDomain dDomain
@@ -183,6 +180,8 @@ let postObs() =
     do fpHist dHist
     do fpTopo dTopo
     do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+    do fpSeg dSeg
+    do fbDfsn dfsn
 
 let run startStep =
     let go = ref true
@@ -201,13 +200,15 @@ let run startStep =
 
 container
     [ 
-    chPoints (Some background) "All" obsAll
-    chPoints (Some background) "Domain" obsDomain
-    chPoints (Some background) "Situational" obsSituational
-    chPoints (Some background) "Normative" obsNorm
-    chPoints (Some background) "Historical" obsHist
-    chPoints (Some background) "Topographical"  obsTopo
-    chCounts obsKSCounts
+        chPoints (Some background) "All" obsAll
+        chPoints (Some background) "Domain" obsDomain
+        chPoints2 (Some background) "Situational" obsSituM
+        chPtsLine (Some background) "Normative" obsNormM
+        chPoints2 (Some background) "Historical" obsHistM
+        chPoints2 (Some background) "Topographical M"  obsTopoM
+        chCounts obsKSCounts
+        chDisp "Segregation" obsSeg
+        chDisp "Diffusion" obsDfsn
     ]
 
 let autoStep() = Async.Start(run startStep, cts.Token);;

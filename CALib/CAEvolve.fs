@@ -2,25 +2,44 @@
 open CA
 open CAUtils
 
-let slideUp influenceLevel sigma parmDef v = 
-    let z = zsample()
-    let z' = z * influenceLevel * sigma |> abs
+let stepUp stepSize slope parmDef v = 
+    let z' = stepSize * slope
+    //printfn "Up: %f * %f = %f + %f" stepSize slope z' v
     match parmDef with
     | F (_,mn,mx)   -> v + z' |> clamp mn mx
     | I (_,mn,mx)   -> v + z' |> clampI mn mx
 
-let slideDown influenceLevel sigma parmDef v =
-    let z = zsample()
-    let z' = z * influenceLevel * sigma |> abs
+let stepDown stepSize slope parmDef v =
+    let z' = stepSize * slope
+    //printfn "Dn: %f * %f = %f - %f" stepSize slope z' v
     match parmDef with
     | F (_,mn,mx)   -> v - z' |> clamp mn mx
     | I (_,mn,mx)   -> v - z' |> clampI mn mx
 
-let evolveS' influenceLevel sigma v = 
+//let slideUp influenceLevel sigma parmDef v = 
+//    let z = zsample()
+//    let z' = z * influenceLevel * sigma |> abs
+//    match parmDef with
+//    | F (_,mn,mx)   -> v + z' |> clamp mn mx
+//    | I (_,mn,mx)   -> v + z' |> clampI mn mx
+
+//let slideDown influenceLevel sigma parmDef v =
+//    let z = zsample()
+//    let z' = z * influenceLevel * sigma |> abs
+//    match parmDef with
+//    | F (_,mn,mx)   -> v - z' |> clamp mn mx
+//    | I (_,mn,mx)   -> v - z' |> clampI mn mx
+
+let range = function
+    | F(_,mn,mx)   ->  mn-mx
+    | I(_,mn,mx)   ->  mx-mn |> float
+
+let evolveS' range influenceLevel sigma v = 
     assert (influenceLevel > 0.0 && influenceLevel <= 1.0)
     assert (sigma > 0.0 && sigma <= 1.0)
-    let z = zsample()
+    let z = zsample() * range / 4.0 // pick something in proportion to the allowable range
     let z' = z * influenceLevel * sigma
+    //printfn "evolveS' infL=%f; s=%f; v=%f - %f" influenceLevel sigma v z'
     v - z'
 
 let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV =
@@ -28,17 +47,22 @@ let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV
     match parm,pV,iV with 
     | F(_,_,_),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV
     | F(_,_,_),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV       //TODO: scaling not symmetrical in both directions
-    | F(_,mn,mx),pV,_             -> influenced.[i] <- evolveS' influenceLevel sigma pV   |> clamp mn mx
+    | F(_,mn,mx),pV,_             -> 
+      let r = range parm
+      influenced.[i] <- evolveS' r influenceLevel sigma pV   |> clamp mn mx
 
     | I(_,mn,mx),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV     |> clampI mn mx
     | I(_,mn,mx),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV     |> clampI mn mx
-    | I(_,mn,mx),pV,_               -> influenced.[i] <- evolveS' influenceLevel sigma pV |> clampI mn mx
+    | I(_,mn,mx),pV,_               -> 
+      let r = range parm
+      influenced.[i] <- evolveS' r influenceLevel sigma pV |> clampI mn mx
 
 let evolveP influenceLevel sigma (indv:float[]) i parm pV =
     //mutation
+    let r = range parm
     match parm with
-    | F(_,mn,mx)   -> indv.[i] <- evolveS' influenceLevel sigma pV |> clamp mn mx
-    | I(_,mn,mx)   -> indv.[i] <- evolveS' influenceLevel sigma pV |> clampI mn mx
+    | F(_,mn,mx)   -> indv.[i] <- evolveS' r influenceLevel sigma pV |> clamp mn mx
+    | I(_,mn,mx)   -> indv.[i] <- evolveS' r influenceLevel sigma pV |> clampI mn mx
 
 let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =
     //mutation

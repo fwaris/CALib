@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 2.0
+let eSigma = 1.0
 
 type Norm = 
     {
@@ -71,6 +71,10 @@ let createNorms parmDefs isBetter = parmDefs |> Array.map (fun p ->
         ParmHi    = maxP p
     })
 
+let log (norms:Norm[]) =
+  let low = norms |> Array.map (fun n -> n.ParmLo)
+  let hi = norms |> Array.map (fun n -> n.ParmHi)
+  [low;hi] |> Metrics.NormState |> Metrics.postAll
 
 let create parmDefs isBetter =
     let create (norms:Norm array) fAccept fInfluence : KnowledgeSource<_> =
@@ -85,6 +89,9 @@ let create parmDefs isBetter =
         let norms = if envChanged then createNorms parmDefs isBetter else norms
         let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
+        #if _LOG_
+        log updatedNorms
+        #endif
         voters,create updatedNorms acceptance fInfluence 
     
     let influence (norms:Norm array) s (ind:Individual<_>) =

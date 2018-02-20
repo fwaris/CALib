@@ -5,7 +5,7 @@ open CAUtils
 open CAEvolve
 open MachineLearning
 
-let eSigma = 3.0
+let eSigma = 1.0
 
 type Centroid =
     {

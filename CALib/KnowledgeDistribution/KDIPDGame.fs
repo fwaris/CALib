@@ -196,7 +196,7 @@ let updateIndv st (vmin,vmax) cmprtr (pop:Population<IpdKS>) (indv:Individual<Ip
             let nhbr = pop.[other indv.Id (fst vmx.[0])]
             let (pks,_):IpdKS = nhbr.KS
             let (oldPks,_) = indv.KS
-            if (pks.KS = oldPks.KS) then printfn "same ks %A" pks.KS
+            //if (pks.KS = oldPks.KS) then printfn "same ks %A" pks.KS
             createWthKS st indv pks Map.empty
         | _,_ ->  
             let i = CAUtils.rnd.Value.Next(0,vmx.Length - 1)

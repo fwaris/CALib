@@ -18,7 +18,7 @@ let applyBg imageOpt (c:FSharp.Charting.ChartTypes.GenericChart) =
             a.BackImageWrapMode <- System.Windows.Forms.DataVisualization.Charting.ChartImageWrapMode.Scaled)
     | None -> c
 
-let chGrid = ChartTypes.Grid(Interval=0.1)
+let chGrid = ChartTypes.Grid(Enabled=false,Interval=0.1)
 let ls = ChartTypes.LabelStyle(TruncatedLabels=true, Interval=0.2, Format="{0:F1}")
 
 let round' x = System.Math.Round((x:float),2)
@@ -32,12 +32,36 @@ let chPoints bg title obs =
         |> applyBg bg
     ch,bg
 
+let box (points:(float*float)seq) =
+  if Seq.length points < 2 then []
+  else
+    let x1,y1 = points |> Seq.item 0
+    let x2,y2 = points |> Seq.item 1
+    [x1,y1;x2,y1;x2,y2;x1,y2;x1,y1]
+
 let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let ch =
         [
           LiveChart.Point(obs1); 
           LiveChart.Point(obs2) 
+          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+        ]
+        |> Chart.Combine 
+        |> Chart.WithTitle title
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+        |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+        |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+        |> applyBg bg
+    ch,bg
+
+let chPtsLine bg title obs =
+    let obs1,obs2 = obs |> Observable.separate
+    let obsB = obs2 |> Observable.map box
+    let ch =
+        [
+          LiveChart.Point(obs1); 
+          LiveChart.Line(obsB) 
           |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 
@@ -85,7 +109,6 @@ let container chlist =
     form.Controls.Add(grid)
     form.Show()
     form
-
 
     //formList.zip chlist containers
 

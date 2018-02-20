@@ -23,8 +23,9 @@ let evaluate fitness pop =
     pop
 
 ///default acceptance function used in most CAs
-let acceptance take minmax beliefSpace (pop:Population<_>) =
+let acceptance topProportion minmax beliefSpace (pop:Population<_>) =
     let sign = if minmax 2. 1. then -1. else +1. 
+    let take = (float pop.Length) * topProportion |> int
     let topInds = 
         pop 
         |> PSeq.sortBy (fun ind -> sign * ind.Fitness) 

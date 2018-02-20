@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.0
+let eSigma = 0.5
 let th_significance = 0.001
 
 //determine direction of change

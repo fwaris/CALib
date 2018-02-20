@@ -19,7 +19,7 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
     parms
     |> Array.mapi (fun i p -> 
         let pDef = parmDefs.[i]
-        let e = epsilonM pDef
+        let e = denominatorM pDef
         let p' =  p + e
         parms.[i] <- p'
         let newFit = fitness parms
@@ -35,16 +35,31 @@ let create parmDefs isBetter (fitness:Fitness) =
             Influence   = fInfluence
         }
 
+    //let influence influenceLevel (ind:Individual<_>) =
+    //    //mutation
+    //    let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
+    //    let parms = ind.Parms
+    //    ind.Parms |> Array.iteri(fun i p ->
+    //        parms.[i] <-
+    //            let (dir,mag) = slopes.[i]
+    //            match dir with
+    //            | Up   -> slideUp (influenceLevel*mag) eSigma parmDefs.[i] p
+    //            | Down -> slideDown (influenceLevel*mag) eSigma parmDefs.[i] p
+    //            | Flat -> p)//evolveS s eSigma p)
+    //    ind
+
     let influence influenceLevel (ind:Individual<_>) =
         //mutation
         let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
         let parms = ind.Parms
+        let z = zsample() |> abs
+        let stepSize = z * influenceLevel * eSigma
         ind.Parms |> Array.iteri(fun i p ->
             parms.[i] <-
-                let (dir,mag) = slopes.[i]
+                let (dir,slope) = slopes.[i]
                 match dir with
-                | Up   -> slideUp (influenceLevel*mag) eSigma parmDefs.[i] p
-                | Down -> slideDown (influenceLevel*mag) eSigma parmDefs.[i] p
+                | Up   -> stepUp stepSize slope parmDefs.[i] p
+                | Down -> stepDown stepSize slope parmDefs.[i] p 
                 | Flat -> p)//evolveS s eSigma p)
         ind
 

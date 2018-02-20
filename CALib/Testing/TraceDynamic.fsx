@@ -260,7 +260,7 @@ let run startStep =
                 false
             st := step envCh !st
             let (bfit,gb) = best !st
-            let solFound = Array.zip gb maxCone.Value.L |> Seq.forall (fun (a,b) -> abs (a - b) < 0.01)
+            let solFound = Array.zip gb maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt < 0.001
             if solFound then 
                 if !envChangedCount >= 4 then
                   go := false

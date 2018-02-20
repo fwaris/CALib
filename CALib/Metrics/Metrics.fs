@@ -13,6 +13,7 @@ type MetricMsg =
   | TopoState of Locations
   | SitState  of Locations
   | HistState of Locations
+  | NormState of Locations
   
 let metricsToken = new CancellationTokenSource()
 let obsAll,postAll = Observable.createObservableAgent<MetricMsg> metricsToken.Token

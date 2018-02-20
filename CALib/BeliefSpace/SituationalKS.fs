@@ -3,7 +3,7 @@ open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 3.0
+let eSigma = 0.5
 
 type State = 
     {
