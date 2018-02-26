@@ -79,11 +79,18 @@ let create (parmDefs:Parm[]) isBetter window =
                 voters, create updatedHistory acceptance fInfluence
     
     let influence {Events=events} s (ind:Individual<_>) =
+        //printf "H:%d %0.2f %A->" ind.Id ind.Fitness ind.Parms
+        //let iBefore = ind.Parms |> Array.copy
         let ev = events.[rnd.Value.Next(0,events.Length)]
-        if isBetter ev.MFitness ind.Fitness then
-            ev.MParms |> influenceInd parmDefs s eSigma ind
-        else
-            evolveInd parmDefs s eSigma ind
+        let ind' = 
+          if isBetter ev.MFitness ind.Fitness then
+              ev.MParms |> influenceInd parmDefs s eSigma ind
+          else
+              evolveInd parmDefs s eSigma ind
+
+        //printfn "[%d] %A (%A)" ind'.Id ind'.Parms ev.MParms
+        //let iAfter = ind'.Parms |> Array.copy
+        ind'
 
     let initialHistory = {Window=window; Events=[]}
        

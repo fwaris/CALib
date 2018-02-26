@@ -16,7 +16,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let FitnessHlder : Fitness = ref (fun xs -> 0.)
+//let FitnessHlder : Fitness = ref (fun xs -> 0.)
 
 let comparator  = CAUtils.Maximize
 
@@ -43,10 +43,6 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-//let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs
-//let startCA = kdWeightedCA fitness comparator parmDefs
-//let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
-
 let primarkyKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
@@ -65,7 +61,7 @@ let a_values = [1.0; 3.1; 3.5; 3.9]
 type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
 let createEnv id a =
-  let w = createWorld 100 2 (5.,15.) (20., 10.) None None (Some a) 
+  let w = createWorld 144 2 (5.,15.) (20., 10.) None None (Some a) 
   let (c,f) = landscape w
   {Id=id; W=w; M=c; F=f; EnvChangeCount=0}
 
@@ -78,11 +74,10 @@ let inline run<'a> (st:TimeStep<'a>,ws,envCh) =
   let st = step envCh st
   let (bfit,gb) = best st
   let dist = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
-  printfn "%A" dist
-  let solFound = dist < 0.001
-  solFound,st
+  let solFound = dist < 0.01
+  solFound,dist,st
 
-let rec findSol (st,ws) envCh =
+let rec findSol (st,ws) d envCh =
   let ws = 
     if envCh then 
       let ws = changeEnv ws 
@@ -90,12 +85,14 @@ let rec findSol (st,ws) envCh =
       ws
     else 
       ws
-  let solFound,st = run (st,ws,envCh)
+  let solFound,dist,st = run (st,ws,envCh)
+  if dist < d then
+    printfn "dist: %f @ %d" dist st.Count
   if solFound then
     printfn "Sol found @%d for %s"  st.Count ws.Id
     st
   else
-    findSol (st,ws) false
+    findSol (st,ws) dist false
 
 type Ret = {I:string; R:int; A:float; C:int; S:float; D:float}
 
@@ -103,9 +100,9 @@ let collecStats i id segF ca =
   a_values 
   |> List.map (fun a ->
     let ws = createEnv id a
-    let f = ref ws.F
-    let st = {CA={ca with Fitness=f}; Best=[]; Count=0; Progress=[]}
-    let st = findSol (st,ws) false
+    ca.Fitness := ws.F
+    let st = {CA=ca; Best=[]; Count=0; Progress=[]}
+    let st = findSol (st,ws) 10.0 false
     let seg = 
       Social.segregation                                    //Schelling-like segregation measure
           2                                                 //radius of neighborhood
@@ -117,14 +114,16 @@ let collecStats i id segF ca =
     {I=id; R= i; A=a; C=st.Count; S=seg; D=dffsn})
 
 let ipdStats() =
-  let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs
+  let f : Fitness = ref (fun xs -> 0.)
+  let startCA = kdIpdCA vmx f comparator parmDefs
   let id = "IPD"
   let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
   [for i in 1 .. 50 -> collecStats i id ksf startCA]
 
 let wtdStats() =
-  let startCA = kdWeightedCA FitnessHlder comparator parmDefs
-  let id = "IPD"
+  let f : Fitness = ref (fun xs -> 0.)
+  let startCA = kdWeightedCA f comparator parmDefs
+  let id = "WTD"
   [for i in 1 .. 50 -> collecStats i id Social.baseSeg startCA]
 
 let ipdS = ipdStats()

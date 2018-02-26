@@ -74,7 +74,7 @@ let sampleAvgDiversity (pop:Population<_>) =
 let isExplorative = function Domain -> false | _ -> true // | Historical | Normative | Topgraphical -> true | _ -> false
 let isExploitative = function Domain  -> true | _ -> false
 
-let KS_ATTRACTION_COFF      = 1.0 //attraction between exploitative and explorative KS
+let KS_ATTRACTION_COFF      = 1.5 //attraction between exploitative and explorative KS
 let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
 let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
 let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
@@ -161,6 +161,9 @@ let removePrimaryKS ks m = Map.remove ks m
 let removeSituationalKS m = Map.remove Situational m //Situational cannot be secondary KS as it changes the indv completely
 let promoteDomainKS : IpdKS->IpdKS = function ({KS=Domain;Level=_} as pks,_) -> (pks,Map.empty) | k -> k 
 
+//remove secondary explorative KS if primary is explorative
+let removeExpScndryKS primaryKS m = if isExplorative primaryKS then  m |> Map.filter (fun k _ -> isExplorative k |> not) else m
+
 let logI st newKs indv = 
     let ps = indv.Parms 
     let pksOld = prmryKS indv.KS
@@ -174,7 +177,16 @@ let rate r = function
 
 let createWthKS st (indv:Individual<IpdKS>) primary secondary = 
     let {KS=oldKS;Level=oldLvl} = fst indv.KS
-    let ({KS=newKS;Level=_},secondary) = (primary, removePrimaryKS primary.KS secondary |> removeSituationalKS) |> promoteDomainKS
+
+    let ({KS=newKS;Level=_},secondary) = 
+        (
+          primary, 
+          removePrimaryKS primary.KS secondary 
+          |> removeSituationalKS 
+          |> removeExpScndryKS primary.KS
+        ) 
+        |> promoteDomainKS
+
     let primary =
         if newKS = oldKS && isExploitative newKS then
             {KS=newKS; Level= rate oldLvl st.KSAdjust}
@@ -274,11 +286,19 @@ let ipdInfluence beliefSpace (pop:Population<IpdKS>) =
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
+        //|> Array.map (fun p -> 
             let {KS=mainKS;Level=lvl},otherKs = p.KS
+            let beforeP = Array.copy p.Parms
             let p = ksMap.[mainKS].Influence lvl p
             let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExplorative k then ksMap.[k].Influence w p else p) //explorative ks go first
             let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExploitative k then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
+            //if p.Parms = [|1.0; 1.0|] then
+            //  let ps = p.Parms
+            //  ()
             p)
+    //let oneP = pop |> Array.filter (fun i->i.Parms =[| 1.0; 1.0 |]) |> Array.length
+    //let zeroP = pop |> Array.filter (fun i->i.Parms =[| 0.0; 0.0 |]) |> Array.length
+    //printfn "1=%d; 0=%d; t=%d" oneP zeroP pop.Length
     pop 
 
 let knowledgeDist ksAdjust (vmin,vmax) comparator pop =

@@ -18,6 +18,7 @@ type MetricMsg =
 let metricsToken = new CancellationTokenSource()
 let obsAll,postAll = Observable.createObservableAgent<MetricMsg> metricsToken.Token
 
+//need to use this option on F# interactive process: --define:_LOG_ 
 #if _LOG_
 printfn "compiled with logging enabled"
 #else

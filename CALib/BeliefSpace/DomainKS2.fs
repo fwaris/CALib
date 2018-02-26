@@ -50,7 +50,9 @@ let create parmDefs isBetter (fitness:Fitness) =
 
     let influence influenceLevel (ind:Individual<_>) =
         //mutation
-        let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
+        let oldFit = fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
+        //let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
+        let slopes = slopes isBetter fitness.Value oldFit parmDefs ind.Parms
         let parms = ind.Parms
         let z = zsample() |> abs
         let stepSize = z * influenceLevel * eSigma

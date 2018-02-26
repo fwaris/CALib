@@ -14,6 +14,7 @@ open System.IO
 open TraceCharts
 open Metrics
 open OpenCvSharp
+open Tracing
 
 let parmDefs = 
     [|
@@ -21,7 +22,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
+let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 1.0) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -38,12 +39,12 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 360 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
 
 let kdIpdCA vmx ftnss cmprtr parmDefs  = 
     let b = bsp ftnss parmDefs cmprtr
     let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let ada = KDIPDGame.Geometric(0.9,0.01)
     let kd = ipdKdist ada vmx cmprtr pop 
     makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
 
@@ -57,39 +58,6 @@ let kdWeightedCA f c p  =
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
-
-let cts = new System.Threading.CancellationTokenSource()
-let obsAll,fpAll = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsKSCounts,fpKSCounts = Observable.createObservableAgent<(string*float) seq> cts.Token
-let obsDomain,fpDomain = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsSecDmn,fpSecDmn = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsSituational,fpSituational = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsNorm,fpNorm = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsHist,fpHist = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsTopo,fpTopo = Observable.createObservableAgent<(float*float) seq> cts.Token
-let obsDispersion,fpDispersion = Observable.createObservableAgent<int*float> cts.Token
-let obsSeg_,fpSeg = Observable.createObservableAgent<float> cts.Token
-let obsSeg = obsSeg_ |> Observable.withI
-let obsDfsn_,fbDfsn= Observable.createObservableAgent<float> cts.Token
-let obsDfsn = obsDfsn_ |> Observable.withI
-
-let obsTopoM = 
-  Metrics.obsAll 
-  |> Observable.choose (function Metrics.TopoState s -> Some s | _ -> None)
-  |> Observable.map (fun l ->  l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsTopo
-
-let obsSituM = 
-  Metrics.obsAll 
-  |> Observable.choose (function Metrics.SitState s -> Some s | _ -> None)
-  |> Observable.map (fun l -> l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsSituational
-
-let obsHistM = 
-  Metrics.obsAll 
-  |> Observable.choose (function Metrics.HistState s -> Some s | _ -> None)
-  |> Observable.map (fun l -> printfn "Hist %d" l.Length; l |> List.toSeq |> Seq.map (fun f -> f.[0],f.[1]))
-  |> Observable.together obsHist
 
 let inline sqr x = x * x
 
@@ -114,7 +82,13 @@ let step envChanged st = CARunner.step envChanged st 2
 let vmx = (0.2, 0.9)
 
 let startCA = kdIpdCA vmx fitness comparator parmDefs
+let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
+
 //let startCA = kdWeightedCA fitness comparator parmDefs
+//let fClr = Viz.clrKnowledge
+//let fSeg = Social.baseSeg
+
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
@@ -202,7 +176,7 @@ let postObs() =
                   (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
                   Social.ksSegments                                 //list of segments
                   st.Value.CA                                       //current state of CA
-                  (fun x -> Social.ksNum (fst x.KS).KS)             //funtion to return segment for each individual
+                  fSeg
     let dfsn = Social.diffusion st.Value.CA
     do fpAll dAll
     do fpKSCounts ksCounts
@@ -217,18 +191,19 @@ let postObs() =
     do fbDfsn dfsn
 
 let frm = 
-    container
-        [ 
-        chPoints (Some background) "All" obsAll
-        chPoints (Some background) "Domain" obsDomain
-        chPoints2 (Some background) "Situational" obsSituM
-        chPoints (Some background) "Normative" obsNorm
-        chPoints2 (Some background) "Historical" obsHistM
-        chPoints2 (Some background) "Topographical M"  obsTopoM
-        chCounts obsKSCounts
-        chDisp "Segregation" obsSeg
-        chDisp "Diffusion" obsDfsn
-        ]
+  container
+      [ 
+          chPoints (Some background) "All" obsAll
+          chPoints (Some background) "Domain" obsDomain
+          chPoints2 (Some background) "Situational" obsSituM
+          chPtsLine (Some background) "Normative" obsNormM
+          chPoints2 (Some background) "Historical" obsHistM
+          chPoints2 (Some background) "Topographical M"  obsTopoM
+          chCounts obsKSCounts
+          chDisp "Segregation" obsSeg
+          chDisp "Diffusion" obsDfsn
+      ]
+
 ;;
 let changeEnvironment() =
     async {
@@ -265,10 +240,7 @@ let run startStep =
                 if !envChangedCount >= 4 then
                   go := false
                   let m = new Mat(Size(512,512), MatType.CV_8UC3)
-                  let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
-                  //let fclr = Viz.clrKnowledge
-                  let fclr = ipdClr
-                  m |> Viz.visualizePopHex 512 fclr  st.Value.CA.Network st.Value.CA.Population
+                  m |> Viz.visualizePopHex 512 fClr  st.Value.CA.Network st.Value.CA.Population
                   VizUtils.win "m1" m
                   m.SaveImage(@"D:\repodata\calib\run1\game399.png") |> ignore
 

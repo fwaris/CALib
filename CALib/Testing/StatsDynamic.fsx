@@ -26,12 +26,12 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 360 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
 
 let kdIpdCA vmx ftnss cmprtr parmDefs  = 
     let b = bsp ftnss parmDefs cmprtr
     let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.1)
+    let ada = KDIPDGame.Geometric(0.9,0.01)
     let kd = ipdKdist ada vmx cmprtr pop 
     makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
 
@@ -73,7 +73,7 @@ let secondaryKS (x:obj) =
 type WorldState = {W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
 let createEnv a =
-  let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some a) 
+  let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some a) 
   let (c,f) = landscape w
   {W=w; M=c; F=f; EnvChangeCount=0}
 
