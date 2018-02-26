@@ -1,6 +1,10 @@
 ﻿#load "TestEnv.fsx"
 #load "SetupVideo.fsx"
 #load @"..\DF1.fs"
+#load @"..\Utilities\TraceCharts.fs"
+#load @"..\Utilities\VizUtils.fs"
+#load "..\Utilities\Viz.fs"
+#load @"..\Utilities\VizLandscape.fs"
 
 open CAUtils
 open TestEnv
@@ -77,6 +81,18 @@ let inline run<'a> (st:TimeStep<'a>,ws,envCh) =
   let solFound = dist < 0.01
   solFound,dist,st
 
+type Ret = {Run:int; I:string; R:int; A:float; C:int; Max:float; S:float; D:float}
+let MAX_GEN = 5000
+let saveFolder = @"D:\repodata\calib\dynstats"
+
+let saveLandscape w r =
+  let (c,f) = landscape w
+  let bg = VizLandscape.gen (c,f)
+  let fn = sprintf "%s-%d-%d-%f-%d-%f.png" r.I r.Run r.R r.A r.C r.Max
+  let path = Path.Combine(saveFolder,fn)
+  bg.Save path  
+
+
 let rec findSol (st,ws) d envCh =
   let ws = 
     if envCh then 
@@ -91,12 +107,13 @@ let rec findSol (st,ws) d envCh =
   if solFound then
     printfn "Sol found @%d for %s"  st.Count ws.Id
     st
+  elif st.Count > MAX_GEN then
+    printfn "MAX_GEN  for %s" ws.Id
+    st
   else
     findSol (st,ws) dist false
 
-type Ret = {I:string; R:int; A:float; C:int; S:float; D:float}
-
-let collecStats i id segF ca =
+let collecStats run i id segF ca =
   a_values 
   |> List.map (fun a ->
     let ws = createEnv id a
@@ -111,20 +128,38 @@ let collecStats i id segF ca =
           st.CA                                             //current state of CA
           segF                                              //function to return segment for each individual
     let dffsn =  Social.diffusion st.CA
-    {I=id; R= i; A=a; C=st.Count; S=seg; D=dffsn})
+    let r = {Run=run; I=id; R= i; A=a; C=st.Count; S=seg; D=dffsn; Max=st.Best.[0].MFitness}
+    if st.Count > MAX_GEN then
+      saveLandscape ws.W r
+    r)
+    
 
-let ipdStats() =
+let ipdStats(run) =
   let f : Fitness = ref (fun xs -> 0.)
   let startCA = kdIpdCA vmx f comparator parmDefs
   let id = "IPD"
   let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
-  [for i in 1 .. 50 -> collecStats i id ksf startCA]
+  [for i in 1 .. 50 -> collecStats run i id ksf startCA]
 
-let wtdStats() =
+let wtdStats(run) =
   let f : Fitness = ref (fun xs -> 0.)
   let startCA = kdWeightedCA f comparator parmDefs
   let id = "WTD"
-  [for i in 1 .. 50 -> collecStats i id Social.baseSeg startCA]
+  [for i in 1 .. 50 -> collecStats run i id Social.baseSeg startCA]
 
-let ipdS = ipdStats()
-let wtdS = wtdStats()
+let ipdS = [for run in 1..30 -> ipdStats(run)]
+let wtdS = [for run in 1..30 -> wtdStats(run)]
+
+let saveStates name stats =
+  let stats = stats |> List.collect yourself |> List.collect yourself
+  use fn = new StreamWriter(File.OpenWrite(Path.Combine(saveFolder,name)))
+  fn.WriteLine("I\tR\tA\tC\tMax\tS\tD")
+  stats |> List.iter(fun r->
+    let line = sprintf "%s\t%d\t%f\t%d\t%f\t%f\t%f" r.I r.R r.A r.C r.Max r.S r.D
+    fn.WriteLine(line)
+    )
+  fn.Close() |> ignore
+
+saveStates (sprintf "IPD%d.txt" (System.DateTime.Now.ToFileTime()))  ipdS
+saveStates (sprintf "WTD%d.txt" (System.DateTime.Now.ToFileTime()))  wtdS
+
