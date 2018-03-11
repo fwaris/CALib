@@ -22,7 +22,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 1.0) |> ref
+let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 3.0) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -81,11 +81,11 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-let startCA = kdIpdCA vmx fitness comparator parmDefs
+let startCA = kdIpdCA vmx fitness comparator parmDefs defaultNetwork
 let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
 let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
 
-//let startCA = kdWeightedCA fitness comparator parmDefs
+//let startCA = kdWeightedCA fitness comparator parmDefs defaultNetwork
 //let fClr = Viz.clrKnowledge
 //let fSeg = Social.baseSeg
 
@@ -207,14 +207,15 @@ let frm =
 ;;
 let changeEnvironment() =
     async {
-        w := updateWorld !w
-        let (c,f) = landscape !w
+        let w' = updateWorld !w
+        let (c,f) = landscape w'
         let bg = VizLandscape.gen (c,f)
         let newBg =
             let f = Path.GetTempFileName()
             bg.Save f
             f
         updateBgForm frm newBg
+        w := w'
         fitness := f
         maxCone := c
         envChangedCount := !envChangedCount + 1
@@ -259,10 +260,9 @@ autoStep()
 
 singleStep()
 
-updateEnvironment() |> Async.Start
 
 cts.Cancel()
 
+changeEnvironment() |> Async.Start
+
 *)
-
-

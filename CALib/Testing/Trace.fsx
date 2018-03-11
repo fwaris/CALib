@@ -1,6 +1,10 @@
 ﻿#load "TestEnv.fsx"
 #load @"..\DF1.fs"
 #load @"..\Utilities\TraceCharts.fs"
+#load "SetupVideo.fsx"
+#load @"..\Utilities\VizUtils.fs"
+#load @"..\Utilities\VizLandscape.fs"
+
 open CAUtils
 open TestEnv
 open CA
@@ -27,26 +31,38 @@ let landscape =
 let createFtns df (parms:float array)  = 
     df parms
 
+let readFile = Some  @"D:\repodata\calib\dynstats\Env_IPD_131652648800521969.env"
 
-let (l,m,fitness) = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,ref (createFtns d))
-
-let background = 
-    let p = __SOURCE_DIRECTORY__ + (snd landscape) 
-    let fn = Path.GetFileNameWithoutExtension(p) + ".png"
-    Path.Combine(Path.GetDirectoryName(p),fn)
+let (l,m,fitness),background = 
+  match readFile with
+  | Some file ->
+    let w1 = loadEnv file
+    let m,f = DF1.landscape w1
+    let ls = "file",m,ref f
+    let bmp = VizLandscape.gen (m,f)
+    let bg=Path.GetTempFileName()
+    bmp.Save bg
+    ls,bg
+  | None ->
+   let bg = 
+      let p = __SOURCE_DIRECTORY__ + (snd landscape) 
+      let fn = Path.GetFileNameWithoutExtension(p) + ".png"
+      Path.Combine(Path.GetDirectoryName(p),fn)     
+   let ls = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,ref (createFtns d))
+   ls,bg
 
 let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 100 true
+let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
 
 let kdIpdCA vmx ftnss cmprtr parmDefs  = 
     let b = bsp ftnss parmDefs cmprtr
     let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
     let ada = KDIPDGame.Geometric(0.9,0.05)
     let kd = ipdKdist ada vmx cmprtr pop 
-    makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
+    makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence defaultNetwork
 
 //let kdlWeightedCA f c p = 
 //    let bsp = bsp f p c
@@ -57,7 +73,7 @@ let kdWeightedCA f c p  =
     let bsp = bsp f p c
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
+    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence defaultNetwork
 
 let inline sqr x = x * x
 

@@ -220,4 +220,25 @@ let df1 = createDf1 @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALi
         yield df1 i j]
 *)
         
+let loadEnv file =
+  let parseLine (s:string) =
+    let s = s.Split([|'|'|],System.StringSplitOptions.RemoveEmptyEntries)
+    let r = float s.[0]
+    let h = float s.[1]
+    let ls = s.[2].Split([|','|],System.StringSplitOptions.RemoveEmptyEntries)
+    let l = ls |> Array.map float
+    {Cone.H=h; R=r; L=l}
+  let cones = file |> File.ReadLines |> Seq.map parseLine |> Seq.toArray
+  let w = {Cones=cones;  Ar   = None; Ah=None; Ac=None}
+  w
 
+let saveEnv path (cones:Cone[]) =
+  use fs = new StreamWriter(File.OpenWrite(path))
+  cones |> Array.iter (fun c -> 
+    fs.Write(c.R)
+    fs.Write("|")
+    fs.Write(c.H)
+    fs.Write("|")
+    c.L |> Array.iter (fun l -> fs.Write l; fs.Write ",")
+    fs.WriteLine()
+  )

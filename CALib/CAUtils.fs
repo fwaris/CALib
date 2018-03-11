@@ -203,6 +203,17 @@ let squareNetwork (pop:Population<'k>) id =
                 let idx = if idx < 0 then idx + sz else idx
                 yield pop.[idx]
     |]
+
+let octagonNetwork (pop:Population<'k>) id =
+    let sz = pop.Length
+    [|
+        for i in -4 .. 1 .. 4 do
+            if i <> 0 then
+                let idx = (id + i) % sz
+                let idx = if idx < 0 then idx + sz else idx
+                yield pop.[idx]
+    |]
+
 (*
 #load "CA.fs"
 #load "Probability.fs"

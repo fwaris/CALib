@@ -86,7 +86,12 @@ let create parmDefs isBetter =
 
     let rec acceptance fInfluence norms envChanged (voters:Individual<_> array) =
         //assumes that individuals are sorted best fitness first
-        let norms = if envChanged then createNorms parmDefs isBetter else norms
+        let norms = 
+          if envChanged then 
+            printfn "changing norms"
+            createNorms parmDefs isBetter 
+          else 
+            norms
         let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
         //printfn "%A" updatedNorms
         #if _LOG_

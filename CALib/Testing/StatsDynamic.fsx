@@ -52,7 +52,7 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs
+let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs defaultNetwork
 //let startCA = kdWeightedCA fitness comparator parmDefs
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
@@ -148,7 +148,7 @@ let runIPD() =
     |> List.map (fun i -> 
       let ws = createEnv avalue
       FitnessHlder := ws.F
-      let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs
+      let startCA = kdIpdCA vmx FitnessHlder comparator parmDefs defaultNetwork
       let st = {CA=startCA; Best=[]; Count=0; Progress=[]}
       let st,ws = ((st,ws),[1..500]) ||> List.fold (fun acc i -> runNoStats acc)
       let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
@@ -171,7 +171,7 @@ let runWTD() =
     |> List.map (fun i -> 
       let ws = createEnv avalue
       FitnessHlder := ws.F
-      let startCA = kdWeightedCA FitnessHlder comparator parmDefs
+      let startCA = kdWeightedCA FitnessHlder comparator parmDefs defaultNetwork
       let st = {CA=startCA; Best=[]; Count=0; Progress=[]}
       let st,ws = ((st,ws),[1..500]) ||> List.fold (fun acc i -> runNoStats acc)
       let maxHop = st.CA.Population.Length / 36 / 2

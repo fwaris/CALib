@@ -6,10 +6,10 @@ open CAUtils
 //let defaultNetwork = CAUtils.hexagonNetwork
 let defaultNetwork = CAUtils.hexagonNetworkViz
 
-let inline makeCA fitness comparator pop bspace kd influence =
+let inline makeCA fitness comparator pop bspace kd influence network =
         {
             Population           = pop
-            Network              = defaultNetwork
+            Network              = network
             KnowlegeDistribution = kd
             BeliefSpace          = bspace
             Acceptance           = CARunner.acceptance 0.25 comparator
