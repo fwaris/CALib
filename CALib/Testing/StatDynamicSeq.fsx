@@ -14,6 +14,10 @@ open System.IO
 open Metrics
 open OpenCvSharp
 
+let NUM_LANDSCAPES = 50
+let SAMPLES = 5
+let DIST_TH = 0.001
+
 let parmDefs = 
     [|
         F(0.,-1.,1.) // x
@@ -35,7 +39,7 @@ let vmx = (0.2, 0.9)
 let a_values = [1.0; 3.1; 3.5; 3.99]
 
 type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
-type NetId = Square | Hexagon | Octogon
+type NetId = Square | Hexagon | Octagon
 type Config = {Id:string; Run:int; Net:NetId; A:float}
 type Ret = {ConfigRun:int; Id:string; LandscapeNum:int; A:float; GenCount:int; Max:float; Seg:float; Dffsn:float; Net:string}
 
@@ -50,7 +54,7 @@ let changeEnv ws =
   {Id=ws.Id; W=w; M=c; F=f; EnvChangeCount = ws.EnvChangeCount + 1}
   
 let MAX_GEN = 5000
-let saveFolder = @"D:\repodata\calib\dynstatsNet"
+let saveFolder = @"d:\repodata\calib\dynstatsNet"
 if not <| Directory.Exists saveFolder then Directory.CreateDirectory saveFolder |> ignore
 
 let saveLandscape w r =
@@ -66,18 +70,19 @@ let saveEnv id (ws:WorldState) =
   DF1.saveEnv path  ws.W.Cones
     
 let getNetwork id = 
-  let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octogon, CAUtils.octagonNetwork] |> Map.ofList
+  let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octagon, CAUtils.octagonNetwork] |> Map.ofList
   networks.[id]
 
 let rec runToSol id ws envCh st gens =
   if gens > MAX_GEN then 
     printfn "MAx_GEN %s" id
+    saveEnv id ws
     false,st
   else
     let st = step envCh st
     let (bfit,gb) = best st
     let dist = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
-    let solFound = dist < 0.01
+    let solFound = dist < DIST_TH
     if solFound then 
       printfn "sol @ %d %s" st.Count id
       true,st
@@ -110,7 +115,7 @@ let runConfig numLandscapes (config:Config) =
   //init pop and belief space
   let wtdBsp = bsp f parmDefs comparator
   let wtdPop = createPop wtdBsp parmDefs CAUtils.baseKsInit
-  let ipdPop = wtdPop |> KDIPDGame.initKS
+  let ipdPop = wtdPop |> KDIPDGame.initKS |> Array.map (fun x-> {x with Parms=Array.copy x.Parms})
   let ipdBsp = bsp f parmDefs comparator
   //ipd kd
   let ada = KDIPDGame.Geometric(0.9,0.01)
@@ -127,7 +132,7 @@ let runConfig numLandscapes (config:Config) =
 
   let wtdSt =  {CA=wtdCA; Best=[]; Count=0; Progress=[]}
   
-  [for i in 1..2 do
+  [for i in 1..numLandscapes do
     let ws = changeEnv ws
     ipdCA.Fitness := ws.F
     wtdCA.Fitness := ws.F
@@ -136,12 +141,10 @@ let runConfig numLandscapes (config:Config) =
     yield statRec i ipdSol ipdSt {config with Id="IPD"} ksf
     yield statRec i wtdSol wtdSt {config with Id="WTD"} Social.baseSeg]
 
-let NUM_LANDSCAPES = 50
-let SAMPLES = 30
 let run() =
   seq{
     for a in a_values do
-      for n in [Square; Hexagon; Octogon] do
+      for n in [Square; Hexagon; Octagon] do
         for i in 1..SAMPLES do
           let config = {Config.Run=i; Config.A=a; Config.Net=n; Config.Id=""}
           yield! runConfig NUM_LANDSCAPES config}

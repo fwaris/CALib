@@ -45,7 +45,7 @@ let segregation radius prop segs (ca:CA<'a>) (seg:Individual<'a>->int) =
       deviations_from_prop
     )
     |> Array.average
-  totalSeg / (segs |> Seq.length |> float)
+  totalSeg // / (segs |> Seq.length |> float)
 
 let rmseDist (a:Individual<_>) (b:Individual<_>) = 
   Array.zip a.Parms b.Parms 
