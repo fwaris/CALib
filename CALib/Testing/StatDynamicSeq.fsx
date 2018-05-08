@@ -14,8 +14,10 @@ open System.IO
 open Metrics
 open OpenCvSharp
 
+let RUN_TO_MAX = true
+let MAX_GEN = 500
 let NUM_LANDSCAPES = 50
-let SAMPLES = 5
+let SAMPLES = 30
 let DIST_TH = 0.001
 
 let parmDefs = 
@@ -53,8 +55,7 @@ let changeEnv ws =
   let (c,f) = landscape w
   {Id=ws.Id; W=w; M=c; F=f; EnvChangeCount = ws.EnvChangeCount + 1}
   
-let MAX_GEN = 5000
-let saveFolder = @"d:\repodata\calib\dynstatsNet"
+let saveFolder = @"d:\repodata\calib\dynstatsNetMax"
 if not <| Directory.Exists saveFolder then Directory.CreateDirectory saveFolder |> ignore
 
 let saveLandscape w r =
@@ -76,14 +77,14 @@ let getNetwork id =
 let rec runToSol id ws envCh st gens =
   if gens > MAX_GEN then 
     printfn "MAx_GEN %s" id
-    saveEnv id ws
+    if RUN_TO_MAX then () else saveEnv id ws
     false,st
   else
     let st = step envCh st
     let (bfit,gb) = best st
     let dist = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
     let solFound = dist < DIST_TH
-    if solFound then 
+    if solFound && not RUN_TO_MAX then 
       printfn "sol @ %d %s" st.Count id
       true,st
     else

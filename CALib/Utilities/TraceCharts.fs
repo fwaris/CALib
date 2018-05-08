@@ -55,6 +55,23 @@ let chPoints2 bg title obs =
         |> applyBg bg
     ch,bg
 
+let chPointsN bg title obss =
+    let ch =
+      obss
+      |> List.map (fun (t,obs) -> 
+            LiveChart.Point(obs)
+            |> Chart.WithStyling(Name=t)
+            |> Chart.WithSeries.Marker(Size=10)
+        )
+      |> Chart.Combine 
+      |> Chart.WithTitle title
+      |> Chart.WithLegend(Enabled=true)
+      |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+      |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+      |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+      |> applyBg bg
+    ch,bg
+
 let chPtsLine bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let obsB = obs2 |> Observable.map box
@@ -80,7 +97,7 @@ let chCounts obs =
 
 let chDisp title obs =  LiveChart.FastLineIncremental(obs,Title=title),(None:string option)
 
-let private containerize (ch,bg) = 
+let containerize (ch,bg) = 
     let chh = new ChartTypes.ChartControl(ch,Dock=DockStyle.Fill)
     match bg with
     | Some image -> applyBgHost image chh

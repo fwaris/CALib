@@ -15,6 +15,7 @@ open TraceCharts
 open Metrics
 open OpenCvSharp
 open Tracing
+open TraceCharts
 
 let parmDefs = 
     [|
@@ -22,7 +23,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 3.0) |> ref
+let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -204,6 +205,20 @@ let frm =
           chDisp "Diffusion" obsDfsn
       ]
 
+let allCh =  
+  let ch =
+    chPointsN 
+      (Some background) 
+      "" 
+      ["Domain",obsDomain; "Situational",obsSituational; 
+       "Normative",obsNorm; "History",obsHist; 
+       "Topographical",obsTopo] 
+    |> TraceCharts.containerize
+  let frm = new System.Windows.Forms.Form()
+  frm.Controls.Add(ch)
+  frm.Show()
+  frm
+
 ;;
 let changeEnvironment() =
     async {
@@ -215,6 +230,8 @@ let changeEnvironment() =
             bg.Save f
             f
         updateBgForm frm newBg
+        updateBgForm allCh newBg
+        ///applyBg (Some newBg) (fst allCh) |> ignore
         w := w'
         fitness := f
         maxCone := c
@@ -257,6 +274,8 @@ let singleStep() = st := step false !st; postObs()
 
 (*
 autoStep()
+
+
 
 singleStep()
 
