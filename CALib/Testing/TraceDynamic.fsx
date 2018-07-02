@@ -3,7 +3,7 @@
 #load @"..\DF1.fs"
 #load @"..\Utilities\TraceCharts.fs"
 #load @"..\Utilities\VizUtils.fs"
-#load "..\Utilities\Viz.fs"
+#load "..\Utilities\VizNetwork.fs"
 #load @"..\Utilities\VizLandscape.fs"
 
 open CAUtils

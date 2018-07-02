@@ -36,7 +36,7 @@ let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
     let natcs = nhbrActns |> Seq.collect (fun x->x) |> Seq.filter (fun (_,nid,_,_) -> indv.Id=nid)
     seq {yield (indv.Id,indv.Id,indv.KS,indv.Fitness); yield! natcs}
 
-let rec outcome state rule cmprtr (pop,beliefSpace) (payouts:Payout array) =
+let rec outcome state rule cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = fun (x:float) -> if cmprtr 1. 0. then x else -x
     let pop' = updatePop state rule cmp pop payouts
     pop',

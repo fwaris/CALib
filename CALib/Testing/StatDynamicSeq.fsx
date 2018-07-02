@@ -3,8 +3,10 @@
 #load @"..\DF1.fs"
 #load @"..\Utilities\TraceCharts.fs"
 #load @"..\Utilities\VizUtils.fs"
-#load "..\Utilities\Viz.fs"
+#load "..\Utilities\VizNetwork.fs"
 #load @"..\Utilities\VizLandscape.fs"
+#load @"..\Utilities\FPGrowth.fs"
+#load @"..\Utilities\Community.fs"
 
 open CAUtils
 open TestEnv
@@ -145,7 +147,8 @@ let runConfig numLandscapes (config:Config) =
 let run() =
   seq{
     for a in a_values do
-      for n in [Square; Hexagon; Octagon] do
+      //for n in [Square; Hexagon; Octagon] do
+      for n in [Hexagon] do
         for i in 1..SAMPLES do
           let config = {Config.Run=i; Config.A=a; Config.Net=n; Config.Id=""}
           yield! runConfig NUM_LANDSCAPES config}
@@ -161,6 +164,13 @@ let saveStates name stats =
     )
   fn.Close() |> ignore
 
-let stats = run() |> Seq.toList
-saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
 
+let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW
+
+//let stats = run() |> Seq.take 1 |> Seq.toList
+//saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
+
+async {run() |> Seq.take 1 |> Seq.toList |> ignore} |> Async.Start
+
+obsDisp.Dispose()
+enc.Release()

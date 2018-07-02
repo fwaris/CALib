@@ -67,6 +67,8 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Metrics\ObservableExt.fs" />
     <Compile Include="Metrics\Metrics.fs" />
+    <Compile Include="Metrics\Tracing.fs" />
+    <Compile Include="Metrics\TracingGame.fs" />
     <Compile Include="Metrics\Social.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
@@ -82,11 +84,12 @@
     <Compile Include="KnowledgeDistribution\Schelling.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
+    <Compile Include="Utilities\FPGrowth.fs" />
     <Compile Include="Utilities\VizUtils.fs" />
-    <Compile Include="Utilities\Viz.fs" />
+    <Compile Include="Utilities\VizNetwork.fs" />
     <Compile Include="Utilities\TraceCharts.fs" />
     <Compile Include="Utilities\VizLandscape.fs" />
-    <Compile Include="Utilities\Tracing.fs" />
+    <Compile Include="Utilities\Community.fs" />
     <None Include="Landscapes\test_cone1.01.csv" />
     <None Include="Landscapes\test_cone2.0.csv" />
     <None Include="Landscapes\test_cone3.35.csv" />

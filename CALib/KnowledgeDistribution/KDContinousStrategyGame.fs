@@ -21,7 +21,7 @@ type Play<'action,'payout,'k> =
 
 type Outcome<'action,'payout,'k> = 
     Comparator
-        -> Population<'k> * BeliefSpace<'k> 
+        -> Population<'k> * BeliefSpace<'k> * Network<'k>
         -> 'payout array 
         ->  Population<'k> * BeliefSpace<'k> * CSGame<'action,'payout,'k>
 
@@ -58,7 +58,7 @@ let rec private csStrategy
                 |> Seq.ofArray
             game.Payoff cmprtr indv indvActn  nhbrActns)
 
-    let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace) payoffs
+    let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace,network) payoffs
     pop,beliefSpace,KD(csStrategy cmprtr game)
 
 let knowledgeDist comparator gameConfig =

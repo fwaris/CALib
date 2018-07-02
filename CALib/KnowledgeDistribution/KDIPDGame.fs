@@ -2,24 +2,6 @@
 open CA
 open CAUtils
 open KDContinousStrategyGame
-open FSharp.Collections.ParallelSeq
-
-//logging code - not functional
-type LIndv = {id:int; x:float; y:float; ks:Knowledge; ksp:Knowledge; gen:int; fit:float}
-type LCoop = {id1:int; id2:int; attr:float; def:float; 
-              kscom:float; kslow:float; dv:float; gen:int; coop:float
-              stb:float;
-              ksI:Knowledge; ksN:Knowledge}
-type LPout = {gen:int; idA:int; idB:int; payoff:float }
-type Log = MIndv of LIndv | MCoop of LCoop | MPout of LPout
-let mutable ld = []
-let log : MailboxProcessor<Log> = MailboxProcessor.Start(fun inbox -> 
-    async {
-        while true do
-            let! msg = inbox.Receive()
-            ld <- [msg]
-//            ld <- msg::ld //use this to keep logging data
-    })
 
 let NEW_KS_LEVEL            = 1.0 //influence level for a new primary KS
 let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks 
@@ -32,6 +14,11 @@ type IpdKS = PrimaryKS * Map<Knowledge,float> //each indv has a primary ks and p
 type W = Set<Id> * float
 type Action = W list
 type Payout = Action
+
+//for logging
+open TracingGame
+let obsNetW,fpNetW = Observable.createObservableAgent<SG<IpdKS>> Tracing.cts.Token
+
 
 type Ada =
     | Fixed of float
@@ -168,7 +155,8 @@ let logI st newKs indv =
     let ps = indv.Parms 
     let pksOld = prmryKS indv.KS
     let pksNew = prmryKS newKs
-    {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=pksNew; ksp=pksOld; gen=st.Gen; fit=indv.Fitness;} |> MIndv |> log.Post
+    {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=pksNew; ksp=pksOld; gen=st.Gen; fit=indv.Fitness;} 
+    |> MIndv |> fpGame
 
 let rate r = function 
     | Fixed f           -> f 
@@ -249,11 +237,16 @@ let updateStability f = function
     | Domain,Domain -> f + 1. //|> min 5.
     | _,_           -> 0.
 
-let rec outcome state cmprtr (pop,beliefSpace) (payouts:Payout array) =
+//let logNetwork popSz state (payouts:Payout array) = TracingGame.fpNetW({popSz, state.VMin,payouts)
+
+let rec outcome state cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop' = updatePop state vmx cmprtr pop payouts
     let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (prmryKS pop'.[i].KS, prmryKS pop.[i].KS))
     let state = createState state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
+  
+    fpNetW {Pop=pop';Net=network; Vmin=state.VMin; Links=payouts}
+
     pop',
     beliefSpace,
     {

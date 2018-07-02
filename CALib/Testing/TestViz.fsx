@@ -1,7 +1,7 @@
 ﻿#load "TestEnv.fsx"
 #load "SetupVideo.fsx"
 #load "..\Utilities\VizUtils.fs"
-#load "..\Utilities\Viz.fs"
+#load "..\Utilities\VizNetwork.fs"
 #load "..\DF1.fs"
 open TestEnv
 open CA
@@ -34,13 +34,13 @@ let best stp = if stp.Best.Length > 0 then stp.Best.[0].MFitness else 0.0
 let tk s = s |> Seq.truncate 250 |> Seq.toList
 
 //let kdSimpleCA      = kdSimpleCA fitness comparator parms
-let kdWeightedCA    = kdWeightedCA fitness comparator parms
+let kdWeightedCA    = kdWeightedCA fitness comparator parms CAUtils.hexagonNetworkViz
 //let kdlWeightedCA   = kdlWeightedCA fitness comparator parms
 //let kdGame2PlayerCA = kdGame2PlayerCA fitness comparator parms
 //let kdHedonicCA     = kdHedonicCA fitness comparator parms
 //let kdIpdCA         = kdIpdCA (0.5,1.9) fitness comparator parms 
-let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms 
-let kdSchCA         = kdSchelligCA fitness comparator parms 
+let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms CAUtils.hexagonNetworkViz
+let kdSchCA         = kdSchelligCA fitness comparator parms CAUtils.hexagonNetworkViz
 
 let testSingle() =
     let m = new Mat(Size(512,512), MatType.CV_8UC3)
