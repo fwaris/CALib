@@ -5,9 +5,26 @@ open VizUtils
 open System
 open OpenCvSharp
 open KDIPDGame
+open CA
+open System.Collections.Generic
+open System.Text
+open System.IO
 
 let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
 
+type Cluster = {Members:Set<Id>; Type:int}
+
+[<AutoOpen>]
+module Smap =
+  type Smap<'a> when 'a : comparison = {Map:Map<'a,int>; Ordered:'a list}
+  let empty = {Map=Map.empty; Ordered=[]}
+  let add a sm  = 
+    let c = sm.Map.Count
+    let m = sm.Map |> Map.add a c
+    {Map=m;Ordered=a::sm.Ordered}
+
+
+///clusters based on link strength between network individuals (game based)
 let cluster  popSz vmin (wtdLinks:(Link list)[]) =
   let links =  wtdLinks |> Seq.collect (fun ls -> ls |> Seq.filter (fun (s,c)->c>vmin) |> Seq.map fst)
   let baskets = Array.create popSz Set.empty
@@ -18,8 +35,8 @@ let cluster  popSz vmin (wtdLinks:(Link list)[]) =
     baskets.[i2] <- baskets.[i2].Add i1)
   let transactions = baskets |> Seq.mapi (fun i s -> i,s)
   let tree = FPGrowth.makeTree transactions
-  let support = 2 
-  let itemCount = 2
+  let support = 3 
+  let itemCount = 3
   let itemSets = FPGrowth.mineTree support tree 
   let largeItemSets = itemSets |> Seq.filter (fun (a,_) -> a.Count >= itemCount) |> Seq.map fst
   let clusters = largeItemSets |> Seq.map(fun is -> 
@@ -29,9 +46,84 @@ let cluster  popSz vmin (wtdLinks:(Link list)[]) =
       |> Array.mapi (fun i s -> let s' = Set.intersect s is in if Set.count s' = isCount then Some i else None) 
       |> Array.choose yourself
     is,matchTxns)
-  clusters
+  clusters //first part is supported items set individuals and 2nd part is individuals point to the itemset individuals
   //printfn "%A" clusters
   //()
+
+//clusters based on knowledge sources of surrounding neighbors
+let clusterKS<'k> (primKS:'k->Knowledge) (network:Network<'k>) (pop:CA.Population<'k>)  =
+
+  let transactions = 
+    pop 
+    |> Array.map (fun p ->
+      let ns = network pop p.Id
+      let txns = 
+        Array.append ns [|p|] 
+        |> Array.map (fun i -> primKS i.KS) |> Array.countBy yourself |> set
+      p.Id,txns
+    )
+
+  let tree = FPGrowth.makeTree transactions
+  let support = (float pop.Length  * 0.1 |> int)
+  let itemCount = 3
+  let itemSets = FPGrowth.mineTree support tree |> Seq.filter (fun (s,c)->s|>Seq.sumBy snd >= itemCount)
+  let n = 1
+  let topN = itemSets |> Seq.sortByDescending snd |> Seq.truncate n |> Seq.map fst |> Seq.toArray
+  transactions,topN
+
+let clusterKSMembers<'k> (primKS:'k->Knowledge) (network:Network<'k>) (pop:CA.Population<'k>)  clusterTypes =
+  let transactions,topN =  clusterKS<'k> (primKS:'k->Knowledge) (network:Network<'k>) (pop:CA.Population<'k>)
+  let matched = 
+    transactions 
+    |> Array.choose (fun (id,ks) ->
+      let bestMatches =  
+        topN 
+        |> Array.choose (fun top2s -> if Set.intersect ks top2s |> Set.count > 0 then Some top2s else None) 
+        |> Array.map(fun ks -> ks, ks |> Seq.map snd |> Seq.sum)
+        |> Array.sortByDescending snd
+      if bestMatches.Length = 0 then 
+        None 
+      else 
+        let bestMtch = bestMatches.[0] |> fst 
+        let ksSet = bestMtch |> Set.map fst
+        Some(id,bestMtch,ksSet))
+
+  let clusters = 
+    let ct = (!clusterTypes, matched) ||> Seq.fold (fun acc (_,s,_) -> if acc.Map |> Map.containsKey s then acc else acc |> Smap.add s) 
+    clusterTypes := ct
+    matched 
+    |> Array.map (fun  (id,clusterType,ksSet) -> 
+      let clusterMembers =  
+        network pop id 
+        |> Seq.append [pop.[id]] 
+        |> Seq.filter (fun i -> ksSet.Contains (primKS i.KS)) 
+        |> Seq.map (fun x->x.Id)
+        |> set
+      {Members=clusterMembers;Type=ct.Map.[clusterType]}
+    )
+  clusters
+
+let qColors = 
+  [|
+    (166,206,227)
+    (31,120,180)
+    (178,223,138)
+    (51,160,44)
+    (251,154,153)
+    (227,26,28)
+    (253,191,111)
+    (255,127,0)
+    (106,61,154)
+    (255,255,153)
+    (177,89,40)
+    50,220,181
+    100,210,185
+    238,190,170
+    76,80,140
+    189,07,107
+    255,88,0
+  |]
+  |> Array.map (fun (b,g,r) -> Scalar(float b,float g,float r, 0.001))
 
 let communityColors = 
   [|
@@ -58,7 +150,7 @@ let communityColors =
         189,07,107
         255,88,0
    |]
-   |> Array.map (fun (b,g,r) -> Scalar(float b,float g,float r))
+   |> Array.map (fun (b,g,r) -> Scalar(float b,float g,float r, 1.0))
 
 
 let drawFrame (pSize:Size) size ext margin network pop =
@@ -70,7 +162,7 @@ let drawFrame (pSize:Size) size ext margin network pop =
   //mChild.Release()
   //mParent.Release()
 
-let drawClusters width (network:CA.Network<_>) (pop:CA.Population<_>) (mat:Mat) (clusters:seq<Set<CA.Id>*int[]>)=
+let drawClusters width (network:CA.Network<_>) (pop:CA.Population<_>) (mat:Mat) (clusters:Cluster[])=
     let rowCount = sqrt (float pop.Length)
     let halfRc = rowCount / 2.0 |> ceil
     let rowLen = int rowCount
@@ -82,38 +174,91 @@ let drawClusters width (network:CA.Network<_>) (pop:CA.Population<_>) (mat:Mat) 
     let halfIncr = incr / 4.
     //printfn "incr %f, half %f " incr halfIncr
     let rad = incr/3.0 |> ceil |> int
-    let draw i clr = 
-        let r = i / rowLen 
-        let c = i % rowLen
-        let shiftY = if c % 2 = 0 then halfIncr else -halfIncr
-        let y = margin + (float r * incr + shiftY)
-        let x = margin + (float c * incr)
-        let ctr = Point(int x, int y)
-        Cv2.Circle(!> mat,ctr,rad+1,clr,2)
-    //pop |> Array.iter(fun p->draw p.Id brgColors.[2])
-    clusters |> Seq.iteri(fun i (s,ids) ->
-      let community = Seq.append s ids |> Seq.toArray
-      let clr  = communityColors.[i % communityColors.Length]
-      community |> Array.iter(fun i -> draw i clr)
+    let draw1 i clr = 
+        let r1 = i / rowLen 
+        let c1 = i % rowLen
+        let shiftY1 = if c1 % 2 = 0 then halfIncr else -halfIncr
+        let y1 = margin + (float r1 * incr + shiftY1)
+        let x1 = margin + (float c1 * incr)
+        let ctr1 = Point(int x1, int y1)
+        Cv2.Circle(!> mat,ctr1,rad+1,clr,25)
+    let draw2 i j clr = 
+        let r1 = i / rowLen 
+        let c1 = i % rowLen
+        let shiftY1 = if c1 % 2 = 0 then halfIncr else -halfIncr
+        let y1 = margin + (float r1 * incr + shiftY1)
+        let x1 = margin + (float c1 * incr)
+        let ctr1 = Point(int x1, int y1)
+        let r2 = j / rowLen 
+        let c2 = j % rowLen
+        let shiftY2 = if c2 % 2 = 0 then halfIncr else -halfIncr
+        let y2 = margin + (float r2 * incr + shiftY2)
+        let x2 = margin + (float c2 * incr)
+        let ctr2 = Point(int x2, int y2)
+        Cv2.Line(!> mat, ctr1,ctr2,clr,2)
+        //Cv2.Circle(!> mat,ctr1,rad+1,clr,20, LineTypes.Link8)
+   //pop |> Array.iter(fun p->draw p.Id brgColors.[2])
+    clusters |> Seq.iter(fun cluster ->
+      let clr  = qColors.[cluster.Type % qColors.Length]
+      cluster.Members |> Set.iter(fun i -> draw1 i clr)
     )
+
+let clusterColor i = qColors.[i % qColors.Length]
+
+let ksSetString ks =  
+  let sb = (StringBuilder(),ks) ||> Seq.fold(fun sb (k,c) -> sb.Append(Viz.ksMap.[k]).Append(c:int))
+  sb.ToString()
+
+let drawLegend margin (clusterTypes:Smap<Set<Knowledge*int>> ref) (m:Mat)  =
+  let x = m.Width - margin - 100
+  let disp = 60
+  let lineLength = 70
+  (!clusterTypes).Ordered  
+  |> List.rev 
+  |> List.iteri (fun i ks -> 
+    let l = ksSetString ks
+    let y = margin + (i * 12)
+    Cv2.Line(!>m, Point(x+disp,y),Point(x+disp+lineLength,y),clusterColor i,10)
+    Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., Scalar.White)
+    )
+
+let gamePrimKs = (fun ((k,_):IpdKS) ->k.KS)
+let basePrimKs = (fun (k:Knowledge) -> k)
 
 let visCommunity file (obs:IObservable<SG<IpdKS>>) =
   let ext = 20
   let margin = 5
   let size = 512
+  let cLeg = size + 100
   let pSize = Size(size, size + ext + 2 * margin)
   let enc = encoder file 30. (pSize.Width,pSize.Height)
-
+  let cluterTypes = ref Smap.empty 
+  let bg = Scalar(0.,0.,0.)
   let disp = 
     obs.Subscribe(fun {Pop=pop;Net=network;Vmin=vmn;Links=links} ->
       for i in 1 .. 10 do 
-        let mC,mP=drawFrame pSize size ext margin network pop
-        let clusters = cluster pop.Length vmn links
-        drawClusters size network pop mC clusters
-        enc.Frame mP
-        mC.Release()
-        mP.Release()
+        let clusters = clusterKSMembers  gamePrimKs network pop cluterTypes
+        let mParent = new Mat(pSize, MatType.CV_8UC3, bg)
+        drawLegend margin cluterTypes mParent
+        Viz.drawLabel mParent (pSize.Height - ext - margin)
+        let mChild = mParent.SubMat(Rect(0,0,size,size))
+        //let clusters = cluster pop.Length vmn links
+        drawClusters size network pop mChild clusters 
+        Viz.visualizePopHex size ipdClr network pop mChild
+        enc.Frame mParent
+        mChild.Release()
+        mParent.Release()
         printfn "."
     )
-
   disp,enc
+
+let logCluster (str:StreamWriter) (id:string) primKs network pop =
+  let _,topN = clusterKS primKs network pop
+  let ks1 = topN.[0]
+  str.Write id
+  str.Write "\t"
+  str.Write(ksSetString ks1)
+  str.Write "\t"
+  str.WriteLine()
+
+let initLog file = new StreamWriter(file:string)

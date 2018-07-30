@@ -43,8 +43,8 @@ let visualizePopHex<'t> width (fc:'t->Scalar)  (network:Network<'t>) (pop:Popula
     //    let ns = network pop p.Id
     //    for n in ns do draw n.Id (fc p.KS))
 
-let drawLabel (m:Mat) y =
-    let ks =
+let ksMap = 
+  dict
         [
             Domain      , "D"
             Historical  , "H"
@@ -52,7 +52,11 @@ let drawLabel (m:Mat) y =
             Normative   , "N"
             Topgraphical, "T"
         ]
-    ks |> List.iteri (fun i (k,l) ->
+
+let drawLabel (m:Mat) y =
+    ksMap |> Seq.iteri (fun i kv ->
+        let k = kv.Key
+        let l = kv.Value
         let x = 52 * i + 30
         Cv2.Circle(!>m, Point(x,y),10,clrKnowledge k, Cv2.FILLED)
         Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., clrKnowledge k)

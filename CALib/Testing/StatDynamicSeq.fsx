@@ -76,22 +76,27 @@ let getNetwork id =
   let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octagon, CAUtils.octagonNetwork] |> Map.ofList
   networks.[id]
 
-let rec runToSol id ws envCh st gens =
+let str = Community.initLog @"D:\repodata\calib\comm\comm1.txt"
+
+let rec runToSol id primKs ws envCh st gens =
+  async {
   if gens > MAX_GEN then 
     printfn "MAx_GEN %s" id
     if RUN_TO_MAX then () else saveEnv id ws
-    false,st
+    return false,st
   else
     let st = step envCh st
+    //do! Async.Sleep 100
+    Community.logCluster str id primKs st.CA.Network st.CA.Population
     let (bfit,gb) = best st
     let dist = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
     let solFound = dist < DIST_TH
     if solFound && not RUN_TO_MAX then 
       printfn "sol @ %d %s" st.Count id
-      true,st
+      return true,st
     else
-      runToSol id ws false st (gens+1) 
-
+      return! runToSol id primKs ws false st (gens+1) 
+  }
 
 let statRec i ipdSol st  (config:Config) segF =
   let seg = 
@@ -139,8 +144,8 @@ let runConfig numLandscapes (config:Config) =
     let ws = changeEnv ws
     ipdCA.Fitness := ws.F
     wtdCA.Fitness := ws.F
-    let ipdSol,ipdSt = runToSol "IPD" ws true ipdSt 0
-    let wtdSol,wtdSt = runToSol "WTD" ws true wtdSt 0
+    let ipdSol,ipdSt = runToSol "IPD" Community.gamePrimKs ws true ipdSt 0 |> Async.RunSynchronously
+    let wtdSol,wtdSt = runToSol "WTD" Community.basePrimKs ws true wtdSt 0 |> Async.RunSynchronously 
     yield statRec i ipdSol ipdSt {config with Id="IPD"} ksf
     yield statRec i wtdSol wtdSt {config with Id="WTD"} Social.baseSeg]
 
@@ -164,13 +169,22 @@ let saveStates name stats =
     )
   fn.Close() |> ignore
 
-
-let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW
+//let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW
 
 //let stats = run() |> Seq.take 1 |> Seq.toList
 //saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
 
-async {run() |> Seq.take 1 |> Seq.toList |> ignore} |> Async.Start
+async {
+  let stats = run() |> Seq.take 1 |> Seq.toList
+  str.Close()
+  saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
+} |> Async.Start
+
+(* stop video recording (does not stop CA run) killing fsi causes video corruption
 
 obsDisp.Dispose()
 enc.Release()
+
+
+
+*)
