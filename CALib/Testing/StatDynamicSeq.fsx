@@ -13,14 +13,16 @@ open TestEnv
 open CA
 open DF1
 open System.IO
+open System
 open Metrics
 open OpenCvSharp
 
 let RUN_TO_MAX = true
-let MAX_GEN = 500
+let MAX_GEN = 250
 let NUM_LANDSCAPES = 50
 let SAMPLES = 30
 let DIST_TH = 0.001
+let A_VALUES = [1.0; 3.5; 3.99]
 
 let parmDefs = 
     [|
@@ -40,8 +42,6 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-let a_values = [1.0; 3.1; 3.5; 3.99]
-
 type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 type NetId = Square | Hexagon | Octagon
 type Config = {Id:string; Run:int; Net:NetId; A:float}
@@ -57,7 +57,7 @@ let changeEnv ws =
   let (c,f) = landscape w
   {Id=ws.Id; W=w; M=c; F=f; EnvChangeCount = ws.EnvChangeCount + 1}
   
-let saveFolder = @"d:\repodata\calib\dynstatsNetMax"
+let saveFolder =  @"D:\repodata\calib\dsst_stats"
 if not <| Directory.Exists saveFolder then Directory.CreateDirectory saveFolder |> ignore
 
 let saveLandscape w r =
@@ -76,26 +76,45 @@ let getNetwork id =
   let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octagon, CAUtils.octagonNetwork] |> Map.ofList
   networks.[id]
 
-let str = Community.initLog @"D:\repodata\calib\comm\comm1.txt"
+type RunState<'k> =
+  {
+    Id        : string
+    A         : float
+    PrimKS    : 'k->Knowledge
+    Ws        : WorldState
+    EnvCh     : bool
+    Step      : TimeStep<'k>
+    Landscape : int
+    StrWComm  : StreamWriter
+    StrWRun   : StreamWriter
+  }
 
-let rec runToSol id primKs ws envCh st gens =
+let writeRun rst =
+  let ft = match rst.Step.Best with [] -> 0.0 | x::_ -> x.MFitness
+  let line = String.Join("\t",rst.Id,rst.A,rst.Step.Count,rst.Landscape,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H)
+  rst.StrWRun.WriteLine line
+
+
+let rec runToSol rst = //id a primKs ws envCh st gens =
   async {
-  if gens > MAX_GEN then 
-    printfn "MAx_GEN %s" id
-    if RUN_TO_MAX then () else saveEnv id ws
-    return false,st
+  if rst.Step.Count > MAX_GEN then 
+    printfn "MAx_GEN %s" rst.Id
+    if RUN_TO_MAX then () else saveEnv rst.Id rst.Ws //save environment to analyze later
+    return false,rst.Step
   else
-    let st = step envCh st
+    let st = step rst.EnvCh rst.Step
+    let rst = {rst with Step=st; EnvCh=false}
     //do! Async.Sleep 100
-    Community.logCluster str id primKs st.CA.Network st.CA.Population
+    writeRun rst
+    Community.logCluster rst.StrWComm rst.Id rst.A rst.Step.Count rst.Landscape rst.PrimKS rst.Step.CA.Network rst.Step.CA.Population
     let (bfit,gb) = best st
-    let dist = Array.zip gb ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
+    let dist = Array.zip gb rst.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
     let solFound = dist < DIST_TH
     if solFound && not RUN_TO_MAX then 
-      printfn "sol @ %d %s" st.Count id
+      printfn "sol @ %d %s" st.Count rst.Id
       return true,st
     else
-      return! runToSol id primKs ws false st (gens+1) 
+      return! runToSol rst
   }
 
 let statRec i ipdSol st  (config:Config) segF =
@@ -117,7 +136,9 @@ let statRec i ipdSol st  (config:Config) segF =
     Net=sprintf "%A" config.Net
   }
 
-let runConfig numLandscapes (config:Config) =
+let runConfig fstrCommunity fstrRun  numLandscapes (config:Config) =
+
+  printfn "config %A %A %A" config.A config.Id config.Run
   let ws = createEnv config.Id config.A
   let f : Fitness = ref ws.F
   //init pop and belief space
@@ -125,38 +146,57 @@ let runConfig numLandscapes (config:Config) =
   let wtdPop = createPop wtdBsp parmDefs CAUtils.baseKsInit
   let ipdPop = wtdPop |> KDIPDGame.initKS |> Array.map (fun x-> {x with Parms=Array.copy x.Parms})
   let ipdBsp = bsp f parmDefs comparator
-  //ipd kd
+  let shPop = wtdPop |> KDStagHunt.initKS |> Array.map (fun x-> {x with Parms=Array.copy x.Parms})
+  let shBsp = bsp f parmDefs comparator
+ //ipd kd
   let ada = KDIPDGame.Geometric(0.9,0.01)
   let ipdKd = ipdKdist ada vmx comparator ipdPop 
   //wtd kd 
   let ksSet = CAUtils.flatten wtdBsp |> List.map (fun ks->ks.Type) |> set
   let wtdKd = wtdMajorityKdist comparator ksSet
+  //sh kd
+  let shKd = KDStagHunt.knowledgeDist 4 comparator shBsp shPop
   //CA
   let ipdCA = makeCA f comparator ipdPop ipdBsp ipdKd KDIPDGame.ipdInfluence (getNetwork config.Net)
   let wtdCA = makeCA f comparator wtdPop wtdBsp wtdKd KDWeightedMajority.wtdMajorityInfluence (getNetwork config.Net)
+  let shCA = makeCA f comparator shPop shBsp shKd KDStagHunt.shInfluence (getNetwork config.Net)
   
   let ipdSt =  {CA=ipdCA; Best=[]; Count=0; Progress=[]}
   let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
 
   let wtdSt =  {CA=wtdCA; Best=[]; Count=0; Progress=[]}
-  
+
+  let shSt = {CA=shCA; Best=[]; Count=0; Progress=[]}
+  let shKs = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
+
   [for i in 1..numLandscapes do
-    let ws = changeEnv ws
-    ipdCA.Fitness := ws.F
+    let ws = changeEnv ws  //change landscape using assigned A-value
+    ipdCA.Fitness := ws.F  //update fitness functions
     wtdCA.Fitness := ws.F
-    let ipdSol,ipdSt = runToSol "IPD" Community.gamePrimKs ws true ipdSt 0 |> Async.RunSynchronously
-    let wtdSol,wtdSt = runToSol "WTD" Community.basePrimKs ws true wtdSt 0 |> Async.RunSynchronously 
+    //Note: population is not re-initialized therefore individuals retain locations from prior run
+    let ipdRst = {Id= "IPD"; Landscape=i; A=config.A; PrimKS=Community.gamePrimKs; Ws=ws;
+                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+    let wtdRst = {Id= "WTD"; Landscape=i; A=config.A; PrimKS=Community.basePrimKs; Ws=ws;
+                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+    let shRst = {Id= "Sh"; Landscape=i; A=config.A; PrimKS=Community.fstPrimKs; Ws=ws;
+                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+    let ipdSol,ipdSt = runToSol ipdRst |> Async.RunSynchronously
+    //let wtdSol,wtdSt = runToSol wtdRst |> Async.RunSynchronously 
+    let shSol,shSt = runToSol shRst    |> Async.RunSynchronously 
     yield statRec i ipdSol ipdSt {config with Id="IPD"} ksf
-    yield statRec i wtdSol wtdSt {config with Id="WTD"} Social.baseSeg]
+    //yield statRec i wtdSol wtdSt {config with Id="WTD"} Social.baseSeg
+    yield statRec i shSol shSt {config with Id="SH"} shKs]
 
 let run() =
   seq{
-    for a in a_values do
+    use fstrCommunity = Path.Combine(saveFolder,"comm_base_runs.txt") |> Community.initLog
+    use fstrRun = Path.Combine(saveFolder,"res_run.txt") |> File.CreateText
+    for a in A_VALUES do
       //for n in [Square; Hexagon; Octagon] do
       for n in [Hexagon] do
         for i in 1..SAMPLES do
           let config = {Config.Run=i; Config.A=a; Config.Net=n; Config.Id=""}
-          yield! runConfig NUM_LANDSCAPES config}
+          yield! runConfig fstrCommunity fstrRun NUM_LANDSCAPES config}
 
 let saveStates name stats =
   use fn = new StreamWriter(File.OpenWrite(Path.Combine(saveFolder,name)))
@@ -169,14 +209,14 @@ let saveStates name stats =
     )
   fn.Close() |> ignore
 
+//uncomment to record video showing community detection in social network
 //let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW
 
 //let stats = run() |> Seq.take 1 |> Seq.toList
 //saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
 
 async {
-  let stats = run() |> Seq.take 1 |> Seq.toList
-  str.Close()
+  let stats = run() |> Seq.toList
   saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
 } |> Async.Start
 
@@ -184,7 +224,5 @@ async {
 
 obsDisp.Dispose()
 enc.Release()
-
-
 
 *)

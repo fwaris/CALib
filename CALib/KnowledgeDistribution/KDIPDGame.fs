@@ -61,14 +61,44 @@ let sampleAvgDiversity (pop:Population<_>) =
 let isExplorative = function Domain -> false | _ -> true // | Historical | Normative | Topgraphical -> true | _ -> false
 let isExploitative = function Domain  -> true | _ -> false
 
-let KS_ATTRACTION_COFF      = 1.5 //attraction between exploitative and explorative KS
-let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
-let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
-let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
-let STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
-let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
+//let KS_ATTRACTION_COFF      = 1.5 //attraction between exploitative and explorative KS
+//let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
+//let LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
+//let FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
+//let STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
+//let DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
+
+type Coeff = {
+  KS_ATTRACTION_COFF      : float //attraction between exploitative and explorative KS
+  IMPROVE_DEFECT_COFF     : float //reduction in cooperation with others due to improved fit from last gen of exploitative ks
+  LOW_KS_COUNT_EXPONENT   : float //factor to prevent a low count KS from being pushed out
+  FIT_ATTRACTION_WEIGHT   : float //weight for supperior fitness term 
+  STABILITY_WEIGHT        : float //weight for stability (of same KS from gen-to-gen) factor in cooperation
+  DIVERSITY_WEIGHT        : float //weigt given to diversity
+}
+
+let defCoeff =
+  {
+    KS_ATTRACTION_COFF      = 1.5 //attraction between exploitative and explorative KS
+    IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
+    LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
+    FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
+    STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
+    DIVERSITY_WEIGHT        = 2.0 //weigt given to diversity
+  }
+
+let explorativeCoeffs =
+  {
+    KS_ATTRACTION_COFF      = 2.0 //attraction between exploitative and explorative KS
+    IMPROVE_DEFECT_COFF     = -0.3 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
+    LOW_KS_COUNT_EXPONENT   = 3.0 //factor to prevent a low count KS from being pushed out
+    FIT_ATTRACTION_WEIGHT   = 2.0 //weight for supperior fitness term 
+    STABILITY_WEIGHT        = 0.01 //weight for stability (of same KS from gen-to-gen) factor in cooperation
+    DIVERSITY_WEIGHT        = 3.0 //weigt given to diversity
+  }
 
 let cooperation 
+    coeffs
     state
     neighbor 
     indv =  
@@ -83,13 +113,13 @@ let cooperation
     let nKSC = 1. - state.KSCount.[ksN] //level of ks
     let coop =
         let attraction = (fNbr - fI) // |> max 0.
-        let defectCoof =  if isExploitative ksI && (fI > pf1I) then IMPROVE_DEFECT_COFF else 0.
-        let ksCompatibility = if isExplorative ksI && isExploitative ksN then KS_ATTRACTION_COFF else 0.
+        let defectCoof =  if isExploitative ksI && (fI > pf1I) then coeffs.IMPROVE_DEFECT_COFF else 0.
+        let ksCompatibility = if isExplorative ksI && isExploitative ksN then coeffs.KS_ATTRACTION_COFF else 0.
         let sameKSDefection = if ksI = ksN then -3.0 else 0.
-        let kslow = nKSC ** LOW_KS_COUNT_EXPONENT
-        let fitattraction = (attraction * FIT_ATTRACTION_WEIGHT)
-        let diversity = d * DIVERSITY_WEIGHT
-        let stability = stability * STABILITY_WEIGHT
+        let kslow = nKSC ** coeffs.LOW_KS_COUNT_EXPONENT
+        let fitattraction = (attraction * coeffs.FIT_ATTRACTION_WEIGHT)
+        let diversity = d * coeffs.DIVERSITY_WEIGHT
+        let stability = stability * coeffs.STABILITY_WEIGHT
         let c = ksCompatibility  + defectCoof  + kslow + fitattraction + stability + diversity + sameKSDefection
 //        {id1=indv.Id; id2=neighbor.Id; attr=attr; 
 //         def=defectCoof; kscom=ksCompatibility;
@@ -103,7 +133,7 @@ let cooperation
 let relativeCoop totalCoop (s,coop) = s, if coop < 0. then 0. else coop / totalCoop
 
 let play state _ indv neighbors payoff : Action =
-    let coops = neighbors |> Seq.map (cooperation state indv) |> Seq.toList
+    let coops = neighbors |> Seq.map (cooperation defCoeff state indv) |> Seq.toList
     let sumCoops = coops |> List.sumBy (fun (_,c) -> max c 0.)
     let ws = coops |> List.map (relativeCoop sumCoops)
     ws

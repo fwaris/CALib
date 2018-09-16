@@ -68,6 +68,7 @@ let detectChange (fitness:Fitness) (best:Marker list) =
 let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
+    let best = if envChanged then [] else best
     let newBest = 
         match best,topInds with
         | _ ,[||]   -> best

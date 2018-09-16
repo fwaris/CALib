@@ -27,5 +27,6 @@
 #load "../KnowledgeDistribution/KDContinousStrategyGame.fs"
 #load "../KnowledgeDistribution/KDIpDGame.fs"
 #load "../KnowledgeDistribution/Schelling.fs"
+#load "../KnowledgeDistribution/KDStagHunt.fs"
 #load "../CARunner.fs"
 

@@ -60,12 +60,12 @@ let create (parmDefs:Parm[]) isBetter window =
             | None -> voters, create history acceptance fInfluence
             | Some nBest ->
                 let pBest = match events with [] -> nBest.Parms | b::_ -> b.MParms
-                let eventDirection = (pBest,nBest.Parms) ||> Array.mapi2 (dir parmDefs)
+                //let eventDirection = (pBest,nBest.Parms) ||> Array.mapi2 (dir parmDefs)
                 let changeEvent    = toMarker nBest
                 let events         = changeEvent::events |> List.truncate win
-                let earliestEvent = events.[events.Length - 1]
-                let distance      = (nBest.Parms,earliestEvent.MParms) ||> Array.map2 (fun p n -> abs ( p - n))
-                let direction     = (nBest.Parms,earliestEvent.MParms) ||> Array.mapi2 (dir parmDefs)
+                //let earliestEvent = events.[events.Length - 1]
+                //let distance      = (nBest.Parms,earliestEvent.MParms) ||> Array.map2 (fun p n -> abs ( p - n))
+                //let direction     = (nBest.Parms,earliestEvent.MParms) ||> Array.mapi2 (dir parmDefs)
                 let updatedHistory =
                     {
                         Window      = win

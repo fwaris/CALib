@@ -73,6 +73,31 @@ let withI (obs:IObservable<'a>) =
           obs.Subscribe(fun a -> state <- state + 1; observer.OnNext (state,a))
     }
 
+let min (obs:IObservable<'a>)=
+    let mutable state = Unchecked.defaultof<'a>
+    { new IObservable<'a> with
+        member x.Subscribe(observer) = //TODO: need to dispose both 
+          obs.Subscribe(fun a -> 
+            if state = Unchecked.defaultof<'a> then
+              state <- a
+              observer.OnNext (state)
+            elif a < state then
+              state <- a
+              observer.OnNext (state))
+    }
+
+let max (obs:IObservable<'a>)=
+    let mutable state = Unchecked.defaultof<'a>
+    { new IObservable<'a> with
+        member x.Subscribe(observer) = //TODO: need to dispose both 
+          obs.Subscribe(fun a -> 
+            if state = Unchecked.defaultof<'a> then
+              state <- a
+              observer.OnNext (state)
+            elif a > state then
+              state <- a
+              observer.OnNext (state))
+    }
 
 
 (*

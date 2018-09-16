@@ -16,6 +16,7 @@ open Metrics
 open OpenCvSharp
 open Tracing
 open TraceCharts
+open System
 
 let parmDefs = 
     [|
@@ -28,6 +29,8 @@ let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
 let envChangedCount = ref 0
+
+//w.Value.Cones |> Array.map(fun c->c.H) |> Array.sortByDescending (fun x->x)
 
 let initBg = VizLandscape.gen (m,f)
  
@@ -49,16 +52,17 @@ let kdIpdCA vmx ftnss cmprtr parmDefs  =
     let kd = ipdKdist ada vmx cmprtr pop 
     makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
 
-//let kdlWeightedCA f c p = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.baseKsInit
-//    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
-
 let kdWeightedCA f c p  = 
     let bsp = bsp f p c
     let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
     let pop = createPop bsp p CAUtils.baseKsInit
     makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
+
+let kdShCA ftnss cmprtr parmDefs =
+    let b = bsp ftnss parmDefs cmprtr
+    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDStagHunt.initKS
+    let kd = KDStagHunt.knowledgeDist 5 cmprtr b pop
+    makeCA ftnss cmprtr pop b kd KDStagHunt.shInfluence
 
 let inline sqr x = x * x
 
@@ -86,9 +90,15 @@ let startCA = kdIpdCA vmx fitness comparator parmDefs defaultNetwork
 let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
 let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
 
+//let startCA = kdShCA fitness comparator parmDefs defaultNetwork
+//let fClr ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
+//let fSeg = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
+
 //let startCA = kdWeightedCA fitness comparator parmDefs defaultNetwork
 //let fClr = Viz.clrKnowledge
 //let fSeg = Social.baseSeg
+
+
 
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
@@ -96,15 +106,20 @@ let primarkyKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
     | :? Knowledge as k -> k
+    | :? (Knowledge * int) as k -> fst k
     | _-> failwithf "not handled"
 
 let secondaryKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> snd ks |> Some
-    | :? Knowledge as k -> None
-    | _-> failwithf "not handled"
+    | _ -> None
 
 let st = ref startStep
+
+let obsDist,fpDist = Observable.createObservableAgent<float>(Tracing.cts.Token)
+let obsMax,fpMax = Observable.createObservableAgent<float>(Tracing.cts.Token) 
+let obsMaxCone,fpMaxCone= Observable.createObservableAgent<float>(Tracing.cts.Token)
+
 
 let postObs() = 
     let dAll =  
@@ -166,6 +181,7 @@ let postObs() =
                 let lvl = pk.Level
                 List.append [k,lvl] (Map.toList m)
             | :? Knowledge as k -> [k,1.0]
+            | :? (Knowledge*int) as k -> [fst k,1.0]
             | _-> failwithf "not handled"
             )
         |> Seq.groupBy (fun (k,f) -> k)
@@ -178,6 +194,9 @@ let postObs() =
                   Social.ksSegments                                 //list of segments
                   st.Value.CA                                       //current state of CA
                   fSeg
+    let minDist = st.Value.CA.Population |> Array.map (fun i-> Array.zip i.Parms maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt) |> Array.min
+    fpMaxCone (maxCone.Value.H)
+    if st.Value.Best.IsEmpty |> not then fpMax  st.Value.Best.[0].MFitness
     let dfsn = Social.diffusion st.Value.CA
     do fpAll dAll
     do fpKSCounts ksCounts
@@ -190,6 +209,9 @@ let postObs() =
     do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
     do fpSeg dSeg
     do fbDfsn dfsn
+    do fpDist minDist; printfn "d: %f" minDist
+
+let obsMinDist = obsDist |> Observable.withI
 
 let frm = 
   container
@@ -201,9 +223,13 @@ let frm =
           chPoints2 (Some background) "Historical" obsHistM
           chPoints2 (Some background) "Topographical M"  obsTopoM
           chCounts obsKSCounts
-          chDisp "Segregation" obsSeg
+          chDisp "Distance" obsMinDist
+          //chDisp "Segregation" obsSeg
           chDisp "Diffusion" obsDfsn
       ]
+
+let maxCh = chOne  (chLines (19.5,20.0)  "Max"  [obsMaxCone |> Observable.withI; obsMax |> Observable.withI])
+
 
 let allCh =  
   let ch =
@@ -213,11 +239,12 @@ let allCh =
       ["Domain",obsDomain; "Situational",obsSituational; 
        "Normative",obsNorm; "History",obsHist; 
        "Topographical",obsTopo] 
-    |> TraceCharts.containerize
-  let frm = new System.Windows.Forms.Form()
-  frm.Controls.Add(ch)
-  frm.Show()
-  frm
+  chOne ch
+  //  |> TraceCharts.containerize
+  //let frm = new System.Windows.Forms.Form()
+  //frm.Controls.Add(ch)
+  //frm.Show()
+  //frm
 
 ;;
 let changeEnvironment() =
@@ -253,7 +280,9 @@ let run startStep =
                 false
             st := step envCh !st
             let (bfit,gb) = best !st
-            let solFound = Array.zip gb maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt < 0.001
+            let dist = Array.zip gb maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
+            //fpDist dist
+            let solFound = dist < 0.001
             if solFound then 
                 if !envChangedCount >= 4 then
                   go := false
@@ -275,10 +304,7 @@ let singleStep() = st := step false !st; postObs()
 (*
 autoStep()
 
-
-
 singleStep()
-
 
 cts.Cancel()
 

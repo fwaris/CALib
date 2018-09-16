@@ -224,8 +224,8 @@ let pop = [|for i in 0 .. 100 -> {Individual.Id=i; Parms=[||]; KS=Domain; Fitnes
 squareNetwork pop 25
 *)
 
-let Maximize a b = a > b
-let Minimize a b = a < b
+let Maximize a b = a >= b
+let Minimize a b = a <= b
 
 let vF   = function F(v,_,_) -> v   | _ -> failwith "invalid type"
 let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"

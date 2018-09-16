@@ -3,6 +3,7 @@ open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 open System.Windows.Forms
 open System.Drawing
+open System
 
 let applyBgHost image (chh:ChartTypes.ChartControl) = 
     let ch = chh.Controls.[0] :?> System.Windows.Forms.DataVisualization.Charting.Chart
@@ -89,6 +90,15 @@ let chPtsLine bg title obs =
         |> applyBg bg
     ch,bg
 
+let chLines (mn,mx) title obs = 
+  let ch = 
+    obs 
+    |> Seq.map (fun o -> LiveChart.FastLineIncremental o) 
+    |> Chart.Combine
+    |> Chart.WithYAxis(Max=mx, Min=mn)
+  ch |> Chart.WithTitle title ,None
+
+
 let chCounts obs =
     let ch =
         LiveChart.Column(obs, Title="Live KS Counts") 
@@ -104,10 +114,17 @@ let containerize (ch,bg) =
     | None       -> ()
     chh
 
+let chOne ch = 
+  let ch = containerize ch
+  let frm = new System.Windows.Forms.Form()
+  frm.Controls.Add(ch)
+  frm.Show()
+  frm
+
 let container chlist =
     let form = new Form()
     form.Width  <- 400
-    form.Height <- 300
+    form.Height <- 600
     form.Visible <- true 
     form.Text <- "CA Charts"
     let grid = new TableLayoutPanel()

@@ -224,6 +224,7 @@ let drawLegend margin (clusterTypes:Smap<Set<Knowledge*int>> ref) (m:Mat)  =
 
 let gamePrimKs = (fun ((k,_):IpdKS) ->k.KS)
 let basePrimKs = (fun (k:Knowledge) -> k)
+let inline fstPrimKs  (k:Knowledge,_) = k
 
 let visCommunity file (obs:IObservable<SG<IpdKS>>) =
   let ext = 20
@@ -252,12 +253,18 @@ let visCommunity file (obs:IObservable<SG<IpdKS>>) =
     )
   disp,enc
 
-let logCluster (str:StreamWriter) (id:string) primKs network pop =
+let logCluster (str:StreamWriter) (id:string) (a:float) (i:int) (lndscp:int) primKs network pop =
   let _,topN = clusterKS primKs network pop
-  let ks1 = topN.[0]
+  let ks1 = if topN.Length > 0 then ksSetString topN.[0] else "N"
   str.Write id
   str.Write "\t"
-  str.Write(ksSetString ks1)
+  str.Write a
+  str.Write "\t"
+  str.Write i
+  str.Write "\t"
+  str.Write lndscp
+  str.Write "\t"
+  str.Write ks1
   str.Write "\t"
   str.WriteLine()
 
