@@ -83,6 +83,7 @@
     <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="KnowledgeDistribution\Schelling.fs" />
     <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
+    <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
     <Compile Include="CAConstants.fs" />
     <Compile Include="CARunner.fs" />
     <Compile Include="Utilities\FPGrowth.fs" />

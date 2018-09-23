@@ -14,7 +14,7 @@ type ShState = {InitialFitness:float[]; CoopGens:int; GensSinceInit: int; KSOrde
 let fitVal sign (_,_,_,f) = sign*f
 
 //let defaultKSOrder = [|Topgraphical; Normative; Historical; Situational; Domain|]
-let defaultKSOrder = [|Topgraphical; Topgraphical; Normative; Historical; Situational; Domain|]
+let defaultKSOrder = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
 
 let private sqr x = x * x
 let private std mean n xs = (xs |> Seq.map (fun x -> mean - x |> sqr) |> Seq.sum) / float n |> sqrt
@@ -145,7 +145,7 @@ let shInfluence beliefSpace (pop:Population<ShKnowledge>) =
               match ks with 
               | Domain -> 
                 let l = lvl ** (float i) |> max 0.00001
-                printfn "dm lvl: %d %f" i l
+                //printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
             let p = ksMap.[ks].Influence lvl  p

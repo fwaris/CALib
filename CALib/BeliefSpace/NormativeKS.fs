@@ -59,7 +59,7 @@ let maxP = function F(_,_,mx) -> mx | I(_,_,mx) -> float mx
 
 let normalizeParm (parmDefs:Parm[]) indv s i  {ParmLo=pLo; ParmHi=pHi} parm = 
     if pLo < parm &&  pHi > parm  then 
-        evolveP s eSigma indv i parmDefs.[i] parm
+        evolveP CAEvolve.RANGE_SCALER s eSigma indv i parmDefs.[i] parm
     else
         distributParm s indv i parmDefs.[i] pLo pHi
 

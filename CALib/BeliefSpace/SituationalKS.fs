@@ -115,7 +115,7 @@ let create (parmDefs:Parm[]) isBetter maxExemplars =
             let i = Probability.spinWheel state.SpinWheel
             let choosen = x.[i]
 //            printfn "sit i = %d %A" i choosen
-            ind.Parms |> Array.iteri (fun i p -> evolveP influenceLevel eSigma ind.Parms i parmDefs.[i] p)
+            ind.Parms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i parmDefs.[i] p)
             ind
 
     create State.Default acceptance influence

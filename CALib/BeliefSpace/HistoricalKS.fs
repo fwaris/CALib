@@ -86,7 +86,7 @@ let create (parmDefs:Parm[]) isBetter window =
           if isBetter ev.MFitness ind.Fitness then
               ev.MParms |> influenceInd parmDefs s eSigma ind
           else
-              evolveInd parmDefs s eSigma ind
+              evolveInd CAEvolve.RANGE_SCALER parmDefs s eSigma ind
 
         //printfn "[%d] %A (%A)" ind'.Id ind'.Parms ev.MParms
         //let iAfter = ind'.Parms |> Array.copy

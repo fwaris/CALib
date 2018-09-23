@@ -24,7 +24,7 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 200 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
+let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -64,6 +64,12 @@ let kdShCA ftnss cmprtr parmDefs =
     let kd = KDStagHunt.knowledgeDist 5 cmprtr b pop
     makeCA ftnss cmprtr pop b kd KDStagHunt.shInfluence
 
+let kdStkCA ftnss cmprtr parmDefs =
+    let b = bsp ftnss parmDefs cmprtr
+    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDStackelberg.initKS
+    let kd = KDStackelberg.knowledgeDist cmprtr
+    makeCA ftnss cmprtr pop b kd KDStackelberg.stkInfluence
+
 let inline sqr x = x * x
 
 //dispersion between parms of two individuals
@@ -86,13 +92,18 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-let startCA = kdIpdCA vmx fitness comparator parmDefs defaultNetwork
-let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
-let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
 
-//let startCA = kdShCA fitness comparator parmDefs defaultNetwork
-//let fClr ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
-//let fSeg = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
+//let startCA = kdIpdCA vmx fitness comparator parmDefs defaultNetwork
+//let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+//let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
+
+let startCA = kdShCA fitness comparator parmDefs defaultNetwork
+let fClr ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
+let fSeg = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
+
+//let startCA = kdStkCA fitness comparator parmDefs defaultNetwork
+//let fClr ((k,_):KDStackelberg.StkKnowledge) = Viz.brgColors.[Viz.ks k]
+//let fSeg = (fun (x:Individual<KDStackelberg.StkKnowledge>) -> Social.ksNum (fst x.KS))
 
 //let startCA = kdWeightedCA fitness comparator parmDefs defaultNetwork
 //let fClr = Viz.clrKnowledge
@@ -265,6 +276,8 @@ let changeEnvironment() =
         envChangedCount := !envChangedCount + 1
     }
 
+let ENV_CHANGE_COUNT = 200 //change environment after this many generations
+
 let run startStep =
     let go = ref true
     async {
@@ -272,7 +285,7 @@ let run startStep =
             do! Async.Sleep 250
             //TODO: detect change from indv performance - change in fitness for same location at different gen
             let envCh =
-              if st.Value.Count > 0 && st.Value.Count % 100 = 0 && !envChangedCount < 4 then
+              if st.Value.Count > 0 && st.Value.Count % ENV_CHANGE_COUNT = 0 && !envChangedCount < 4 then
                 changeEnvironment() |> Async.RunSynchronously
                 printf "env changed"
                 true

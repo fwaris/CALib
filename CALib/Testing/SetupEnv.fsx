@@ -28,5 +28,6 @@
 #load "../KnowledgeDistribution/KDIpDGame.fs"
 #load "../KnowledgeDistribution/Schelling.fs"
 #load "../KnowledgeDistribution/KDStagHunt.fs"
+#load "../KnowledgeDistribution/KDStackelberg.fs"
 #load "../CARunner.fs"
 

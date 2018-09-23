@@ -34,13 +34,15 @@ let range = function
     | F(_,mn,mx)   ->  mn-mx
     | I(_,mn,mx)   ->  mx-mn |> float
 
-let evolveS' range influenceLevel sigma v = 
+let evolveS' rangeScaler range influenceLevel sigma v = 
     assert (influenceLevel > 0.0 && influenceLevel <= 1.0)
     assert (sigma > 0.0 && sigma <= 1.0)
-    let z = zsample() * range / 4.0 // pick something in proportion to the allowable range
+    let z = zsample() * range * rangeScaler // pick something in proportion to the allowable range
     let z' = z * influenceLevel * sigma
     //printfn "evolveS' infL=%f; s=%f; v=%f - %f" influenceLevel sigma v z'
     v - z'
+
+let RANGE_SCALER = 0.25 //how much of the available parameter range to use for evolving parm
 
 let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV =
     //mutation
@@ -49,20 +51,20 @@ let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV
     | F(_,_,_),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV       //TODO: scaling not symmetrical in both directions
     | F(_,mn,mx),pV,_             -> 
       let r = range parm
-      influenced.[i] <- evolveS' r influenceLevel sigma pV   |> clamp mn mx
+      influenced.[i] <- evolveS' RANGE_SCALER  r influenceLevel sigma pV   |> clamp mn mx
 
     | I(_,mn,mx),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV     |> clampI mn mx
     | I(_,mn,mx),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV     |> clampI mn mx
     | I(_,mn,mx),pV,_               -> 
       let r = range parm
-      influenced.[i] <- evolveS' r influenceLevel sigma pV |> clampI mn mx
+      influenced.[i] <- evolveS' RANGE_SCALER r influenceLevel sigma pV |> clampI mn mx
 
-let evolveP influenceLevel sigma (indv:float[]) i parm pV =
+let evolveP rangeScaler influenceLevel sigma (indv:float[]) i parm pV =
     //mutation
     let r = range parm
     match parm with
-    | F(_,mn,mx)   -> indv.[i] <- evolveS' r influenceLevel sigma pV |> clamp mn mx
-    | I(_,mn,mx)   -> indv.[i] <- evolveS' r influenceLevel sigma pV |> clampI mn mx
+    | F(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clamp mn mx
+    | I(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clampI mn mx
 
 let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =
     //mutation
@@ -79,9 +81,9 @@ let influenceInd caParms influenceLevel sigma (influenced:Individual<_>) (parmsI
 
 ///influenced indivual's parameters are modified 
 ///to move them towards the influencer's parameters
-let evolveInd caParms influenceLevel sigma (individual:Individual<_>) =
+let evolveInd rangeScaler caParms influenceLevel sigma (individual:Individual<_>) =
     let prms = individual.Parms
-    caParms |> Array.iteri (fun i p -> evolveP influenceLevel sigma prms i p prms.[i])
+    caParms |> Array.iteri (fun i p -> evolveP rangeScaler influenceLevel sigma prms i p prms.[i])
     individual
 
 (*
