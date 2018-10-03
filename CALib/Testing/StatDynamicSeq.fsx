@@ -18,11 +18,13 @@ open Metrics
 open OpenCvSharp
 
 let RUN_TO_MAX = true
-let MAX_GEN = 200
+let CALC_SOC_METRICS = true
+let MAX_GEN = 500
 let NUM_LANDSCAPES = 50
-let SAMPLES = 10
+let SAMPLES = 30
 let DIST_TH = 0.001
-let A_VALUES = [3.99] //[1.0; 3.5; 3.99]
+//let A_VALUES = [1.01; 2.8; 3.35; 3.5; 3.99] // [1.0; 3.5; 3.99]
+let A_VALUES = [1.0; 1.4; 1.8; 2.2; 2.6; 3.1; 3.2;3.3;3.4;3.5;3.6;3.7;3.8;3.9]
 
 let parmDefs = 
     [|
@@ -85,20 +87,21 @@ type RunState<'k> =
     EnvCh     : bool
     Step      : TimeStep<'k>
     Landscape : int
+    SampleNum : int
     StrWComm  : StreamWriter
     StrWRun   : StreamWriter
   }
 
 let writeRun rst =
   let ft = match rst.Step.Best with [] -> 0.0 | x::_ -> x.MFitness
-  let line = String.Join("\t",rst.Id,rst.A,rst.Step.Count,rst.Landscape,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H)
+  let line = String.Join("\t",rst.Id,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H)
   rst.StrWRun.WriteLine line
 
 
 let rec runToSol rst = //id a primKs ws envCh st gens =
   async {
   if rst.Step.Count > MAX_GEN then 
-    printfn "MAx_GEN %s %f %d" rst.Id rst.A rst.Landscape
+    printfn "MAx_GEN Id=%s A=%f Lndscp=%d Sample=%d" rst.Id rst.A rst.Landscape rst.SampleNum
     if RUN_TO_MAX then () else saveEnv rst.Id rst.Ws //save environment to analyze later
     return false,rst.Step
   else
@@ -106,7 +109,7 @@ let rec runToSol rst = //id a primKs ws envCh st gens =
     let rst = {rst with Step=st; EnvCh=false}
     //do! Async.Sleep 100
     writeRun rst
-    Community.logCluster rst.StrWComm rst.Id rst.A rst.Step.Count rst.Landscape rst.PrimKS rst.Step.CA.Network rst.Step.CA.Population
+    //Community.logCluster rst.StrWComm rst.Id rst.A rst.Step.Count rst.Landscape rst.PrimKS rst.Step.CA.Network rst.Step.CA.Population
     let (bfit,gb) = best st
     let dist = Array.zip gb rst.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
     let solFound = dist < DIST_TH
@@ -118,14 +121,19 @@ let rec runToSol rst = //id a primKs ws envCh st gens =
   }
 
 let statRec i ipdSol st  (config:Config) segF =
-  let seg = 
-    Social.segregation                                    //Schelling-like segregation measure
-        2                                                 //radius of neighborhood
-        (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
-        Social.ksSegments                                 //list of segments
-        st.CA                                             //current state of CA
-        segF                                              //function to return segment for each individual
-  let dffsn =  Social.diffusion st.CA
+  let seg,dffsn =
+    if CALC_SOC_METRICS then
+      let seg = 
+        Social.segregation                                    //Schelling-like segregation measure
+            2                                                 //radius of neighborhood
+            (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
+            Social.ksSegments                                 //list of segments
+            st.CA                                             //current state of CA
+            segF                                              //function to return segment for each individual
+      let dffsn =  Social.diffusion st.CA
+      seg,dffsn
+    else
+      -1.0,-1.0
   {
     ConfigRun=config.Run
     Id=config.Id; LandscapeNum=i
@@ -138,7 +146,7 @@ let statRec i ipdSol st  (config:Config) segF =
 
 let runConfig fstrCommunity fstrRun  numLandscapes (config:Config) =
 
-  printfn "config %A %A %A" config.A config.Id config.Run
+  //printfn "config %A %A %A" config.A config.Id config.Run
   let ws = createEnv config.Id config.A
   let f : Fitness = ref ws.F
   //init pop and belief space
@@ -190,13 +198,13 @@ let runConfig fstrCommunity fstrRun  numLandscapes (config:Config) =
 
     //Note: population is not re-initialized therefore individuals retain locations from prior run
     let ipdRst = {Id= "IPD"; Landscape=i; A=config.A; PrimKS=Community.gamePrimKs; Ws=ws;
-                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
     let wtdRst = {Id= "WTD"; Landscape=i; A=config.A; PrimKS=Community.basePrimKs; Ws=ws;
-                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
     let shRst = {Id= "SH"; Landscape=i; A=config.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
     let stkRst = {Id= "STK"; Landscape=i; A=config.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; StrWRun=fstrRun}
+                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
 
     let ipdSol,ipdSt = runToSol ipdRst |> Async.RunSynchronously
     let wtdSol,wtdSt = runToSol wtdRst |> Async.RunSynchronously 
