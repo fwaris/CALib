@@ -2,10 +2,13 @@
 open CA
 open CAUtils
 open CAEvolve
+open HistoricalKS
 
 let eSigma = 0.003
 
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
+
+type DomainState = {ParmDefs:Parm[]; IsBetter:Comparator; Fitness:Fitness}
 
 let rateOfImprovement oldFitness newFitness isBetter denominator =
     if oldFitness = newFitness then 
@@ -27,46 +30,37 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
         parms.[i] <- p
         partialSlope)
 
+
+let initialState parmDefs isBetter fitness = {ParmDefs=parmDefs; IsBetter=isBetter; Fitness=fitness}
+
+let construct state fAccept fInfluence : KnowledgeSource<_> =
+    {
+        Type        = Domain
+        Accept      = fAccept fInfluence state
+        Influence   = fInfluence state
+    }
+
+let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
+
+let defaultInfluence state influenceLevel (ind:Individual<_>) =
+    //mutation
+    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
+    //let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
+    let slopes = slopes state.IsBetter state.Fitness.Value oldFit state.ParmDefs ind.Parms
+    let parms = ind.Parms
+    let z = zsample() |> abs
+    let stepSize = z * influenceLevel * eSigma
+    ind.Parms |> Array.iteri(fun i p ->
+        parms.[i] <-
+            let (dir,slope) = slopes.[i]
+            match dir with
+            | Up   -> stepUp stepSize slope state.ParmDefs.[i] p
+            | Down -> stepDown stepSize slope state.ParmDefs.[i] p 
+            | Flat -> p)//evolveS s eSigma p)
+    ind
+
 let create parmDefs isBetter (fitness:Fitness) =
-    let create fAccept fInfluence : KnowledgeSource<_> =
-        {
-            Type        = Domain
-            Accept      = fAccept
-            Influence   = fInfluence
-        }
 
-    //let influence influenceLevel (ind:Individual<_>) =
-    //    //mutation
-    //    let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
-    //    let parms = ind.Parms
-    //    ind.Parms |> Array.iteri(fun i p ->
-    //        parms.[i] <-
-    //            let (dir,mag) = slopes.[i]
-    //            match dir with
-    //            | Up   -> slideUp (influenceLevel*mag) eSigma parmDefs.[i] p
-    //            | Down -> slideDown (influenceLevel*mag) eSigma parmDefs.[i] p
-    //            | Flat -> p)//evolveS s eSigma p)
-    //    ind
+    let state = initialState parmDefs isBetter fitness
 
-    let influence influenceLevel (ind:Individual<_>) =
-        //mutation
-        let oldFit = fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
-        //let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
-        let slopes = slopes isBetter fitness.Value oldFit parmDefs ind.Parms
-        let parms = ind.Parms
-        let z = zsample() |> abs
-        let stepSize = z * influenceLevel * eSigma
-        ind.Parms |> Array.iteri(fun i p ->
-            parms.[i] <-
-                let (dir,slope) = slopes.[i]
-                match dir with
-                | Up   -> stepUp stepSize slope parmDefs.[i] p
-                | Down -> stepDown stepSize slope parmDefs.[i] p 
-                | Flat -> p)//evolveS s eSigma p)
-        ind
-
-    let rec acceptance 
-        envChanged
-        (voters : Individual<_> array) = voters, create acceptance influence
-       
-    create acceptance influence
+    construct state defaultAcceptance defaultInfluence

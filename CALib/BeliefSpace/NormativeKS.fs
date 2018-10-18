@@ -2,6 +2,7 @@
 open CA
 open CAUtils
 open CAEvolve
+open System.Windows.Forms
 
 let eSigma = 1.0
 
@@ -11,6 +12,13 @@ type Norm =
         ParmLo    : float
         FitnessHi : float
         ParmHi    : float
+    }
+
+type NormState = 
+    {
+        Norms       : Norm[]
+        IsBetter    : Comparator
+        ParmDefs    : Parm[]
     }
 
 let updateNorms isBetter norms highPerfInd =
@@ -76,32 +84,35 @@ let log (norms:Norm[]) =
   let hi = norms |> Array.map (fun n -> n.ParmHi)
   [low;hi] |> Metrics.NormState |> Metrics.postAll
 
-let create parmDefs isBetter =
-    let create (norms:Norm array) fAccept fInfluence : KnowledgeSource<_> =
-        {
-            Type        = Normative
-            Accept      = fAccept fInfluence norms
-            Influence   = fInfluence norms
-        }
+let construct state fAccept fInfluence : KnowledgeSource<_> =
+    {
+        Type        = Normative
+        Accept      = fAccept fInfluence state
+        Influence   = fInfluence state
+    }
 
-    let rec acceptance fInfluence norms envChanged (voters:Individual<_> array) =
-        //assumes that individuals are sorted best fitness first
-        let norms = 
-          if envChanged then 
+let initialState parmDefs isBetter = {ParmDefs=parmDefs; IsBetter=isBetter; Norms=createNorms parmDefs isBetter}
+
+let defaultInfluence {Norms=norms; ParmDefs=parmDefs} s (ind:Individual<_>) =
+    (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> normalizeParm parmDefs ind.Parms s i n p)
+    ind
+
+let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> array) =
+    //assumes that individuals are sorted best fitness first
+    let norms = 
+        if envChanged then 
             printfn "changing norms"
-            createNorms parmDefs isBetter 
-          else 
-            norms
-        let updatedNorms = voters |> Array.fold (updateNorms isBetter) norms
-        //printfn "%A" updatedNorms
-        #if _LOG_
-        log updatedNorms
-        #endif
-        voters,create updatedNorms acceptance fInfluence 
-    
-    let influence (norms:Norm array) s (ind:Individual<_>) =
-        (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> normalizeParm parmDefs ind.Parms s i n p)
-        ind
-        
-    let initialNorms = createNorms parmDefs isBetter
-    create initialNorms acceptance influence
+            createNorms state.ParmDefs state.IsBetter
+        else 
+            state.Norms
+    let updatedNorms = voters |> Array.fold (updateNorms state.IsBetter) norms
+    //printfn "%A" updatedNorms
+    #if _LOG_
+    log updatedNorms
+    #endif
+    let state = {state with Norms=updatedNorms}
+    voters,construct state defaultAcceptance fInfluence 
+
+let create parmDefs isBetter =    
+    let state = initialState parmDefs isBetter
+    construct state defaultAcceptance defaultInfluence

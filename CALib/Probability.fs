@@ -86,10 +86,12 @@ let GAUSS mean sigma =
 
 let createWheel (weights:('a*float)[]) = //key * weight  key must be unique
     let s = Array.sumBy snd weights
-    if s = 0. then failwithf "weights cannot sum to 0 %A" s
+    let weights = if s = 0. then weights |> Array.map(fun (a,_)->a,1.0) else weights
+    //if s = 0. then 
+    //    failwithf "weights cannot sum to 0 %A" s
     let ws = 
         weights 
-        |> Array.filter (fun (_,w) -> w > 0. && w <> nan) 
+        |> Array.filter (fun (_,w) -> w > 0. && (Double.IsNaN w || Double.IsInfinity w) |> not) 
         |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
         |> Array.sortBy snd                         //arrange ascending
     let cum = 

@@ -7,14 +7,15 @@ let eSigma = 0.05
 
 type State = 
     {
-        Exemplars    :   Marker array
-        SpinWheel    :   (int*float)array
+        Exemplars    : Marker array
+        SpinWheel    : (int*float)array
+        ParmDefs     : Parm[]
+        IsBetter     : Comparator
+        MaxExemplars : int
     }
-    with
-      static member Default = {Exemplars=[||];SpinWheel=[||]}
 
 let fitweights isBetter (exemplars:Marker array) =
-    let tx m = if isBetter 2. 1. then m else 1.0 / m
+    let tx m = if isBetter 2. 1. then m else if m = 0.0 then 1.0 else  1.0 / m
     let wghts = exemplars |> Array.map (fun i-> tx i.MFitness)
     wghts 
 
@@ -81,41 +82,51 @@ let pickExamplars isBetter (prevE:Marker[]) (voters:Individual<_> seq) =
         |> Seq.toList
     best::(clct [] binned [])    
 
-let create (parmDefs:Parm[]) isBetter maxExemplars =
-    let create state fAccept fInfluence : KnowledgeSource<_> =
-        {
-            Type        = Situational
-            Accept      = fAccept fInfluence state
-            Influence   = fInfluence state
-        }
+let construct state fAccept fInfluence : KnowledgeSource<_> =
+    {
+        Type        = Situational
+        Accept      = fAccept fInfluence state
+        Influence   = fInfluence state
+    }
 
-    let rec acceptance 
-        fInfluence 
-        state
-        envChanged
-        (voters : Individual<_> array) =
-        let state = if envChanged then State.Default else state
-        let explrs = pickExamplars isBetter state.Exemplars voters |> List.truncate maxExemplars |> List.toArray
+let initialState parmDefs isBetter maxExemplars = 
+    {
+        Exemplars   = [||]
+        SpinWheel   = [||]
+        ParmDefs    = parmDefs
+        IsBetter    = isBetter
+        MaxExemplars = maxExemplars
+    }
+
+let defaultInfluence state influenceLevel (ind:Individual<_>) =
+    match state.Exemplars with
+    | [||] -> ind
+    | x -> 
+        let i = Probability.spinWheel state.SpinWheel
+        let choosen = x.[i]
+//            printfn "sit i = %d %A" i choosen
+        ind.Parms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i state.ParmDefs.[i] p)
+        ind
+
+let rec defaultAcceptance 
+    fInfluence 
+    state
+    envChanged
+    (voters : Individual<_> array) =
+    let state = if envChanged then {state with Exemplars=[||]; SpinWheel=[||]} else state
+    let explrs = pickExamplars state.IsBetter state.Exemplars voters |> List.truncate state.MaxExemplars |> List.toArray
 //        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
 //        printfn ""
-        let weights = fitweights isBetter explrs |> Array.mapi (fun i x -> i,x)
-        let _,wheel = Probability.createWheel weights
-        let state = {Exemplars=explrs; SpinWheel=wheel}
+    let weights = fitweights state.IsBetter explrs |> Array.mapi (fun i x -> i,x)
+    let _,wheel = Probability.createWheel weights
+    let state = {state with Exemplars=explrs; SpinWheel=wheel}
 
-        #if _LOG_
-        log explrs
-        #endif
+    #if _LOG_
+    log explrs
+    #endif
 
-        voters, create state acceptance fInfluence
-    
-    let influence state influenceLevel (ind:Individual<_>) =
-        match state.Exemplars with
-        | [||] -> ind
-        | x -> 
-            let i = Probability.spinWheel state.SpinWheel
-            let choosen = x.[i]
-//            printfn "sit i = %d %A" i choosen
-            ind.Parms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i parmDefs.[i] p)
-            ind
+    voters, construct state defaultAcceptance fInfluence
 
-    create State.Default acceptance influence
+let create parmDefs isBetter maxExemplars =
+    let state = initialState parmDefs isBetter maxExemplars
+    construct state defaultAcceptance defaultInfluence

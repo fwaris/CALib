@@ -57,87 +57,6 @@
       </PropertyGroup>
     </When>
   </Choose>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Probability.fs" />
-    <Compile Include="DF1.fs" />
-    <Compile Include="CA.fs" />
-    <Compile Include="CAUtils.fs" />
-    <Compile Include="CAEvolve.fs" />
-    <Compile Include="Settings.fs" />
-    <Compile Include="Metrics\ObservableExt.fs" />
-    <Compile Include="Metrics\Metrics.fs" />
-    <Compile Include="Metrics\Tracing.fs" />
-    <Compile Include="Metrics\TracingGame.fs" />
-    <Compile Include="Metrics\Social.fs" />
-    <Compile Include="BeliefSpace\HistoricalKS.fs" />
-    <Compile Include="BeliefSpace\NormativeKS.fs" />
-    <Compile Include="BeliefSpace\SituationalKS.fs" />
-    <Compile Include="BeliefSpace\DomainKS2.fs" />
-    <Compile Include="BeliefSpace\KMeans.fs" />
-    <Compile Include="BeliefSpace\TopographicKS.fs" />
-    <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
-    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
-    <Compile Include="KnowledgeDistribution\Schelling.fs" />
-    <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
-    <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
-    <Compile Include="CAConstants.fs" />
-    <Compile Include="CARunner.fs" />
-    <Compile Include="Utilities\FPGrowth.fs" />
-    <Compile Include="Utilities\VizUtils.fs" />
-    <Compile Include="Utilities\VizNetwork.fs" />
-    <Compile Include="Utilities\TraceCharts.fs" />
-    <Compile Include="Utilities\VizLandscape.fs" />
-    <Compile Include="Utilities\Community.fs" />
-    <None Include="Landscapes\test_cone1.01.csv" />
-    <None Include="Landscapes\test_cone2.0.csv" />
-    <None Include="Landscapes\test_cone3.35.csv" />
-    <None Include="Landscapes\test_cone3.5.csv" />
-    <None Include="Landscapes\test_cone3.99.csv" />
-    <None Include="Landscapes\Backgrounds.fsx" />
-    <None Include="Testing\SetupEnv.fsx" />
-    <None Include="Testing\SetupVideo.fsx" />
-    <None Include="Testing\TestEnv.fsx" />
-    <None Include="Testing\TestViz.fsx" />
-    <None Include="Testing\Trace.fsx" />
-    <None Include="Testing\TraceDynamic.fsx" />
-    <None Include="Testing\StatsDynamic.fsx" />
-    <None Include="Testing\StatDynamicSeq.fsx" />
-    <None Include="Testing\DispIndex.fsx" />
-    <None Include="Testing\IPD_Weighted_Comparo.fsx" />
-    <None Include="Testing\TestIPDPerf.fsx" />
-    <None Include="Testing\TestDF1.fsx" />
-    <None Include="Testing\TestDF1Gen.fsx" />
-    <None Include="Testing\TestCA3D.fsx" />
-    <None Include="Testing\TestDomain.fsx" />
-    <None Include="Testing\TestHistorical.fsx" />
-    <None Include="Testing\TestNormative.fsx" />
-    <None Include="Testing\TestParms.fsx" />
-    <None Include="Testing\TestSituational.fsx" />
-    <None Include="Testing\IPDLogAnalysis.fsx" />
-    <None Include="Testing\IPDWTDRun.xlsx" />
-    <None Include="Testing\IPDStats.fsx" />
-    <None Include="Testing\CecBenchmark.fsx" />
-    <None Include="Testing\L-Shade.fsx" />
-    <None Include="paket.references" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.ValueTuple">
-      <HintPath>..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Windows.Forms.DataVisualization" />
-  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -1157,4 +1076,88 @@
   </Choose>
   <Import Project="..\packages\NETStandard.Library\build\NETStandard.Library.targets" Condition="Exists('..\packages\NETStandard.Library\build\NETStandard.Library.targets')" Label="Paket" />
   <Import Project="..\packages\NETStandard.Library\build\$(__paket__NETStandard_Library_targets).targets" Condition="Exists('..\packages\NETStandard.Library\build\$(__paket__NETStandard_Library_targets).targets')" Label="Paket" />
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Probability.fs" />
+    <Compile Include="DF1.fs" />
+    <Compile Include="CA.fs" />
+    <Compile Include="CAUtils.fs" />
+    <Compile Include="CAEvolve.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="Metrics\ObservableExt.fs" />
+    <Compile Include="Metrics\Metrics.fs" />
+    <Compile Include="Metrics\Tracing.fs" />
+    <Compile Include="Metrics\TracingGame.fs" />
+    <Compile Include="Metrics\Social.fs" />
+    <Compile Include="BeliefSpace\HistoricalKS.fs" />
+    <Compile Include="BeliefSpace\NormativeKS.fs" />
+    <Compile Include="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="BeliefSpace\DomainKS2.fs" />
+    <Compile Include="BeliefSpace\KMeans.fs" />
+    <Compile Include="BeliefSpace\TopographicKS.fs" />
+    <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
+    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
+    <Compile Include="KnowledgeDistribution\Schelling.fs" />
+    <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
+    <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
+    <Compile Include="CAConstants.fs" />
+    <Compile Include="CARunner.fs" />
+    <Compile Include="Utilities\FPGrowth.fs" />
+    <Compile Include="Utilities\VizUtils.fs" />
+    <Compile Include="Utilities\VizNetwork.fs" />
+    <Compile Include="Utilities\TraceCharts.fs" />
+    <Compile Include="Utilities\VizLandscape.fs" />
+    <Compile Include="Utilities\Community.fs" />
+    <None Include="Landscapes\test_cone1.01.csv" />
+    <None Include="Landscapes\test_cone2.0.csv" />
+    <None Include="Landscapes\test_cone3.35.csv" />
+    <None Include="Landscapes\test_cone3.5.csv" />
+    <None Include="Landscapes\test_cone3.99.csv" />
+    <None Include="Landscapes\Backgrounds.fsx" />
+    <None Include="Testing\SetupEnv.fsx" />
+    <None Include="Testing\SetupVideo.fsx" />
+    <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\TestViz.fsx" />
+    <None Include="Testing\Trace.fsx" />
+    <None Include="Testing\TraceDynamic.fsx" />
+    <None Include="Testing\StatsDynamic.fsx" />
+    <None Include="Testing\StatDynamicSeq.fsx" />
+    <None Include="Testing\DispIndex.fsx" />
+    <None Include="Testing\IPD_Weighted_Comparo.fsx" />
+    <None Include="Testing\TestIPDPerf.fsx" />
+    <None Include="Testing\TestDF1.fsx" />
+    <None Include="Testing\TestDF1Gen.fsx" />
+    <None Include="Testing\TestCA3D.fsx" />
+    <None Include="Testing\TestDomain.fsx" />
+    <None Include="Testing\TestHistorical.fsx" />
+    <None Include="Testing\TestNormative.fsx" />
+    <None Include="Testing\TestParms.fsx" />
+    <None Include="Testing\TestSituational.fsx" />
+    <None Include="Testing\IPDLogAnalysis.fsx" />
+    <None Include="Testing\IPDWTDRun.xlsx" />
+    <None Include="Testing\IPDStats.fsx" />
+    <None Include="Testing\CecBenchmark.fsx" />
+    <None Include="Testing\L-Shade.fsx" />
+    <None Include="paket.references" />
+    <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\packages\FSharp.Core.4.5.2\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.ValueTuple">
+      <HintPath>..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+  </ItemGroup>
 </Project>

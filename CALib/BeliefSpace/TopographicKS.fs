@@ -19,6 +19,7 @@ type CIndv = {CParms:float[]; CFitness:float}
 
 type State<'a> = 
     {
+        IsBetter        : Comparator
         Centroids       : Centroid list
         CIndvs          : Marker array
         Fitness         : Fitness
@@ -65,16 +66,9 @@ let updateClusters state voters =
 
 let TOPOGRAPHICAL_RANGE_SCALER = 0.5
 
-let influenceIndv state s (indv:Individual<_>) =
-    //mutation
-    let cntrd = Probability.spinWheel state.SpinWheel 
-    let p2 = cntrd.Best
-    let updateParms = indv.Parms
-    p2 |> Array.iteri (fun i p -> evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p)
-    indv
-
 let initialState parmDefs isBetter fitness =
     {
+        IsBetter    = isBetter
         Centroids   = []
         CIndvs      = [||]
         Fitness     = fitness
@@ -82,19 +76,27 @@ let initialState parmDefs isBetter fitness =
         SpinWheel   = [||]
         ParmDefs    = parmDefs
     }
+
+let construct state fAccept fInfluence : KnowledgeSource<_> =
+    {
+        Type        = Topgraphical
+        Accept      = fAccept fInfluence state
+        Influence   = fInfluence state
+    }
+
+let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> array) =
+    let state = if envChanged then initialState state.ParmDefs state.IsBetter state.Fitness else state
+    let state = updateClusters state voters
+    voters,construct state defaultAcceptance fInfluence
+
+let defaultInfluence state s (indv:Individual<_>) =
+    //mutation
+    let cntrd = Probability.spinWheel state.SpinWheel 
+    let p2 = cntrd.Best
+    let updateParms = indv.Parms
+    p2 |> Array.iteri (fun i p -> evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p)
+    indv
     
 let create parmDefs isBetter (fitness:Fitness) =
-    let create state fAccept : KnowledgeSource<_> =
-        {
-            Type        = Topgraphical
-            Accept      = fAccept state
-            Influence   = influenceIndv state
-        }
-
-    let rec acceptance state envChanged  (voters:Individual<_> array) =
-        let state = if envChanged then initialState parmDefs isBetter fitness else state
-        let state = updateClusters state voters
-        voters,create state acceptance 
-           
     let state = initialState parmDefs isBetter fitness
-    create state acceptance
+    construct state defaultAcceptance defaultInfluence
