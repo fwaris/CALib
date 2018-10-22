@@ -17,7 +17,7 @@ type Centroid =
 
 type CIndv = {CParms:float[]; CFitness:float}
 
-type State<'a> = 
+type State = 
     {
         IsBetter        : Comparator
         Centroids       : Centroid list

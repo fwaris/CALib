@@ -14,7 +14,7 @@ type ShState = {InitialFitness:float[]; CoopGens:int; GensSinceInit: int; KSOrde
 let fitVal sign (_,_,_,f) = sign*f
 
 //let defaultKSOrder = [|Topgraphical; Normative; Historical; Situational; Domain|]
-let defaultKSOrder = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
+let defaultKSOrder = [|Topgraphical; Domain; Normative; Historical; Situational; Domain; |]
 
 let private sqr x = x * x
 let private std mean n xs = (xs |> Seq.map (fun x -> mean - x |> sqr) |> Seq.sum) / float n |> sqrt
@@ -27,8 +27,8 @@ let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[])
   let mn = fst toRange
   let mx = snd toRange
   if CAUtils.isValidNum mn && CAUtils.isValidNum mx && mn <> mx then
-      let scaledRank = CAUtils.scaler st.KSRange toRange (sign * indv.Fitness)
-      let newKS = st.KSOrder.[int scaledRank]
+      let scaledRank = CAUtils.scaler st.KSRange toRange (sign * indv.Fitness) 
+      let newKS = st.KSOrder.[int scaledRank |> min (st.KSOrder.Length - 1)]
       let _,c = indv.KS
       {indv with KS=newKS,c+1}
   else

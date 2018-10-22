@@ -72,7 +72,7 @@ let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 8 c)
 //let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
 //let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
 //let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
-let ipdKdist      c p    = KDIPDGame.knowledgeDist c p
+let ipdKdist   explKs   c p    = KDIPDGame.knowledgeDist explKs c p
 let rule1 = Schelling.r1 0.5
 let schKdist      c p    = Schelling.knowledgeDist rule1 c p
 
@@ -114,8 +114,8 @@ let kdIpdCA vmx f c p  =
     let bsp = bsp f p c
     let pop = createPop bsp p CAUtils.baseKsInit |> KDIPDGame.initKS
     let ada = KDIPDGame.Geometric(0.9,0.1)
-    let kd = ipdKdist ada vmx c pop 
-    makeCA f c pop bsp kd KDIPDGame.ipdInfluence
+    let kd,inf = ipdKdist Domain ada vmx c pop 
+    makeCA f c pop bsp kd inf
 
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")

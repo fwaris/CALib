@@ -36,6 +36,7 @@ type IpdState =
         Stability       : float array
         KSCount         : Map<Knowledge,float>
         KSAdjust        : Ada 
+        ExploitativeKS  : Knowledge
         }
 
 let parmDiversity p1 p2 = 
@@ -58,8 +59,8 @@ let sampleAvgDiversity (pop:Population<_>) =
             loop (acc + d) (c + 1)
     loop 0. 0
 
-let isExplorative = function Domain -> false | _ -> true // | Historical | Normative | Topgraphical -> true | _ -> false
-let isExploitative = function Domain  -> true | _ -> false
+let isExploitative state ks = state.ExploitativeKS = ks
+let isExplorative state ks = isExploitative state ks |> not
 
 //let KS_ATTRACTION_COFF      = 1.5 //attraction between exploitative and explorative KS
 //let IMPROVE_DEFECT_COFF     = -0.7 //reduction in cooperation with others due to improved fit from last gen of exploitative ks
@@ -113,8 +114,8 @@ let cooperation
     let nKSC = 1. - state.KSCount.[ksN] //level of ks
     let coop =
         let attraction = (fNbr - fI) // |> max 0.
-        let defectCoof =  if isExploitative ksI && (fI > pf1I) then coeffs.IMPROVE_DEFECT_COFF else 0.
-        let ksCompatibility = if isExplorative ksI && isExploitative ksN then coeffs.KS_ATTRACTION_COFF else 0.
+        let defectCoof =  if isExploitative state ksI && (fI > pf1I) then coeffs.IMPROVE_DEFECT_COFF else 0.
+        let ksCompatibility = if isExplorative state ksI && isExploitative state ksN then coeffs.KS_ATTRACTION_COFF else 0.
         let sameKSDefection = if ksI = ksN then -3.0 else 0.
         let kslow = nKSC ** coeffs.LOW_KS_COUNT_EXPONENT
         let fitattraction = (attraction * coeffs.FIT_ATTRACTION_WEIGHT)
@@ -179,7 +180,7 @@ let removeSituationalKS m = Map.remove Situational m //Situational cannot be sec
 let promoteDomainKS : IpdKS->IpdKS = function ({KS=Domain;Level=_} as pks,_) -> (pks,Map.empty) | k -> k 
 
 //remove secondary explorative KS if primary is explorative
-let removeExpScndryKS primaryKS m = if isExplorative primaryKS then  m |> Map.filter (fun k _ -> isExplorative k |> not) else m
+let removeExpScndryKS state primaryKS m = if isExplorative state primaryKS then  m |> Map.filter (fun k _ -> isExplorative state k |> not) else m
 
 let logI st newKs indv = 
     let ps = indv.Parms 
@@ -201,12 +202,12 @@ let createWthKS st (indv:Individual<IpdKS>) primary secondary =
           primary, 
           removePrimaryKS primary.KS secondary 
           |> removeSituationalKS 
-          |> removeExpScndryKS primary.KS
+          |> removeExpScndryKS st primary.KS
         ) 
         |> promoteDomainKS
 
     let primary =
-        if newKS = oldKS && isExploitative newKS then
+        if newKS = oldKS && isExploitative st newKS then
             {KS=newKS; Level= rate oldLvl st.KSAdjust}
         else
             {KS=newKS; Level=NEW_KS_LEVEL}
@@ -241,7 +242,7 @@ let updatePop st vmx cmprtr (pop:Population<IpdKS>) (payouts:Payout array) =
     )
     pop
 
-let createState ksAdjust gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
+let createState exploitativeKS ksAdjust gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     let ksc = 
         pop 
@@ -261,6 +262,7 @@ let createState ksAdjust gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Popula
         KSCount = ksc
         Gen = gen + 1
         KSAdjust = ksAdjust
+        ExploitativeKS = exploitativeKS
     }
 
 let updateStability f = function
@@ -273,7 +275,7 @@ let rec outcome state cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop' = updatePop state vmx cmprtr pop payouts
     let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (prmryKS pop'.[i].KS, prmryKS pop.[i].KS))
-    let state = createState state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
+    let state = createState state.ExploitativeKS state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
   
     fpNetW {Pop=pop';Net=network; Vmin=state.VMin; Links=payouts}
 
@@ -295,16 +297,16 @@ let initKS (pop:Population<Knowledge>) : Population<IpdKS> =
             KS={KS=indv.KS;Level=NEW_KS_LEVEL},Map.empty
         })
 
-let game ksAdjust (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
+let game exploitativeKS ksAdjust  (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
     let stability = Array.zeroCreate pop.Length
-    let state = createState ksAdjust 0 stability None (vmin,vmax) cmprtr pop
+    let state = createState exploitativeKS ksAdjust 0 stability None (vmin,vmax) cmprtr pop
     {
         Play = play state
         Payoff = payoff state
         Outcome = outcome state
     }
 
-let ipdInfluence beliefSpace (pop:Population<IpdKS>) =
+let private ipdInfluence explotiativeKs beliefSpace (pop:Population<IpdKS>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
@@ -313,8 +315,8 @@ let ipdInfluence beliefSpace (pop:Population<IpdKS>) =
             let {KS=mainKS;Level=lvl},otherKs = p.KS
             let beforeP = Array.copy p.Parms
             let p = ksMap.[mainKS].Influence lvl p
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExplorative k then ksMap.[k].Influence w p else p) //explorative ks go first
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if isExploitative k then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k <> explotiativeKs then ksMap.[k].Influence w p else p) //explorative ks go first
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k = explotiativeKs then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
             //if p.Parms = [|1.0; 1.0|] then
             //  let ps = p.Parms
             //  ()
@@ -324,7 +326,7 @@ let ipdInfluence beliefSpace (pop:Population<IpdKS>) =
     //printfn "1=%d; 0=%d; t=%d" oneP zeroP pop.Length
     pop 
 
-let knowledgeDist ksAdjust (vmin,vmax) comparator pop =
-    let g = game ksAdjust (vmin,vmax)  comparator pop
-    KDContinousStrategyGame.knowledgeDist comparator g
+let knowledgeDist exploitativeKs ksAdjust (vmin,vmax) comparator pop =
+    let g = game exploitativeKs ksAdjust (vmin,vmax)  comparator pop
+    KDContinousStrategyGame.knowledgeDist comparator g, ipdInfluence exploitativeKs
 
