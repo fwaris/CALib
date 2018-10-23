@@ -2,7 +2,6 @@
 open CA
 open CAUtils
 open CAEvolve
-open System.Windows.Forms
 
 let eSigma = 1.0
 

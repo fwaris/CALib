@@ -19,12 +19,13 @@ open OpenCvSharp
 
 let RUN_TO_MAX = true
 let CALC_SOC_METRICS = true
-let MAX_GEN = 500
+let MAX_GEN = 250
 let NUM_LANDSCAPES = 50
 let SAMPLES = 30
 let DIST_TH = 0.001
 //let A_VALUES = [1.01; 2.8; 3.35; 3.5; 3.99] // [1.0; 3.5; 3.99]
-let A_VALUES = [1.0; 1.4; 1.8; 2.2; 2.6; 3.1; 3.2;3.3;3.4;3.5;3.6;3.7;3.8;3.9]
+//let A_VALUES = [1.0; 1.4; 1.8; 2.2; 2.6; 3.1; 3.2;3.3;3.4;3.5;3.6;3.7;3.8;3.9]
+let A_VALUES = [3.5;5.7]
 
 let parmDefs = 
     [|
@@ -50,7 +51,9 @@ type Config = {Id:string; Run:int; Net:NetId; A:float}
 type Ret = {ConfigRun:int; Id:string; LandscapeNum:int; A:float; GenCount:int; Max:float; Seg:float; Dffsn:float; Net:string}
 
 let createEnv id a =
-  let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some a) 
+  let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some a) //loc
+  //let w = createWorld 500 2 (5.,15.) (20., 10.) None (Some a) None //height
+  //let w = createWorld 500 2 (5.,15.) (20., 10.) (Some a) None None //radius
   let (c,f) = landscape w
   {Id=id; W=w; M=c; F=f; EnvChangeCount=0}
 
@@ -163,16 +166,16 @@ let runConfig fstrCommunity fstrRun  numLandscapes (config:Config) =
   let stkBsp = bsp f parmDefs comparator
 //ipd kd
   let ada = KDIPDGame.Geometric(0.9,0.01)
-  let ipdKd = ipdKdist ada vmx comparator ipdPop 
+  let ipdKd,ipdInf = ipdKdist Domain ada vmx comparator ipdPop 
   //wtd kd 
   let ksSet = CAUtils.flatten wtdBsp |> List.map (fun ks->ks.Type) |> set
   let wtdKd = wtdMajorityKdist comparator ksSet
   //sh kd
-  let shKd = KDStagHunt.knowledgeDist 5 comparator shBsp shPop
+  let shKd = KDStagHunt.knowledgeDist None 5 comparator shBsp shPop
   //stk dk
   let stkKd = KDStackelberg.knowledgeDist comparator 
  //CA
-  let ipdCA = makeCA f comparator ipdPop ipdBsp ipdKd KDIPDGame.ipdInfluence (getNetwork config.Net)
+  let ipdCA = makeCA f comparator ipdPop ipdBsp ipdKd ipdInf (getNetwork config.Net)
   let wtdCA = makeCA f comparator wtdPop wtdBsp wtdKd KDWeightedMajority.wtdMajorityInfluence (getNetwork config.Net)
   let shCA = makeCA f comparator shPop shBsp shKd KDStagHunt.shInfluence (getNetwork config.Net)
   let stkCA = makeCA f comparator stkPop stkBsp stkKd KDStackelberg.stkInfluence (getNetwork config.Net)

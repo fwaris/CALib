@@ -32,8 +32,8 @@ let kdIpdCA vmx ftnss cmprtr parmDefs  =
     let b = bsp ftnss parmDefs cmprtr
     let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
     let ada = KDIPDGame.Geometric(0.9,0.01)
-    let kd = ipdKdist ada vmx cmprtr pop 
-    makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence
+    let kd,inf = ipdKdist Domain ada vmx cmprtr pop 
+    makeCA ftnss cmprtr pop b kd inf
 
 //let kdlWeightedCA f c p = 
 //    let bsp = bsp f p c

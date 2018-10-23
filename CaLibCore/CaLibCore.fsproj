@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\CALib\AssemblyInfo.fs" Link="AssemblyInfo.fs" />
+    <Compile Include="..\CALib\Probability.fs" Link="Probability.fs" />
+    <Compile Include="..\CALib\DF1.fs" Link="DF1.fs" />
+    <Compile Include="..\CALib\CA.fs" Link="CA.fs" />
+    <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
+    <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
+    <Compile Include="..\CALib\Settings.fs" Link="Settings.fs" />
+    <Folder Include="Metrics\" />
+    <Compile Include="..\CALib\Metrics\Metrics\ObservableExt.fs" Link="Metrics\ObservableExt.fs" />
+    <Compile Include="..\CALib\Metrics\Metrics\Metrics.fs" Link="Metrics\Metrics.fs" />
+    <Compile Include="..\CALib\Metrics\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
+    <Compile Include="..\CALib\Metrics\Metrics\TracingGame.fs" Link="Metrics\TracingGame.fs" />
+    <Compile Include="..\CALib\Metrics\Metrics\Social.fs" Link="Metrics\Social.fs" />
+    <Folder Include="BeliefSpace\" />
+    <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DomainKS2.fs" Link="BeliefSpace\DomainKS2.fs" />
+    <Compile Include="..\CALib\BeliefSpace\KMeans.fs" Link="BeliefSpace\KMeans.fs" />
+    <Compile Include="..\CALib\BeliefSpace\TopographicKS.fs" Link="BeliefSpace\TopographicKS.fs" />
+    <Folder Include="KnowledgeDistribution\" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDSimpleMajority.fs" Link="KnowledgeDistribution\KDSimpleMajority.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDLocallyWeightedMajority.fs" Link="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDWeightedMajority.fs" Link="KnowledgeDistribution\KDWeightedMajority.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDContinousStrategyGame.fs" Link="KnowledgeDistribution\KDContinousStrategyGame.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDIPDGame.fs" Link="KnowledgeDistribution\KDIPDGame.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDStagHunt.fs" Link="KnowledgeDistribution\KDStagHunt.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDStackelberg.fs" Link="KnowledgeDistribution\KDStackelberg.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\Schelling.fs" Link="KnowledgeDistribution\Schelling.fs" />
+    <Compile Include="..\CALib\CAConstants.fs" Link="CAConstants.fs" />
+    <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
+    <Compile Include="..\CALib\Utilities\FPGrowth.fs" Link="Utilities\FPGrowth.fs" />
+    <Compile Include="Utilities\Community.fs" />
+    <Compile Include="Run\TestEnv.fs" />
+    <Compile Include="Run\StatDynamicSeq.fs" />
+    <Compile Include="Run\RunConfigs.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.1.2" />
+    <PackageReference Include="FsPickler" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup />
+
+</Project>

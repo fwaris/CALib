@@ -14,7 +14,7 @@ type ShState = {InitialFitness:float[]; CoopGens:int; GensSinceInit: int; KSOrde
 let fitVal sign (_,_,_,f) = sign*f
 
 //let defaultKSOrder = [|Topgraphical; Normative; Historical; Situational; Domain|]
-let defaultKSOrder = [|Topgraphical; Domain; Normative; Historical; Situational; Domain; |]
+let defaultKSOrder = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
 
 let private sqr x = x * x
 let private std mean n xs = (xs |> Seq.map (fun x -> mean - x |> sqr) |> Seq.sum) / float n |> sqrt
@@ -100,14 +100,14 @@ let rec outcome state cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
     }
 
 
-let game ksSet coopGens (pop:Population<ShKnowledge>) =
+let game ksOrder ksSet coopGens (pop:Population<ShKnowledge>) =
     
     let state = 
       {
         InitialFitness = pop |> Array.map (fun i-> i.Fitness)
         CoopGens = coopGens
         GensSinceInit = 0
-        KSOrder = defaultKSOrder |> Array.filter (fun k -> ksSet |> Set.contains k)
+        KSOrder = ksOrder |> Array.filter (fun k -> ksSet |> Set.contains k)
         KSRange = (0.0,defaultKSOrder.Length - 1|>float)
       }
     {
@@ -156,7 +156,8 @@ let shInfluence beliefSpace (pop:Population<ShKnowledge>) =
             p)
     pop 
 
-let knowledgeDist coopGens comparator beliefSpace pop =
+let knowledgeDist ksOrder coopGens comparator beliefSpace pop =
+    let ksOrder = ksOrder |> Option.defaultValue defaultKSOrder
     let ksSet = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type) |> set //use only KS used in belief space
-    let g = game ksSet coopGens pop
+    let g = game ksOrder ksSet coopGens pop
     KDContinousStrategyGame.knowledgeDist comparator g
