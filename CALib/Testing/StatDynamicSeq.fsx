@@ -16,6 +16,7 @@ open System.IO
 open System
 open Metrics
 open OpenCvSharp
+open Tracing
 
 let RUN_TO_MAX = true
 let CALC_SOC_METRICS = true
@@ -48,7 +49,12 @@ let vmx = (0.2, 0.9)
 type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 type NetId = Square | Hexagon | Octagon
 type Config = {Id:string; Run:int; Net:NetId; A:float}
-type Ret = {ConfigRun:int; Id:string; LandscapeNum:int; A:float; GenCount:int; Max:float; Seg:float; Dffsn:float; Net:string}
+
+type Ret = {ConfigRun:int; Id:string; LandscapeNum:int; A:float; 
+            GenCount:int; Max:float; Seg:float; Dffsn:float; Net:string
+            IndvSeg   : float[]
+            IndvDfsn  : float[]
+            }
 
 let createEnv id a =
   let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some a) //loc
@@ -100,6 +106,16 @@ let writeRun rst =
   let line = String.Join("\t",rst.Id,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H)
   rst.StrWRun.WriteLine line
 
+let segAt ca fSeg indv = Social.segregationAt                        //Schelling-like segregation measure
+                            2                                       //radius of neighborhood
+                            (1.0 / float Social.ksSegments.Length)  //proportion of each segment or group at start
+                            Social.ksSegments                       //list of segments
+                            ca                                      //current state of CA
+                            fSeg
+                            indv
+
+let dfsnAt ca p = Social.diffusionAt ca p
+
 
 let rec runToSol rst = //id a primKs ws envCh st gens =
   async {
@@ -145,6 +161,8 @@ let statRec i ipdSol st  (config:Config) segF =
     Dffsn=dffsn
     Max=st.Best.[0].MFitness
     Net=sprintf "%A" config.Net
+    IndvSeg = st.CA.Population |> Array.map (segAt st.CA segF)
+    IndvDfsn = st.CA.Population |> Array.map (dfsnAt st.CA)
   }
 
 let runConfig fstrCommunity fstrRun  numLandscapes (config:Config) =
@@ -232,15 +250,36 @@ let run() =
           yield! runConfig fstrCommunity fstrRun NUM_LANDSCAPES config}
 
 let saveStates name stats =
-  use fn = new StreamWriter(File.OpenWrite(Path.Combine(saveFolder,name)))
-  fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet")
-  stats |> List.iter(fun r->
-    let line = 
-      sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
-        r.ConfigRun r.Id r.LandscapeNum r.A r.GenCount r.Max r.Seg r.Dffsn r.Net
-    fn.WriteLine(line)
-    )
-  fn.Close() |> ignore
+
+    let writeStats() =
+      use fn = new StreamWriter(File.OpenWrite(Path.Combine(saveFolder,name)))
+      fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet")
+      stats |> List.iter(fun r->
+        let line = 
+          sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
+            r.ConfigRun r.Id r.LandscapeNum r.A r.GenCount r.Max r.Seg r.Dffsn r.Net
+        fn.WriteLine(line)
+        )
+      fn.Close()
+    
+    let writeSoc() =
+        use fn = new StreamWriter(File.OpenWrite(Path.Combine(saveFolder,"soc_",name)))
+        fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn")
+        stats |> List.iter(fun r->
+        let line = 
+            sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
+                r.ConfigRun r.Id r.LandscapeNum r.A r.GenCount r.Max r.Seg r.Dffsn r.Net
+        fn.Write(line)
+        fn.Write("\t")
+        r.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+        fn.Write("\t")
+        r.IndvDfsn |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+        fn.WriteLine()
+        )
+        fn.Close()
+   
+    writeStats()
+    writeSoc()
 
 //uncomment to record video showing community detection in social network
 //let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW

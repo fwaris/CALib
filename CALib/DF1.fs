@@ -125,7 +125,7 @@ let changeRadius (enum:IEnumerator<float>) maxR cone =
     let rpct = rpct + dr
     let rpct = if rpct > 1.0 then rpct - 2. * dr else rpct
     let newR = maxR * rpct
-    {cone with H=newR}
+    {cone with R=newR}
 
 //cones world is a set of cones and optional logistic enumerations for radius, height and location
 type World = 

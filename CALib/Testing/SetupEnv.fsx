@@ -1,4 +1,4 @@
-﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
+﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net45\FSharp.Collections.ParallelSeq.dll"
 #r @"..\..\packages\FSharp.Charting\lib\net45\FSharp.Charting.dll"
 #r "System.Windows.Forms.DataVisualization"
 #r "System.Windows"

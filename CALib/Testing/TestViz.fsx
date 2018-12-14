@@ -41,6 +41,7 @@ let kdWeightedCA    = kdWeightedCA fitness comparator parms CAUtils.hexagonNetwo
 //let kdIpdCA         = kdIpdCA (0.5,1.9) fitness comparator parms 
 let kdIpdCA         = kdIpdCA  (0.2, 0.9) fitness comparator parms CAUtils.hexagonNetworkViz
 let kdSchCA         = kdSchelligCA fitness comparator parms CAUtils.hexagonNetworkViz
+let kdShCA          = shCA fitness comparator parms CAUtils.hexagonNetworkViz
 
 let testSingle() =
     let m = new Mat(Size(512,512), MatType.CV_8UC3)
@@ -48,8 +49,11 @@ let testSingle() =
     VizUtils.win "m1" m
 
 let genViz() =
-    Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge
-    Viz.createVid @"D:\repodata\calib\wtd.mp4"  512 1000 kdWeightedCA Viz.clrKnowledge
+    ////Viz.createVid @"D:\repodata\calib\sch.mp4"  512 1000 kdSchCA Viz.clrKnowledge
+    //Viz.createVid @"D:\repodata\calib\wtd.mp4"  512 1000 kdWeightedCA Viz.clrKnowledge
+
+    let shClr ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
+    Viz.createVid @"D:\repodata\calib\shnt.mp4" 512 1000 kdShCA shClr
 
     let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
     Viz.createVid @"D:\repodata\calib\game.mp4"  512 1000 kdIpdCA ipdClr

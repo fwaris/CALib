@@ -1,6 +1,7 @@
 ﻿module Social
 open CA
 open CAUtils
+open FSharp.Collections.ParallelSeq
 
 let ksNum = function
   | Situational   -> 1
@@ -12,22 +13,17 @@ let ksNum = function
 
 let ksSegments = [1;2;3;4;5]
 
-let baseSeg (indv:Individual<Knowledge>) = ksNum indv.KS
-
-let segregation radius prop segs (ca:CA<'a>) (seg:Individual<'a>->int) =
-  let rec clct i ks =
+let rec nhbrTypes ca (seg:Individual<'a>->int) i ks  =
     seq {
-      yield! ks
-      if i > 0 then
-          let nbrs = ks |> Array.collect (fun (id,_) -> 
-            ca.Network ca.Population id |> Array.map (fun i -> i.Id,seg i))
-          yield! clct (i-1) nbrs
-      }
+        yield! ks
+        if i > 0 then
+            let nbrs = ks |> Array.collect (fun (id,_) -> 
+                ca.Network ca.Population id |> Array.map (fun i -> i.Id,seg i))
+            yield! nhbrTypes ca seg (i-1) nbrs
+    }
 
-  let totalSeg = 
-    ca.Population 
-    |> Array.map (fun indv ->
-      let nbrs = clct radius [|indv.Id,seg indv|]
+let segregationAt radius prop segs ca seg indv =
+      let nbrs = nhbrTypes ca seg radius [|indv.Id,seg indv|]
       let nbrsK = 
         nbrs
         |> set
@@ -43,9 +39,11 @@ let segregation radius prop segs (ca:CA<'a>) (seg:Individual<'a>->int) =
       let totK = nbrsKComplete |> Seq.map snd |> Seq.sum
       let deviations_from_prop = nbrsKComplete |> Seq.map (fun (k,v) -> prop - (v / totK) |> abs) |> Seq.sum
       deviations_from_prop
-    )
-    |> Array.average
-  totalSeg // / (segs |> Seq.length |> float)
+
+let segregation radius prop segs ca seg =
+    ca.Population 
+    |> PSeq.map (segregationAt radius prop segs ca seg)
+    |> PSeq.average
 
 let rmseDist (a:Individual<_>) (b:Individual<_>) = 
   Array.zip a.Parms b.Parms 
@@ -54,12 +52,13 @@ let rmseDist (a:Individual<_>) (b:Individual<_>) =
   |> fun x -> x / (float a.Parms.Length) 
   |> sqrt
 
+let diffusionAt<'a> (ca:CA<'a>) (i:Individual<'a>) =
+    let nbrs = ca.Network ca.Population i.Id
+    let rmse = nbrs |> Array.map (rmseDist i) |> Array.sum
+    let avgRmse = rmse / (float nbrs.Length)
+    avgRmse
+
 let diffusion  (ca:CA<'a>) = 
-  let totDfsn = 
-    ca.Population |> Array.map (fun i ->
-      let nbrs = ca.Network ca.Population i.Id
-      let rmse = nbrs |> Array.map (rmseDist i) |> Array.sum
-      let avgRmse = rmse / (float nbrs.Length)
-      avgRmse)
-    |> Seq.sum
-  totDfsn / (float ca.Population.Length)
+    ca.Population 
+    |> PSeq.map (diffusionAt ca)
+    |> PSeq.average

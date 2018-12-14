@@ -14,8 +14,10 @@ let isValidNum n = (System.Double.IsInfinity n || System.Double.IsNaN n) |> not
 
 
 let scaler (sMin,sMax) (vMin,vMax) (v:float) =
-    if v < vMin then failwith "out of min range for scaling"
-    if v > vMax then failwith "out of max range for scaling"
+    //if v < vMin then failwith "out of min range for scaling"
+    //if v > vMax then failwith "out of max range for scaling"
+    let v = max v vMin
+    let v = min v vMax
     (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
     (*
     scaler (0.1, 0.9) (10., 500.) 223.

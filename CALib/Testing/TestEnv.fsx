@@ -117,6 +117,12 @@ let kdIpdCA vmx f c p  =
     let kd,inf = ipdKdist Domain ada vmx c pop 
     makeCA f c pop bsp kd inf
 
+let shCA f c p  = 
+    let bsp = bsp f p c
+    let pop = createPop bsp p CAUtils.baseKsInit |> KDStagHunt.initKS
+    let shKd = KDStagHunt.knowledgeDist None 5 c bsp pop 
+    makeCA f c pop bsp shKd KDStagHunt.shInfluence
+    
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")
 

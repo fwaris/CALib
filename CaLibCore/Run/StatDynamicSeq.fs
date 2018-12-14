@@ -6,32 +6,9 @@ open DF1
 open System.IO
 open System
 open Metrics
+open FSharp.Collections.ParallelSeq
+open Runs.Types
 
-type RunsConfig = 
-  {
-    SaveFolder    : string
-    RunToMax      : bool
-    CalcSocMetrics : bool
-    MaxGen        : int
-    NumLandscapes : int
-    Samples       : int
-    DistTh        : float
-    AValues       : float list
-    ChangeHeight  : bool
-    ChangeRadius  : bool
-    ChangeLoc     : bool
-  }
-
-//let SAVE_FOLDER =  @"D:\repodata\calib\dsst_stats"
-
-//let RUN_TO_MAX = true
-//let CALC_SOC_METRICS = true
-//let MAX_GEN = 500
-//let NUM_LANDSCAPES = 50
-//let SAMPLES = 30
-//let DIST_TH = 0.001
-////let A_VALUES = [1.01; 2.8; 3.35; 3.5; 3.99] // [1.0; 3.5; 3.99]
-//let A_VALUES = [1.0; 1.4; 1.8; 2.2; 2.6; 3.1; 3.2;3.3;3.4;3.5;3.6;3.7;3.8;3.9]
   
 let parmDefs = 
     [|
@@ -43,7 +20,7 @@ let comparator  = CAUtils.Maximize
 
 //let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
 let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
+let inline createPop rsc bsp parms init = CAUtils.createPop (init bsp) parms rsc.PopulationSize true
 
 let inline sqr x = x * x
 
@@ -51,16 +28,11 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
-type NetId = Square | Hexagon | Octagon
-type Config = {Id:string; Run:int; Net:NetId; A:float}
-type Ret = {ConfigRun:int; Id:string; LandscapeNum:int; A:float; GenCount:int; Max:float; Seg:float; Dffsn:float; Net:string}
-
 let createEnv rsc id a =
   let aH = if rsc.ChangeHeight then Some a else None
   let aR = if rsc.ChangeRadius then Some a else None
   let aC = if rsc.ChangeLoc then Some a else None
-  let w = createWorld 500 2 (5.,15.) (20., 10.) aR aH aC 
+  let w = createWorld rsc.NumCones 2 (5.,15.) (20., 10.) aR aH aC 
   let (c,f) = landscape w
   {Id=id; W=w; M=c; F=f; EnvChangeCount=0}
 
@@ -69,7 +41,6 @@ let changeEnv ws =
   let (c,f) = landscape w
   {Id=ws.Id; W=w; M=c; F=f; EnvChangeCount = ws.EnvChangeCount + 1}
   
-
 let saveEnv rsc id (ws:WorldState) =
   let fn = sprintf "Env_%s_%d.env" id (System.DateTime.Now.ToFileTime())
   let path = Path.Combine(rsc.SaveFolder,fn)
@@ -79,23 +50,63 @@ let getNetwork id =
   let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octagon, CAUtils.octagonNetwork] |> Map.ofList
   networks.[id]
 
-type RunState<'k> =
+let socialMetrics st primKS =
+    let segF i =  primKS i.KS |> Social.ksNum
+    let seg = 
+        Social.segregation                                    //Schelling-like segregation measure
+            2                                                 //radius of neighborhood
+            (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
+            Social.ksSegments                                 //list of segments
+            st.CA                                             //current state of CA
+            segF                                              //function to return segment for each individual
+    let dffsn =  Social.diffusion st.CA
+    seg,dffsn
+
+let segAt ca fSeg indv = Social.segregationAt                        //Schelling-like segregation measure
+                            2                                       //radius of neighborhood
+                            (1.0 / float Social.ksSegments.Length)  //proportion of each segment or group at start
+                            Social.ksSegments                       //list of segments
+                            ca                                      //current state of CA
+                            fSeg
+                            indv
+
+let dfsnAt ca p = Social.diffusionAt ca p
+
+let statRec rsc i ipdSol st  (config:RunId) primKS =
+  //let seg,dffsn = if rsc.CalcSocMetrics then socialMetrics st segF else -1.0, -1.0
+  let segF indv = primKS indv.KS |> Social.ksNum
+  let iSeg,iDffsn = 
+    if rsc.CalcSocMetrics then
+        st.CA.Population |> PSeq.map (fun i -> i.Id,segAt st.CA segF i) |> PSeq.toArray |> Array.sortBy fst |> Array.map snd,
+        st.CA.Population |> PSeq.map (fun i -> i.Id,dfsnAt st.CA i) |> PSeq.toArray |> Array.sortBy fst |> Array.map snd
+    else
+        [|-1.0|],
+        [|-1.0|]
+
+  let seg,dffsn = 
+    if rsc.CalcSocMetrics then
+        iSeg   |> Array.average,
+        iDffsn |> Array.average
+    else
+        -1.0,-1.0
+
   {
-    Id        : string
-    A         : float
-    PrimKS    : 'k->Knowledge
-    Ws        : WorldState
-    EnvCh     : bool
-    Step      : TimeStep<'k>
-    Landscape : int
-    SampleNum : int
-    StrWComm  : StreamWriter
-    StrWRun   : StreamWriter
+    ConfigRun=config.Run
+    Id=config.Id; LandscapeNum=i
+    A=config.A; GenCount=st.Count
+    Seg=seg
+    Dffsn=dffsn
+    Max=st.Best.[0].MFitness
+    Net=sprintf "%A" config.Net
+    IndvSeg = iSeg
+    IndvDfsn = iDffsn
+    IndvKs = st.CA.Population |> Array.map(fun i-> primKS i.KS |> Social.ksNum)
   }
 
-let writeRun rst =
+let writeRun rsc rst =
+  let seg,dffsn =if rsc.CalcSocMetrics then socialMetrics rst.Step rst.PrimKS else -1.0, -1.0
   let ft = match rst.Step.Best with [] -> 0.0 | x::_ -> x.MFitness
-  let line = String.Join("\t",rst.Id,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H)
+  let line = String.Join("\t",rst.Id,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H,seg,dffsn)
   rst.StrWRun.WriteLine line
 
 let rec runToSol rsc rst = //id a primKs ws envCh st gens =
@@ -108,7 +119,7 @@ let rec runToSol rsc rst = //id a primKs ws envCh st gens =
     let st = step rst.EnvCh rst.Step
     let rst = {rst with Step=st; EnvCh=false}
     //do! Async.Sleep 100
-    writeRun rst
+    writeRun rsc rst
     //Community.logCluster rst.StrWComm rst.Id rst.A rst.Step.Count rst.Landscape rst.PrimKS rst.Step.CA.Network rst.Step.CA.Population
     let (bfit,gb) = best st
     let dist = Array.zip gb rst.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
@@ -120,38 +131,16 @@ let rec runToSol rsc rst = //id a primKs ws envCh st gens =
       return! runToSol rsc rst
   }
 
-let statRec rsc i ipdSol st  (config:Config) segF =
-  let seg,dffsn =
-    if rsc.CalcSocMetrics then
-      let seg = 
-        Social.segregation                                    //Schelling-like segregation measure
-            2                                                 //radius of neighborhood
-            (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
-            Social.ksSegments                                 //list of segments
-            st.CA                                             //current state of CA
-            segF                                              //function to return segment for each individual
-      let dffsn =  Social.diffusion st.CA
-      seg,dffsn
-    else
-      -1.0,-1.0
-  {
-    ConfigRun=config.Run
-    Id=config.Id; LandscapeNum=i
-    A=config.A; GenCount=st.Count
-    Seg=seg
-    Dffsn=dffsn
-    Max=st.Best.[0].MFitness
-    Net=sprintf "%A" config.Net
-  }
 
-let runConfig rsc fstrCommunity fstrRun  numLandscapes (config:Config) =
+
+let runConfig rsc fstrCommunity fstrRun  (runId:RunId) =
 
   //printfn "config %A %A %A" config.A config.Id config.Run
-  let ws = createEnv rsc config.Id config.A
+  let ws = createEnv rsc runId.Id runId.A
   let f : Fitness = ref ws.F
   //init pop and belief space
   let wtdBsp = bsp f parmDefs comparator
-  let wtdPop = createPop wtdBsp parmDefs CAUtils.baseKsInit
+  let wtdPop = createPop rsc wtdBsp parmDefs CAUtils.baseKsInit
   //
   let ipdPop = wtdPop |> KDIPDGame.initKS |> Array.map (fun x-> {x with Parms=Array.copy x.Parms})
   let ipdBsp = bsp f parmDefs comparator
@@ -172,10 +161,10 @@ let runConfig rsc fstrCommunity fstrRun  numLandscapes (config:Config) =
   //stk dk
   let stkKd = KDStackelberg.knowledgeDist comparator 
  //CA
-  let ipdCA = makeCA f comparator ipdPop ipdBsp ipdKd ipdInf (getNetwork config.Net)
-  let wtdCA = makeCA f comparator wtdPop wtdBsp wtdKd KDWeightedMajority.wtdMajorityInfluence (getNetwork config.Net)
-  let shCA = makeCA f comparator shPop shBsp shKd KDStagHunt.shInfluence (getNetwork config.Net)
-  let stkCA = makeCA f comparator stkPop stkBsp stkKd KDStackelberg.stkInfluence (getNetwork config.Net)
+  let ipdCA = makeCA f comparator ipdPop ipdBsp ipdKd ipdInf (getNetwork runId.Net)
+  let wtdCA = makeCA f comparator wtdPop wtdBsp wtdKd KDWeightedMajority.wtdMajorityInfluence (getNetwork runId.Net)
+  let shCA = makeCA f comparator shPop shBsp shKd KDStagHunt.shInfluence (getNetwork runId.Net)
+  let stkCA = makeCA f comparator stkPop stkBsp stkKd KDStackelberg.stkInfluence (getNetwork runId.Net)
 
   let ipdSt =  {CA=ipdCA; Best=[]; Count=0; Progress=[]}
   let ksf = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
@@ -189,7 +178,7 @@ let runConfig rsc fstrCommunity fstrRun  numLandscapes (config:Config) =
   let stkKs = (fun (x:Individual<KDStackelberg.StkKnowledge>) -> Social.ksNum (fst x.KS))
 
 
-  [for i in 1..numLandscapes do
+  [for i in 1..rsc.NumLandscapes do
     let ws = changeEnv ws  //change landscape using assigned A-value
     ipdCA.Fitness := ws.F  //update fitness functions
     wtdCA.Fitness := ws.F
@@ -197,24 +186,29 @@ let runConfig rsc fstrCommunity fstrRun  numLandscapes (config:Config) =
     shCA.Fitness := ws.F
 
     //Note: population is not re-initialized therefore individuals retain locations from prior run
-    let ipdRst = {Id= "IPD"; Landscape=i; A=config.A; PrimKS=Community.gamePrimKs; Ws=ws;
-                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
-    let wtdRst = {Id= "WTD"; Landscape=i; A=config.A; PrimKS=Community.basePrimKs; Ws=ws;
-                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
-    let shRst = {Id= "SH"; Landscape=i; A=config.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
-    let stkRst = {Id= "STK"; Landscape=i; A=config.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=config.Run}
+    let ipdRst = {Id= "IPD"; Landscape=i; A=runId.A; PrimKS=Community.gamePrimKs; Ws=ws;
+                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
+    let wtdRst = {Id= "WTD"; Landscape=i; A=runId.A; PrimKS=Community.basePrimKs; Ws=ws;
+                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
+    let shRst = {Id= "SH"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
+                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
+    let stkRst = {Id= "STK"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
+                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
 
-    let ipdSol,ipdSt = runToSol rsc ipdRst |> Async.RunSynchronously
-    let wtdSol,wtdSt = runToSol rsc wtdRst |> Async.RunSynchronously 
-    let shSol,shSt = runToSol rsc shRst    |> Async.RunSynchronously 
-    let stkSol,stkSt = runToSol rsc stkRst |> Async.RunSynchronously 
-
-    yield statRec rsc i ipdSol ipdSt {config with Id="IPD"} ksf
-    yield statRec rsc i wtdSol wtdSt {config with Id="WTD"} Social.baseSeg
-    yield statRec rsc i shSol shSt {config with Id="SH"} shKs
-    yield statRec rsc i stkSol stkSt {config with Id="STK"} stkKs
+    for kd in rsc.KDs do
+        match kd with
+        | WTD -> 
+            let wtdSol,wtdSt = runToSol rsc wtdRst |> Async.RunSynchronously 
+            yield statRec rsc i wtdSol wtdSt {runId with Id="WTD"} wtdRst.PrimKS
+        | IPD -> 
+            let ipdSol,ipdSt = runToSol rsc ipdRst |> Async.RunSynchronously
+            yield statRec rsc i ipdSol ipdSt {runId with Id="IPD"} ipdRst.PrimKS
+        | SH -> 
+            let shSol,shSt = runToSol rsc shRst    |> Async.RunSynchronously 
+            yield statRec rsc i shSol shSt {runId with Id="SH"} shRst.PrimKS
+        | STK ->
+            let stkSol,stkSt = runToSol rsc stkRst |> Async.RunSynchronously 
+            yield statRec rsc i stkSol stkSt {runId with Id="STK"} stkRst.PrimKS
   ]
 
 let initLogging rsc =
@@ -228,37 +222,35 @@ let run rsc =
       //for n in [Square; Hexagon; Octagon] do
       for n in [Hexagon] do
         for i in 1..rsc.Samples do
-          let config = {Config.Run=i; Config.A=a; Config.Net=n; Config.Id=""}
-          yield! runConfig rsc fstrCommunity fstrRun rsc.NumLandscapes config}
+          let runId = {RunId.Run=i; RunId.A=a; RunId.Net=n; RunId.Id=""}
+          yield! runConfig rsc fstrCommunity fstrRun runId}
 
-let saveStates rsc name stats =
-  use fn = new StreamWriter(File.OpenWrite(Path.Combine(rsc.SaveFolder,name)))
-  fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet")
-  stats |> List.iter(fun r->
+let prepFile rsc fileName = 
+    let path = Path.Combine(rsc.SaveFolder,fileName)
+    if File.Exists path |> not then 
+        use fn = new StreamWriter(File.OpenWrite(path))
+        fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS")
+
+let writeLndcspStats rsc fileName ls =
+    let path = Path.Combine(rsc.SaveFolder,fileName)
+    use fn = File.AppendText(path)
     let line = 
-      sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
-        r.ConfigRun r.Id r.LandscapeNum r.A r.GenCount r.Max r.Seg r.Dffsn r.Net
-    fn.WriteLine(line)
-    )
-  fn.Close() |> ignore
-
-//uncomment to record video showing community detection in social network
-//let obsDisp,enc = Community.visCommunity @"D:\repodata\calib\comm\test1.mp4" KDIPDGame.obsNetW
-
-//let stats = run() |> Seq.take 1 |> Seq.toList
-//saveStates  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
+        sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
+            ls.ConfigRun ls.Id ls.LandscapeNum ls.A ls.GenCount ls.Max ls.Seg ls.Dffsn ls.Net
+    fn.Write(line)
+    fn.Write("\t")
+    ls.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    fn.Write("\t")
+    ls.IndvDfsn |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    fn.Write("\t")
+    ls.IndvKs |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    fn.WriteLine()
 
 let start rsc =
   initLogging rsc
   async {
-    let stats = run rsc |> Seq.toList
-    saveStates rsc  (sprintf "Stats%d.txt" (System.DateTime.Now.ToFileTime())) stats
+    let fileName = "Stats.txt"
+    prepFile rsc fileName
+    let stats = run rsc |> Seq.iter (writeLndcspStats rsc fileName)
     printfn "Done stats"
-  } |> Async.Start
-
-(* stop video recording (does not stop CA run) killing fsi causes video corruption
-
-obsDisp.Dispose()
-enc.Release()
-
-*)
+  } 

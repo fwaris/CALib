@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,12 +13,11 @@
     <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
     <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
     <Compile Include="..\CALib\Settings.fs" Link="Settings.fs" />
-    <Folder Include="Metrics\" />
     <Compile Include="..\CALib\Metrics\Metrics\ObservableExt.fs" Link="Metrics\ObservableExt.fs" />
     <Compile Include="..\CALib\Metrics\Metrics\Metrics.fs" Link="Metrics\Metrics.fs" />
     <Compile Include="..\CALib\Metrics\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
     <Compile Include="..\CALib\Metrics\Metrics\TracingGame.fs" Link="Metrics\TracingGame.fs" />
-    <Compile Include="..\CALib\Metrics\Metrics\Social.fs" Link="Metrics\Social.fs" />
+    <Compile Include="..\CALib\Metrics\Social.fs" Link="Metrics\Social.fs" />
     <Folder Include="BeliefSpace\" />
     <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
@@ -39,6 +38,7 @@
     <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
     <Compile Include="..\CALib\Utilities\FPGrowth.fs" Link="Utilities\FPGrowth.fs" />
     <Compile Include="Utilities\Community.fs" />
+    <Compile Include="Run\Types.fs" />
     <Compile Include="Run\TestEnv.fs" />
     <Compile Include="Run\StatDynamicSeq.fs" />
     <Compile Include="Run\RunConfigs.fs" />

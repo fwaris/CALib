@@ -46,4 +46,29 @@ let colors =
         255,215,0
         ]
 
+open System.Drawing
 
+//let scaler (sMin,sMax) (vMin,vMax) (v:float) =
+//    if v < vMin then failwith "out of min range for scaling"
+//    if v > vMax then failwith "out of max range for scaling"
+//    (v - vMin) / (vMax - vMin) * (sMax - sMin) + sMin
+
+let createColor (r,g,b) = Color.FromArgb(255, min r 255, min g 255, min b 255)
+
+let interpolate (c1:Color) (c2:Color) (m:float) =
+    createColor(
+        (1. - m) * float c1.R + float c2.R * m |> int,
+        (1. - m) * float c1.G + float c2.G * m |> int,
+        (1. - m) * float c1.B + float c2.B * m |> int
+    )
+
+let cI (v:float) mn mx (colorRange:Color[]) =
+    //if v < mn || v > mx then failwithf "value %0.3f should be between min (%0.3f) and max (%0.3f)" v mn mx
+    let cindex = CAUtils.scaler (0., float (colorRange.Length - 1)) (mn,mx) v
+    let c1 = colorRange.[floor cindex |> int]
+    let c2 = colorRange.[ceil cindex |> int]
+    let prop = cindex - (floor cindex)
+    interpolate c1 c2 prop
+
+//usage:
+// cI 0.3 0. 1. [|Color.Blue; Color.Yellow; Color.Red|]
