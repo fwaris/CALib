@@ -8,6 +8,7 @@ open System
 open Metrics
 open FSharp.Collections.ParallelSeq
 open Runs.Types
+open Social
 
   
 let parmDefs = 
@@ -50,11 +51,13 @@ let getNetwork id =
   let networks = [Square,CAUtils.squareNetwork; Hexagon, CAUtils.hexagonNetworkViz; Octagon, CAUtils.octagonNetwork] |> Map.ofList
   networks.[id]
 
+let SEG_RAD = 2
+
 let socialMetrics st primKS =
     let segF i =  primKS i.KS |> Social.ksNum
     let seg = 
         Social.segregation                                    //Schelling-like segregation measure
-            2                                                 //radius of neighborhood
+            SEG_RAD                                           //radius of neighborhood
             (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
             Social.ksSegments                                 //list of segments
             st.CA                                             //current state of CA
@@ -63,7 +66,7 @@ let socialMetrics st primKS =
     seg,dffsn
 
 let segAt ca fSeg indv = Social.segregationAt                        //Schelling-like segregation measure
-                            2                                       //radius of neighborhood
+                            SEG_RAD                                      //radius of neighborhood
                             (1.0 / float Social.ksSegments.Length)  //proportion of each segment or group at start
                             Social.ksSegments                       //list of segments
                             ca                                      //current state of CA
@@ -72,11 +75,12 @@ let segAt ca fSeg indv = Social.segregationAt                        //Schelling
 
 let dfsnAt ca p = Social.diffusionAt ca p
 
-let statRec rsc i ipdSol st  (config:RunId) primKS =
+//samples x landscapes x generation x KD x A x net
+let statRec calcSocMetrics primKS landscapeNum  (config:RunId) st =
   //let seg,dffsn = if rsc.CalcSocMetrics then socialMetrics st segF else -1.0, -1.0
   let segF indv = primKS indv.KS |> Social.ksNum
   let iSeg,iDffsn = 
-    if rsc.CalcSocMetrics then
+    if calcSocMetrics then
         st.CA.Population |> PSeq.map (fun i -> i.Id,segAt st.CA segF i) |> PSeq.toArray |> Array.sortBy fst |> Array.map snd,
         st.CA.Population |> PSeq.map (fun i -> i.Id,dfsnAt st.CA i) |> PSeq.toArray |> Array.sortBy fst |> Array.map snd
     else
@@ -84,16 +88,18 @@ let statRec rsc i ipdSol st  (config:RunId) primKS =
         [|-1.0|]
 
   let seg,dffsn = 
-    if rsc.CalcSocMetrics then
+    if calcSocMetrics then
         iSeg   |> Array.average,
         iDffsn |> Array.average
     else
         -1.0,-1.0
 
   {
-    ConfigRun=config.Run
-    Id=config.Id; LandscapeNum=i
-    A=config.A; GenCount=st.Count
+    Sample=config.SampleNum
+    KD=config.Id; 
+    LandscapeNum=landscapeNum
+    A=config.A
+    GenCount=st.Count
     Seg=seg
     Dffsn=dffsn
     Max=st.Best.[0].MFitness
@@ -103,37 +109,40 @@ let statRec rsc i ipdSol st  (config:RunId) primKS =
     IndvKs = st.CA.Population |> Array.map(fun i-> primKS i.KS |> Social.ksNum)
   }
 
-let writeRun rsc rst =
-  let seg,dffsn =if rsc.CalcSocMetrics then socialMetrics rst.Step rst.PrimKS else -1.0, -1.0
-  let ft = match rst.Step.Best with [] -> 0.0 | x::_ -> x.MFitness
-  let line = String.Join("\t",rst.Id,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H,seg,dffsn)
-  rst.StrWRun.WriteLine line
+//let writeRun rsc rst =
+//  let seg,dffsn =if rsc.CalcSocMetrics then socialMetrics rst.Step rst.PrimKS else -1.0, -1.0
+//  let ft = match rst.Step.Best with [] -> 0.0 | x::_ -> x.MFitness
+//  let line = String.Join("\t",rst.KD,rst.A,rst.SampleNum,rst.Landscape,rst.Step.Count,ft,rst.Ws.EnvChangeCount,rst.Ws.M.H,seg,dffsn)
+//  rst.StrWRun.WriteLine line
 
-let rec runToSol rsc rst = //id a primKs ws envCh st gens =
+let rec runToSol acc rsc rst (runId:RunId) = //id a primKs ws envCh st gens =
   async {
   if rst.Step.Count > rsc.MaxGen then 
-    printfn "MAx_GEN Id=%s A=%f Lndscp=%d Sample=%d" rst.Id rst.A rst.Landscape rst.SampleNum
-    if rsc.RunToMax then () else saveEnv rsc rst.Id rst.Ws //save environment to analyze later
-    return false,rst.Step
+    printfn "MAx_GEN Id=%s A=%f Lndscp=%d Sample=%d" rst.KD rst.A rst.Landscape rst.SampleNum
+    if rsc.RunToMax then () else saveEnv rsc rst.KD rst.Ws //save environment to analyze later
+    return (List.rev acc)
   else
-    let st = step rst.EnvCh rst.Step
-    let rst = {rst with Step=st; EnvCh=false}
+    let st = step rst.EnvCh rst.Step            //step once indicating if environment changed or not
+    let sr = statRec rsc.CalcSocMetrics rst.PrimKS rst.Landscape runId st
+    let acc = sr::acc
+    let rst = {rst with Step=st; EnvCh=false}   //update recursion state
+
     //do! Async.Sleep 100
-    writeRun rsc rst
+    //writeRun rsc rst
     //Community.logCluster rst.StrWComm rst.Id rst.A rst.Step.Count rst.Landscape rst.PrimKS rst.Step.CA.Network rst.Step.CA.Population
     let (bfit,gb) = best st
     let dist = Array.zip gb rst.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
     let solFound = dist < rsc.DistTh
     if solFound && not rsc.RunToMax then 
-      printfn "sol @ %d %s" st.Count rst.Id
-      return true,st
+      printfn "sol @ %d %s" st.Count rst.KD
+      //statRec rsc rst.Landscape true st  rst.PrimKS
+
+      return (List.rev acc)
     else
-      return! runToSol rsc rst
+      return! runToSol acc rsc rst runId
   }
 
-
-
-let runConfig rsc fstrCommunity fstrRun  (runId:RunId) =
+let runConfig rsc fstrCommunity  (runId:RunId) =
 
   //printfn "config %A %A %A" config.A config.Id config.Run
   let ws = createEnv rsc runId.Id runId.A
@@ -186,29 +195,30 @@ let runConfig rsc fstrCommunity fstrRun  (runId:RunId) =
     shCA.Fitness := ws.F
 
     //Note: population is not re-initialized therefore individuals retain locations from prior run
-    let ipdRst = {Id= "IPD"; Landscape=i; A=runId.A; PrimKS=Community.gamePrimKs; Ws=ws;
-                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
-    let wtdRst = {Id= "WTD"; Landscape=i; A=runId.A; PrimKS=Community.basePrimKs; Ws=ws;
-                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
-    let shRst = {Id= "SH"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
-    let stkRst = {Id= "STK"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
-                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; StrWRun=fstrRun; SampleNum=runId.Run}
+    let ipdRst = {KD= "IPD"; Landscape=i; A=runId.A; PrimKS=Community.gamePrimKs; Ws=ws;
+                  EnvCh=true; Step=ipdSt; StrWComm=fstrCommunity; SampleNum=runId.SampleNum}
+    let wtdRst = {KD= "WTD"; Landscape=i; A=runId.A; PrimKS=Community.basePrimKs; Ws=ws;
+                  EnvCh=true; Step=wtdSt; StrWComm=fstrCommunity; SampleNum=runId.SampleNum}
+    let shRst = {KD= "SH"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
+                  EnvCh=true; Step=shSt; StrWComm=fstrCommunity; SampleNum=runId.SampleNum}
+    let stkRst = {KD= "STK"; Landscape=i; A=runId.A; PrimKS=Community.fstPrimKs; Ws=ws;
+                  EnvCh=true; Step=stkSt; StrWComm=fstrCommunity; SampleNum=runId.SampleNum}
 
+    //this supports that all KD are tested on the same landscape
     for kd in rsc.KDs do
         match kd with
         | WTD -> 
-            let wtdSol,wtdSt = runToSol rsc wtdRst |> Async.RunSynchronously 
-            yield statRec rsc i wtdSol wtdSt {runId with Id="WTD"} wtdRst.PrimKS
+            let statRecs = runToSol [] rsc wtdRst {runId with Id="WTD"} |> Async.RunSynchronously 
+            yield! statRecs
         | IPD -> 
-            let ipdSol,ipdSt = runToSol rsc ipdRst |> Async.RunSynchronously
-            yield statRec rsc i ipdSol ipdSt {runId with Id="IPD"} ipdRst.PrimKS
+            let statRecs = runToSol [] rsc ipdRst {runId with Id="IPD"} |> Async.RunSynchronously
+            yield! statRecs
         | SH -> 
-            let shSol,shSt = runToSol rsc shRst    |> Async.RunSynchronously 
-            yield statRec rsc i shSol shSt {runId with Id="SH"} shRst.PrimKS
+            let statRecs = runToSol [] rsc shRst  {runId with Id="SH"}   |> Async.RunSynchronously 
+            yield! statRecs 
         | STK ->
-            let stkSol,stkSt = runToSol rsc stkRst |> Async.RunSynchronously 
-            yield statRec rsc i stkSol stkSt {runId with Id="STK"} stkRst.PrimKS
+            let statRecs = runToSol [] rsc stkRst {runId with Id="STK"} |> Async.RunSynchronously 
+            yield! statRecs
   ]
 
 let initLogging rsc =
@@ -217,26 +227,26 @@ let initLogging rsc =
 let run rsc =
   seq{
     use fstrCommunity = Path.Combine(rsc.SaveFolder,"comm_base_runs.txt") |> Community.initLog
-    use fstrRun = Path.Combine(rsc.SaveFolder,"res_run.txt") |> File.CreateText
+    //use fstrRun = Path.Combine(rsc.SaveFolder,"res_run.txt") |> File.CreateText
     for a in rsc.AValues do
       //for n in [Square; Hexagon; Octagon] do
       for n in [Hexagon] do
         for i in 1..rsc.Samples do
-          let runId = {RunId.Run=i; RunId.A=a; RunId.Net=n; RunId.Id=""}
-          yield! runConfig rsc fstrCommunity fstrRun runId}
+          let runId = {RunId.SampleNum=i; RunId.A=a; RunId.Net=n; RunId.Id=""}
+          yield! runConfig rsc fstrCommunity runId}
 
 let prepFile rsc fileName = 
     let path = Path.Combine(rsc.SaveFolder,fileName)
     if File.Exists path |> not then 
         use fn = new StreamWriter(File.OpenWrite(path))
-        fn.WriteLine("ConfigRun\tId\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS")
+        fn.WriteLine("Sample\tKD\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS")
 
 let writeLndcspStats rsc fileName ls =
     let path = Path.Combine(rsc.SaveFolder,fileName)
     use fn = File.AppendText(path)
     let line = 
         sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
-            ls.ConfigRun ls.Id ls.LandscapeNum ls.A ls.GenCount ls.Max ls.Seg ls.Dffsn ls.Net
+            ls.Sample ls.KD ls.LandscapeNum ls.A ls.GenCount ls.Max ls.Seg ls.Dffsn ls.Net
     fn.Write(line)
     fn.Write("\t")
     ls.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))

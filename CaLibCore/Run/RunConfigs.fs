@@ -2,6 +2,7 @@
 open MBrace.FsPickler
 open Runs.Types
 open System.IO
+open System
 
 let configToSave = 
     {
@@ -37,19 +38,23 @@ let createJobs() =
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
     let kds = [WTD; IPD; SH; STK]
     let avals = [1.0; 3.6; 3.9]
-    let kdav = seq {for kd in kds do  
-                        for av in avals do
+    //let kdav = seq {for kd in kds do  
+    //                    for av in avals do
+    //                        for s in 1..30 do
+    //                            yield kd,av,s}
+    let kdav = seq {for av in avals do
                             for s in 1..30 do
-                                yield kd,av,s}
+                                yield kds,av,s}
     let ser = FsPickler.CreateXmlSerializer(indent=true)
     let saveFolder = "/wsu/home/ar/ar86/ar8623/calib/jobout"
     kdav |> Seq.iteri (fun i (k,a,s) -> 
         let fnJob = Path.Combine(folder,sprintf "job_%d.xml" i)
-        let fnOut = sprintf "%s/%A_%A_%d" saveFolder k a s
+        //let fnOut = sprintf "%s/%A_%A_%d" saveFolder k a s
+        let fnOut = sprintf "%s/KD_%A_%d" saveFolder a s
         let cfg = 
              {
                   SaveFolder    = fnOut
-                  KDs            = [k]
+                  KDs            = k
                   PopulationSize = 360
                   NumCones      = 500
                   RunToMax      = true

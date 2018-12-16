@@ -3,9 +3,11 @@
 open DF1
 open CA
 open System.IO
+open KDIPDGame
 
 type KD = WTD | IPD | SH | STK
 
+//a single program run executes according to this config
 type RunsConfig= 
   {
     SaveFolder    : string
@@ -25,20 +27,20 @@ type RunsConfig=
   }
 
 type NetId = Square | Hexagon | Octagon
-type RunId = {Id:string; Run:int; Net:NetId; A:float}
+type RunId = {Id:string; SampleNum:int; Net:NetId; A:float}
 type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
-type LandscapeStats = 
+type GenStats = 
     {
-        ConfigRun       : int
-        Id              : string
-        LandscapeNum    : int
+        KD              : string
         A               : float
+        Sample          : int
+        LandscapeNum    : int
         GenCount        : int
+        Net             : string
         Max             : float
         Seg             : float
         Dffsn           : float
-        Net             : string
         IndvSeg         : float[]
         IndvDfsn        : float[]
         IndvKs          : int[]
@@ -46,7 +48,7 @@ type LandscapeStats =
 
 type RunState<'k> =
   {
-    Id        : string
+    KD        : string
     A         : float
     PrimKS    : 'k->Knowledge
     Ws        : WorldState
@@ -55,7 +57,7 @@ type RunState<'k> =
     Landscape : int
     SampleNum : int
     StrWComm  : StreamWriter
-    StrWRun   : StreamWriter
+    //StrWRun   : StreamWriter
   }
 
 

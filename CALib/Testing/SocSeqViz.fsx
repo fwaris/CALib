@@ -22,24 +22,16 @@ open OpenCvSharp
 let remE = StringSplitOptions.RemoveEmptyEntries
 
 let joboutFolder =  @"D:\repodata\calib\jobout"
+let outfolder = @"D:\repodata\calib\dsst_soc"
+let (@@) a b = Path.Combine(a,b)
+
 let jobOuts = Directory.EnumerateDirectories joboutFolder |> Seq.toArray
 let kd_a = jobOuts |> Array.map (fun x->let i = x.LastIndexOf('_') in x.Substring(0,i)) |> Array.distinct
 let sample1s = kd_a |> Array.map(fun x->x + "_1")
 
-let statFiles = sample1s |> Array.map(fun p-> Path.Combine(p,"Stats.txt"))
-
-let rows = 
-    seq {for f in statFiles do yield! (File.ReadLines f |> Seq.skip 1) } 
-    |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
-
-//let f1 = @"D:\repodata\calib\dsst_stats\Stats.txt"
-
-//let rows = File.ReadLines f1 |> Seq.skip 1 |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
-rows.Length
-
 type SocR = {KD:string; A:string; Sample:int; Segs:float[]; Dffns:float[]; KS:int[]}
 
-let socrs = rows |> Array.map (fun r->
+let toSocrs rows = rows |> Array.map (fun (r:string[]) ->
    {
     KD = r.[1]
     A = r.[3]
@@ -49,8 +41,8 @@ let socrs = rows |> Array.map (fun r->
     KS = r.[11].Split([|'|'|],remE) |> Array.map int
    })
 
-let maxSeg = socrs |> Array.map (fun x-> Array.max x.Segs) |> Array.max
-let maxDffsn = socrs |> Array.map (fun x-> Array.max x.Dffns) |> Array.max
+//let maxSeg = socrs |> Array.map (fun x-> Array.max x.Segs) |> Array.max
+//let maxDffsn = socrs |> Array.map (fun x-> Array.max x.Dffns) |> Array.max
 
 let neighbrs (pop:float[]) id =
     let rowCount = sqrt (float pop.Length)
@@ -99,7 +91,8 @@ let visualizePopHeat width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Ma
         Cv2.Circle(!> mat,ctr,rad,clr,Cv2.FILLED)
         Cv2.Circle(!> mat,ctr,rad/2,c2,Cv2.FILLED)
         Cv2.Circle(!> mat,ctr,rad/2+1,Scalar.Wheat,1)
-        Cv2.PutText(!>mat, kLetter, ctr, HersheyFonts.HersheyPlain, 1., Scalar.DarkBlue)
+        let txtPt = Point(ctr.X-4,ctr.Y+5)
+        Cv2.PutText(!>mat, kLetter, txtPt, HersheyFonts.HersheyPlain, 1., Scalar.DarkBlue)
     //pop |> Array.iter(fun p->draw p.Id brgColors.[2])
     pop |> Array.iteri (fun i p -> draw i (clrF p))
     //pop |> Array.iter (fun p ->
@@ -133,16 +126,24 @@ let segClr v =
     let clr = VizUtils.cI v 0. 2. [|Color.Blue; Color.Yellow; Color.Red|]
     Scalar.FromRgb(int clr.R, int clr.G, int clr.B) 
 
-let kdA = socrs |> Array.filter(fun r->r.Sample=1) |> Array.groupBy (fun r->r.KD,r.A)
 
-let outfolder = @"D:\repodata\calib\dsst_soc"
-let (@@) a b = Path.Combine(a,b)
+let genVidsByKdA socrs =
+    let kdA = socrs |> Array.groupBy (fun r->r.KD,r.A)
 
-kdA |> Array.iter (fun ((kd,a),srs) -> 
-    let segs = srs |> Array.map(fun j->j.Segs)
-    let dffns = srs |> Array.map(fun j->j.Dffns)
-    let kss   = srs |> Array.map(fun j->j.KS)
-    let fseg = outfolder @@ (sprintf "%s_%s_segs.mp4" kd a)
-    let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
-    createVidHeat fseg 1024 segs kss segClr
-    createVidHeat fdffsn 1024 dffns kss dfsnClr)
+
+    kdA |> Array.iter (fun ((kd,a),srs) -> 
+        let segs = srs |> Array.map(fun j->j.Segs)
+        let dffns = srs |> Array.map(fun j->j.Dffns)
+        let kss   = srs |> Array.map(fun j->j.KS)
+        let fseg = outfolder @@ (sprintf "%s_%s_segs.mp4" kd a)
+        let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
+        createVidHeat fseg 1024 segs kss segClr
+        createVidHeat fdffsn 1024 dffns kss dfsnClr)
+  
+let gen1Sample()=
+    let statFiles = sample1s |> Array.map(fun p-> Path.Combine(p,"Stats.txt"))
+    let rows = 
+        seq {for f in statFiles do yield! (File.ReadLines f |> Seq.skip 1) } 
+        |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
+    let socrs = toSocrs rows |> Array.filter(fun r->r.Sample=1)
+    genVidsByKdA socrs
