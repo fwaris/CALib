@@ -19,7 +19,8 @@ type IEncoder =
 
 let private captureTo v_out frameRate sz =
     let clipOut = new VideoWriter()
-    clipOut.Open(v_out,FourCC.DIVX,frameRate,sz)
+    //let c4 = FourCCCalcurator.Run("avc1")
+    clipOut.Open(v_out,FourCC.H264,frameRate,sz)
     if not(clipOut.IsOpened()) then failwith "file not opened"
     clipOut
 

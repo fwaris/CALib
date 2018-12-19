@@ -124,6 +124,7 @@
     <None Include="Testing\IPDStats.fsx" />
     <None Include="Testing\CecBenchmark.fsx" />
     <None Include="Testing\L-Shade.fsx" />
+    <None Include="Testing\ViewVideo.fsx" />
     <None Include="paket.references" />
     <Content Include="packages.config" />
   </ItemGroup>

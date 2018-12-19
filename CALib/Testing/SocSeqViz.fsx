@@ -18,27 +18,31 @@ open System
 open VizUtils
 open Viz
 open OpenCvSharp
+open OpenCvSharp.ML
 
 let remE = StringSplitOptions.RemoveEmptyEntries
 
 let joboutFolder =  @"D:\repodata\calib\jobout"
-let outfolder = @"D:\repodata\calib\dsst_soc"
+let outfolder = @"D:\repodata\calib\dsst_soc_all_gen"
+if Directory.Exists outfolder |> not then Directory.CreateDirectory outfolder |> ignore
 let (@@) a b = Path.Combine(a,b)
 
 let jobOuts = Directory.EnumerateDirectories joboutFolder |> Seq.toArray
 let kd_a = jobOuts |> Array.map (fun x->let i = x.LastIndexOf('_') in x.Substring(0,i)) |> Array.distinct
 let sample1s = kd_a |> Array.map(fun x->x + "_1")
 
-type SocR = {KD:string; A:string; Sample:int; Segs:float[]; Dffns:float[]; KS:int[]}
+type SocR = {KD:string; A:string; Landscape:int; Gen:int; Sample:int; Segs:float[]; Dffns:float[]; KS:int[]}
 
 let toSocrs rows = rows |> Array.map (fun (r:string[]) ->
    {
-    KD = r.[1]
-    A = r.[3]
-    Sample=int r.[0]
-    Segs = r.[9].Split([|'|'|],remE) |> Array.map float
-    Dffns = r.[10].Split([|'|'|],remE) |> Array.map float
-    KS = r.[11].Split([|'|'|],remE) |> Array.map int
+    KD          = r.[1]
+    Landscape   = int r.[2]
+    A           = r.[3]
+    Gen         = int r.[4]
+    Sample      = int r.[0]
+    Segs        = r.[9].Split([|'|'|],remE) |> Array.map float
+    Dffns       = r.[10].Split([|'|'|],remE) |> Array.map float
+    KS          = r.[11].Split([|'|'|],remE) |> Array.map int
    })
 
 //let maxSeg = socrs |> Array.map (fun x-> Array.max x.Segs) |> Array.max
@@ -101,20 +105,44 @@ let visualizePopHeat width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Ma
     //    let ns = network pop p.Id
     //    for n in ns do draw n.Id (fc p.KS))
 
-let createVidHeat ouput size popSeq ksSeq clrF = 
+let drawLabelGen (idx:int) maxGen (m:Mat) y =
+    ksMap |> Seq.iteri (fun i kv ->
+        let k = kv.Key
+        let l = kv.Value
+        let x = 52 * i + 30
+        Cv2.Circle(!>m, Point(x,y),10,clrKnowledge k, Cv2.FILLED)
+        Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., clrKnowledge k)
+       )
+    let gen=idx+1
+    let x' = (50 * ksMap.Count) + 30
+    let p = Point(x'+ 15, y + 5)
+    match maxGen with 
+    | Some mg ->
+        let lscapeNum = gen / mg + 1
+        let g = gen % mg
+        Cv2.PutText(!>m, lscapeNum.ToString(),p, HersheyFonts.HersheyTriplex, 1., Scalar.Wheat)
+        Cv2.PutText(!>m, g.ToString(),Point(p.X + 50, p.Y), HersheyFonts.HersheyTriplex, 1., Scalar.Azure)
+        if idx%mg=1 then //1 generation after maxgen - draw rect to highlight environment change
+            Cv2.Circle(!>m, Point(p.X + 450,p.Y),10,Scalar.IndianRed, Cv2.FILLED)
+    | None ->
+        Cv2.PutText(!>m, idx.ToString(),p, HersheyFonts.HersheyTriplex, 2., Scalar.Wheat)
+    
+let createVidHeat maxGen ouput size popSeq ksSeq clrF = 
     let ext = 20
     let margin = 5
     let pSize = Size(size, size + ext + 2 * margin)
     let enc = encoder ouput 30. (pSize.Width,pSize.Height)
-    let drawFrame pop ks =
+    let drawFrame i (pop, ks) =
         let mParent = new Mat(pSize, MatType.CV_8UC3,  Scalar(0., 0., 0.))
-        drawLabel mParent (pSize.Height - ext - margin)
         let mChild = mParent.SubMat(Rect(0,0,size,size))
         visualizePopHeat size pop ks clrF mChild
+        drawLabelGen i maxGen mParent (pSize.Height - ext - margin)
         enc.Frame mParent
         mChild.Release()
         mParent.Release()
-    Seq.zip popSeq ksSeq  |> Seq.iter(fun (pop,ks) -> drawFrame pop ks)
+    Seq.zip popSeq ksSeq  |> Seq.iteri(fun i m ->
+        for _ in 1 .. 10 do 
+            drawFrame i m)
 
     enc.Release()
 
@@ -127,7 +155,7 @@ let segClr v =
     Scalar.FromRgb(int clr.R, int clr.G, int clr.B) 
 
 
-let genVidsByKdA socrs =
+let genVidsByKdA socrs maxGen =
     let kdA = socrs |> Array.groupBy (fun r->r.KD,r.A)
 
 
@@ -135,10 +163,10 @@ let genVidsByKdA socrs =
         let segs = srs |> Array.map(fun j->j.Segs)
         let dffns = srs |> Array.map(fun j->j.Dffns)
         let kss   = srs |> Array.map(fun j->j.KS)
-        let fseg = outfolder @@ (sprintf "%s_%s_segs.mp4" kd a)
+        let fseg = outfolder @@ (sprintf "%s_%s_segs.mov" kd a)
         let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
-        createVidHeat fseg 1024 segs kss segClr
-        createVidHeat fdffsn 1024 dffns kss dfsnClr)
+        createVidHeat maxGen fseg 1024 segs kss segClr
+        createVidHeat maxGen fdffsn 1024 dffns kss dfsnClr)
   
 let gen1Sample()=
     let statFiles = sample1s |> Array.map(fun p-> Path.Combine(p,"Stats.txt"))
@@ -146,4 +174,12 @@ let gen1Sample()=
         seq {for f in statFiles do yield! (File.ReadLines f |> Seq.skip 1) } 
         |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
     let socrs = toSocrs rows |> Array.filter(fun r->r.Sample=1)
-    genVidsByKdA socrs
+    genVidsByKdA socrs None
+
+
+let gen2Sample() =
+    let statFile = @"D:\repodata\calib\video_loc\Stats.txt"
+    let rows = File.ReadLines statFile |> Seq.skip 1 |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
+    let socrs = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
+    let maxGen = socrs |> Array.map(fun r->r.Gen) |> Array.max
+    genVidsByKdA socrs (Some maxGen)
