@@ -4,7 +4,6 @@
 // Learn more about F# at http://fsharp.org
 
 open System
-open Runs.StatsDynamic
 open System.IO
 
 type RunCommand = Job of string | Cfg of string | NoArgs | InvalidArgs
@@ -35,7 +34,7 @@ let runJob jobLoc =
             | None -> printfn "Config file '%s' not found" configFile; 1
             | Some f -> 
                 let rsc = RunConfigs.loadConfig f
-                Runs.StatsDynamic.start rsc |> Async.RunSynchronously
+                Runs.StatDynamicSeq.run rsc 
                 0
 
 
@@ -50,7 +49,7 @@ let main argv =
         1
     | Cfg (loc) -> 
         let rsc = RunConfigs.loadConfig loc
-        Runs.StatsDynamic.start rsc |> Async.RunSynchronously
+        Runs.StatDynamicSeq.run rsc
         0
     | Job (loc) -> 
         runJob loc

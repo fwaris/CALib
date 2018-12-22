@@ -105,7 +105,7 @@ let visualizePopHeat width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Ma
     //    let ns = network pop p.Id
     //    for n in ns do draw n.Id (fc p.KS))
 
-let drawLabelGen (idx:int) maxGen (m:Mat) y =
+let drawLabelGen (idx:int) (m:Mat) y gen lndscp =
     ksMap |> Seq.iteri (fun i kv ->
         let k = kv.Key
         let l = kv.Value
@@ -113,21 +113,14 @@ let drawLabelGen (idx:int) maxGen (m:Mat) y =
         Cv2.Circle(!>m, Point(x,y),10,clrKnowledge k, Cv2.FILLED)
         Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., clrKnowledge k)
        )
-    let gen=idx+1
     let x' = (50 * ksMap.Count) + 30
     let p = Point(x'+ 15, y + 5)
-    match maxGen with 
-    | Some mg ->
-        let lscapeNum = gen / mg + 1
-        let g = gen % mg
-        Cv2.PutText(!>m, lscapeNum.ToString(),p, HersheyFonts.HersheyTriplex, 1., Scalar.Wheat)
-        Cv2.PutText(!>m, g.ToString(),Point(p.X + 50, p.Y), HersheyFonts.HersheyTriplex, 1., Scalar.Azure)
-        if idx%mg=1 then //1 generation after maxgen - draw rect to highlight environment change
-            Cv2.Circle(!>m, Point(p.X + 450,p.Y),10,Scalar.IndianRed, Cv2.FILLED)
-    | None ->
-        Cv2.PutText(!>m, idx.ToString(),p, HersheyFonts.HersheyTriplex, 2., Scalar.Wheat)
+    Cv2.PutText(!>m, lndscp.ToString(),p, HersheyFonts.HersheyTriplex, 1., Scalar.Wheat)
+    Cv2.PutText(!>m, gen.ToString(),Point(p.X + 50, p.Y), HersheyFonts.HersheyTriplex, 1., Scalar.Azure)
+    if gen=1 then //1 generation after maxgen - draw rect to highlight environment change
+        Cv2.Circle(!>m, Point(p.X + 450,p.Y),10,Scalar.Maroon, Cv2.FILLED)
     
-let createVidHeat maxGen ouput size popSeq ksSeq clrF = 
+let createVidHeat ouput size popSeq ksSeq clrF (gens:int[]) (lndscps:int[]) = 
     let ext = 20
     let margin = 5
     let pSize = Size(size, size + ext + 2 * margin)
@@ -136,12 +129,12 @@ let createVidHeat maxGen ouput size popSeq ksSeq clrF =
         let mParent = new Mat(pSize, MatType.CV_8UC3,  Scalar(0., 0., 0.))
         let mChild = mParent.SubMat(Rect(0,0,size,size))
         visualizePopHeat size pop ks clrF mChild
-        drawLabelGen i maxGen mParent (pSize.Height - ext - margin)
+        drawLabelGen i mParent (pSize.Height - ext - margin) (gens.[i]) (lndscps.[i])
         enc.Frame mParent
         mChild.Release()
         mParent.Release()
     Seq.zip popSeq ksSeq  |> Seq.iteri(fun i m ->
-        for _ in 1 .. 10 do 
+        for _ in 1 .. 1 do 
             drawFrame i m)
 
     enc.Release()
@@ -155,18 +148,19 @@ let segClr v =
     Scalar.FromRgb(int clr.R, int clr.G, int clr.B) 
 
 
-let genVidsByKdA socrs maxGen =
+let genVidsByKdA socrs =
     let kdA = socrs |> Array.groupBy (fun r->r.KD,r.A)
-
 
     kdA |> Array.iter (fun ((kd,a),srs) -> 
         let segs = srs |> Array.map(fun j->j.Segs)
         let dffns = srs |> Array.map(fun j->j.Dffns)
         let kss   = srs |> Array.map(fun j->j.KS)
+        let gens  = srs |> Array.map(fun j->j.Gen)
+        let lndscps = srs |> Array.map(fun j->j.Landscape)
         let fseg = outfolder @@ (sprintf "%s_%s_segs.mov" kd a)
         let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
-        createVidHeat maxGen fseg 1024 segs kss segClr
-        createVidHeat maxGen fdffsn 1024 dffns kss dfsnClr)
+        createVidHeat fseg 1024 segs kss segClr gens lndscps 
+        createVidHeat fdffsn 1024 dffns kss dfsnClr gens lndscps )
   
 let gen1Sample()=
     let statFiles = sample1s |> Array.map(fun p-> Path.Combine(p,"Stats.txt"))
@@ -174,7 +168,7 @@ let gen1Sample()=
         seq {for f in statFiles do yield! (File.ReadLines f |> Seq.skip 1) } 
         |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
     let socrs = toSocrs rows |> Array.filter(fun r->r.Sample=1)
-    genVidsByKdA socrs None
+    genVidsByKdA socrs
 
 
 let gen2Sample() =
@@ -182,4 +176,4 @@ let gen2Sample() =
     let rows = File.ReadLines statFile |> Seq.skip 1 |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
     let socrs = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
     let maxGen = socrs |> Array.map(fun r->r.Gen) |> Array.max
-    genVidsByKdA socrs (Some maxGen)
+    genVidsByKdA socrs

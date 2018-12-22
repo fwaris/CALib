@@ -1,14 +1,12 @@
 ﻿module Runs.Types
-
 open DF1
 open CA
 open System.IO
-open KDIPDGame
 
 type KD = WTD | IPD | SH | STK
 
 //a single program run executes according to this config
-type RunsConfig= 
+type RunConfig = 
   {
     SaveFolder    : string
     KDs           : KD list
@@ -27,8 +25,8 @@ type RunsConfig=
   }
 
 type NetId = Square | Hexagon | Octagon
-type RunId = {Id:string; SampleNum:int; Net:NetId; A:float}
-type WorldState = {Id:string; W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
+//type RunId = {Id:string; SampleNum:int; Net:NetId; A:float}
+type WorldState = {W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
 type GenStats = 
     {
@@ -46,18 +44,35 @@ type GenStats =
         IndvKs          : int[]
     }
 
-type RunState<'k> =
+//type RunStep<'k> =
+//    {
+//        KD        : string
+//        A         : float
+//        PrimKS    : 'k->Knowledge
+//        Ws        : WorldState
+//        EnvCh     : bool
+//        Step      : TimeStep<'k>
+//        Landscape : int
+//        SampleNum : int
+//        StrWComm  : StreamWriter
+//        //StrWRun   : StreamWriter
+//    }
+
+type Step = 
+    | WtdSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
+    | IpdSt of TimeStep<KDIPDGame.IpdKS> * (KDIPDGame.IpdKS->Knowledge)
+    | ShSt  of TimeStep<KDStagHunt.ShKnowledge> *  (KDStagHunt.ShKnowledge->Knowledge)
+    | StkSt of TimeStep<KDStackelberg.StkKnowledge> * (KDStackelberg.StkKnowledge->Knowledge)
+
+type LandscapeConfig =
   {
-    KD        : string
-    A         : float
-    PrimKS    : 'k->Knowledge
     Ws        : WorldState
-    EnvCh     : bool
-    Step      : TimeStep<'k>
+    A         : float
+    Net       : NetId
     Landscape : int
     SampleNum : int
-    StrWComm  : StreamWriter
-    //StrWRun   : StreamWriter
+    EnvCh     : bool
+    Steps     : Step array
   }
 
 

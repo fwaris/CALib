@@ -1,3 +1,5 @@
 FSharp.Charting
 FSharp.Collections.ParallelSeq
 OpenCvSharp3-AnyCPU
+FSharp.Core
+FsPickler

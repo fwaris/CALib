@@ -38,11 +38,11 @@ let getFrame file n =
             else
                 None
     mat.Release()
-    clipIn.Release()
+    clipIn.Release() 
     resp
 
 let frameCount f = 
-    let clipIn = new VideoCapture(f1:string)
+    let clipIn = new VideoCapture(f:string)
     let fc = clipIn.FrameCount
     clipIn.Release()
     fc

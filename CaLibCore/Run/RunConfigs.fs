@@ -30,7 +30,7 @@ let saveConfig() =
 let loadConfig file =
   use f = File.OpenText file
   let ser = FsPickler.CreateXmlSerializer(indent=true)
-  let config:RunsConfig = ser.Deserialize(f)
+  let config:RunConfig = ser.Deserialize(f)
   config
 
 let createJobs() =
