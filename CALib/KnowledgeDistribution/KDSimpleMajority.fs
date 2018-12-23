@@ -18,9 +18,15 @@ let private smDist pop network (indv:Individual<Knowledge>) =
             fst cnddtKS.[CAUtils.rnd.Value.Next(0,cnddtKS.Length-1)]
     {indv with KS=slctdKS}
 
-let rec knowledgeDist (pop,b) network =
-    let pop = 
-        pop
-        |> Array.Parallel.map (smDist pop network)
-    pop,b,KD(knowledgeDist)
+let rec influence
+    envCh
+    pop
+    beliefSpace
+    network
+    fitness
+    cmprtr
+    =    
+    let pop = pop |> Array.Parallel.map (smDist pop network)
+    let pop = CAUtils.defaultInfluence beliefSpace pop
+    pop,beliefSpace,Influence(influence)
 

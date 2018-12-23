@@ -13,7 +13,7 @@ open System.IO
 open Tracing
 open TraceCharts
 
-let parmDefs = 
+let parms = 
     [|
         F(0.,-1.,1.) // x
         F(0.,-1.,1.) // y
@@ -51,64 +51,51 @@ let (l,m,fitness),background =
    let ls = landscape |>  (fun (l,f)-> let m,d = createDf1 (__SOURCE_DIRECTORY__ + f) in l,m,ref (createFtns d))
    ls,bg
 
-let comparator  = CAUtils.Maximize
+let kdWeightedCA    = kdWeightedCA (basePop parms fitness) parms fitness
+let kdIpdCA         = kdIpdCA (basePop parms fitness) parms fitness
+let kdSchCA         = kdSchelligCA (basePop parms fitness) parms fitness
+let kdShCA          = shCA (basePop parms fitness) parms fitness
+let kdStkCA         = kdStkCA (basePop parms fitness) parms fitness
 
-//let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
-let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
-
-let kdIpdCA vmx ftnss cmprtr parmDefs  = 
-    let b = bsp ftnss parmDefs cmprtr
-    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.05)
-    let kd = ipdKdist ada vmx cmprtr pop 
-    makeCA ftnss cmprtr pop b kd KDIPDGame.ipdInfluence defaultNetwork
-
-//let kdlWeightedCA f c p = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.baseKsInit
-//    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
-
-let kdWeightedCA f c p  = 
-    let bsp = bsp f p c
-    let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence defaultNetwork
+//let startCA,primKS = kdWeightedCA,KDWeightedMajority.primKS
+//let startCA,primKS = kdIpdCA,KDIPDGame.primKS
+//let startCA,primKS = kdShCA,KDStagHunt.primKS
+let startCA,primKS = kdStkCA,KDStackelberg.primKS
 
 let inline sqr x = x * x
 
-//dispersion between parms of two individuals
-let disp (p1:float[]) (p2:float[]) =
-    (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
-    |> sqrt
+////dispersion between parms of two individuals
+//let disp (p1:float[]) (p2:float[]) =
+//    (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
+//    |> sqrt
 
-//pop dispersion 
-let dispPop (pop:Population<_>) (network:Network<_>) =
-    let n = network pop 0
-    let esum = 
-        (0.,pop) 
-        ||> Array.fold (fun acc indv -> 
-            (acc,network pop indv.Id) 
-            ||> Array.fold(fun acc n -> disp indv.Parms n.Parms))
-    let st = esum / float n.Length
-    st
+////pop dispersion 
+//let dispPop (pop:Population<_>) (network:Network<_>) =
+//    let n = network pop 0
+//    let esum = 
+//        (0.,pop) 
+//        ||> Array.fold (fun acc indv -> 
+//            (acc,network pop indv.Id) 
+//            ||> Array.fold(fun acc n -> disp indv.Parms n.Parms))
+//    let st = esum / float n.Length
+//    st
+
 
 let step st = CARunner.step false st 2
-let vmx = (0.2, 0.9)
-let startCA = kdIpdCA vmx fitness comparator parmDefs
-//let startCA = kdWeightedCA fitness comparator parmDefs
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
 let primarkyKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
     | :? Knowledge as k -> k
+    | :? (Knowledge*int) as k -> fst k
     | _-> failwithf "not handled"
 
 let secondaryKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> snd ks |> Some
     | :? Knowledge as k -> None
+    | :? (Knowledge*int) -> None
     | _-> failwithf "not handled"
 
 let st = ref startStep
@@ -173,6 +160,7 @@ let postObs() =
                 let lvl = pk.Level
                 List.append [k,lvl] (Map.toList m)
             | :? Knowledge as k -> [k,1.0]
+            | :? (Knowledge*int) as k -> [fst k, 1.0]
             | _-> failwithf "not handled"
             )
         |> Seq.groupBy (fun (k,f) -> k)
@@ -184,8 +172,7 @@ let postObs() =
                   (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
                   Social.ksSegments                                 //list of segments
                   st.Value.CA                                       //current state of CA
-                  //Social.baseSeg
-                  (fun x -> Social.ksNum (fst x.KS).KS)             //funtion to return segment for each individual
+                  (segF primKS)
     let dfsn = Social.diffusion st.Value.CA
     do fpAll dAll
     do fpKSCounts ksCounts
@@ -195,7 +182,7 @@ let postObs() =
     do fpNorm dNorm
     do fpHist dHist
     do fpTopo dTopo
-    do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+    do fpDispersion (st.Value.Count,Social.diffusion st.Value.CA)
     do fpSeg dSeg
     do fbDfsn dfsn
 

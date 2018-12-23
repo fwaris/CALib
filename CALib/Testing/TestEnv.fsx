@@ -5,12 +5,13 @@ open CAUtils
 //let defaultNetwork = CAUtils.l4BestNetwork
 //let defaultNetwork = CAUtils.hexagonNetwork
 let defaultNetwork = CAUtils.hexagonNetworkViz
+let defaultComparator = CAUtils.Maximize
+let POP_SIZE = 72
 
-let inline makeCA fitness comparator pop bspace kd influence network =
+let inline makeCA fitness comparator pop bspace influence network =
         {
             Population           = pop
             Network              = network
-            KnowlegeDistribution = kd
             BeliefSpace          = bspace
             Acceptance           = CARunner.acceptance 0.25 comparator
             Influence            = influence
@@ -21,6 +22,11 @@ let inline makeCA fitness comparator pop bspace kd influence network =
 
 let termination step = step.Count > 1000
 let best stp = if stp.Best.Length > 0 then stp.Best.[0].MFitness,stp.Best.[0].MParms else 0.0,[||]
+let segF primKS indv  = primKS indv.KS |> Social.ksNum
+
+let basePop parmDefs fitness = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    CAUtils.createPop (baseKsInit bsp) parmDefs POP_SIZE true
 
 let dataCollector s = 
     best s, 
@@ -62,66 +68,40 @@ let runCollect data maxBest ca =
     step 
     |> Seq.unfold (fun s -> let s = loop s in (data s,s)  |> Some ) 
 
-let inline bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
+let kdWeightedCA basePop parmDefs fitness = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
+    let influence = KDWeightedMajority.influence bsp 3
+    makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 900 true
+let kdSchelligCA basePop parmDefs fitness  = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
+    let rule1 = Schelling.r1 0.5
+    let influence = Schelling.influence rule1
+    makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
-//kd construction
-//let simpleMajorityKDist  = KD(KDSimpleMajority.knowledgeDist)
-let wtdMajorityKdist c p = KD(KDWeightedMajority.knowledgeDist p 8 c)
-//let lWtdMajorityKdist  c = KD(KDLocallyWeightedMajority.knowledgeDist c)
-//let gameKdist        c p = KDGame.knowledgeDist c KDGame.hawkDoveGame p defaultNetwork
-//let hedonicKdist  c p    = KDHedonicGame.knowledgeDist c p defaultNetwork
-let ipdKdist explKs ada vmx cmprtr pop  = KDIPDGame.knowledgeDist explKs ada vmx cmprtr pop
-let rule1 = Schelling.r1 0.5
-let schKdist      c p    = Schelling.knowledgeDist rule1 c p
+let kdIpdCA basePop parmDefs fitness  = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    let pop = basePop |> KDIPDGame.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
+    let influence = 
+        let ada = KDIPDGame.Geometric(0.9,0.01)
+        let vmx = (0.2, 0.9)
+        KDIPDGame.influence Domain ada vmx defaultComparator pop
+    makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
+let shCA basePop parmDefs fitness = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
+    let influence = KDStagHunt.influence None 5 bsp pop
+    makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
-//CA construction
-//let kdSimpleCA   f c p  = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.baseKsInit
-//    makeCA f c pop bsp simpleMajorityKDist CARunner.baseInfluence
+let kdStkCA basePop parmDefs fitness  = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
+    let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
+    let influence = KDStackelberg.influence
+    makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
-let kdWeightedCA f c p  = 
-    let bsp = bsp f p c
-    let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) CARunner.baseInfluence
-
-let kdSchelligCA f c p  = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (schKdist c pop) CARunner.baseInfluence
-
-//let kdlWeightedCA f c p = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.baseKsInit
-//    makeCA f c pop bsp (lWtdMajorityKdist c) CARunner.baseInfluence
-
-//let kdGame2PlayerCA f c p = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.baseKsInit
-//    makeCA f c pop bsp (gameKdist c pop) CARunner.baseInfluence
-
-//let kdHedonicCA f c p = 
-//    let bsp = bsp f p c
-//    let pop = createPop bsp p CAUtils.ksSetInit
-//    let kd = hedonicKdist c pop 
-//    makeCA f c pop bsp kd KDHedonicGame.setInfluence
-
-let kdIpdCA vmx f c p  = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.1)
-    let kd,inf = ipdKdist Domain ada vmx c pop 
-    makeCA f c pop bsp kd inf
-
-let shCA f c p  = 
-    let bsp = bsp f p c
-    let pop = createPop bsp p CAUtils.baseKsInit |> KDStagHunt.initKS
-    let shKd = KDStagHunt.knowledgeDist None 5 c bsp pop 
-    makeCA f c pop bsp shKd KDStagHunt.shInfluence
     
 open FSharp.Charting
 fsi.AddPrinter(fun (ch:FSharp.Charting.ChartTypes.GenericChart) -> ch.ShowChart() |> ignore; "(Chart)")

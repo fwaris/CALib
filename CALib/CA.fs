@@ -10,10 +10,8 @@ type Parm =
     | F of      v:float     * min:float     * max:float 
     | I of      v:int       * min:int       * max:int
 
-
 type Id = int
 type Temp = float
-type Topology   = LBest | Global
 type Knowledge  = Situational | Historical | Normative | Topgraphical | Domain | Other of string
 type Individual<'k> = {Id:Id; Parms:float array; Fitness:float; KS:'k}
 and Fitness     = (float array -> float) ref
@@ -22,9 +20,9 @@ and Population<'k>  = Individual<'k> array
 and Network<'k>     = Population<'k> -> Id -> Individual<'k> array
 and BeliefSpace<'k> = KnowledgeSource<'k> Tree
 and Acceptance<'k>  = BeliefSpace<'k> -> Population<'k> -> Individual<'k> array
-and Influence<'k>   = BeliefSpace<'k> -> Population<'k> -> Population<'k>
+//and Influence<'k>   = BeliefSpace<'k> -> Population<'k> -> Population<'k>
 and Update<'k>      = bool -> BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
-and KnowledgeDist<'k>   = KD of ((Population<'k>*BeliefSpace<'k>) -> Network<'k> -> (Population<'k>*BeliefSpace<'k>*KnowledgeDist<'k>))
+and Influence<'k>   = Influence of (bool -> Population<'k> -> BeliefSpace<'k> -> Network<'k> -> Fitness -> Comparator -> (Population<'k>*BeliefSpace<'k>*Influence<'k>))
 
 and KnowledgeSource<'k> = 
     {
@@ -36,13 +34,12 @@ and KnowledgeSource<'k> =
 
 type CA<'k> =
     {
-        Population              : Population<'k>
-        Network                 : Network<'k>
-        KnowlegeDistribution    : KnowledgeDist<'k>
         BeliefSpace             : BeliefSpace<'k>
         Acceptance              : Acceptance<'k>
-        Influence               : Influence<'k>
         Update                  : Update<'k>
+        Influence               : Influence<'k>
+        Population              : Population<'k>
+        Network                 : Network<'k>
         Fitness                 : Fitness
         Comparator              : Comparator
     }

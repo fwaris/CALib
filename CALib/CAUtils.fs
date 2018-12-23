@@ -245,3 +245,11 @@ let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
     let maxFit = currentFit |> PSeq.max
     let scaler = scaler target (minFit,maxFit) 
     currentFit |> Array.Parallel.map scaler  //scale fitness to target range
+
+///default population influence function
+let defaultInfluence beliefSpace pop =
+    let ksMap = flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let pop =
+        pop
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
+    pop

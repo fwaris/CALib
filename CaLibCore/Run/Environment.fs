@@ -17,11 +17,10 @@ let defaultMaxBest = 2
 let SEG_RAD = 2
 
 
-let inline makeCA fitness comparator pop bspace kd influence network =
+let inline makeCA fitness comparator pop bspace influence network =
         {
             Population           = pop
             Network              = network
-            KnowlegeDistribution = kd
             BeliefSpace          = bspace
             Acceptance           = CARunner.acceptance 0.25 comparator
             Influence            = influence

@@ -18,7 +18,7 @@ open Tracing
 open TraceCharts
 open System
 
-let parmDefs = 
+let parms = 
     [|
         F(0.,-1.,1.) // x
         F(0.,-1.,1.) // y
@@ -39,77 +39,40 @@ let background =
     initBg.Save f
     f
 
-let comparator  = CAUtils.Maximize
-
-//let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
-let bsp fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-let inline createPop bsp parms init = CAUtils.createPop (init bsp) parms 72 true
-
-let kdIpdCA vmx ftnss cmprtr parmDefs  = 
-    let b = bsp ftnss parmDefs cmprtr
-    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDIPDGame.initKS
-    let ada = KDIPDGame.Geometric(0.9,0.01)
-    let kd,inf = ipdKdist Domain ada vmx cmprtr pop 
-    makeCA ftnss cmprtr pop b kd inf
-
-let kdWeightedCA f c p  = 
-    let bsp = bsp f p c
-    let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
-    let pop = createPop bsp p CAUtils.baseKsInit
-    makeCA f c pop bsp (wtdMajorityKdist c ksSet) KDWeightedMajority.wtdMajorityInfluence
-
-let kdShCA ftnss cmprtr parmDefs =
-    let b = bsp ftnss parmDefs cmprtr
-    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDStagHunt.initKS
-    let kd = KDStagHunt.knowledgeDist None 5 cmprtr b pop
-    makeCA ftnss cmprtr pop b kd KDStagHunt.shInfluence
-
-let kdStkCA ftnss cmprtr parmDefs =
-    let b = bsp ftnss parmDefs cmprtr
-    let pop = createPop b parmDefs CAUtils.baseKsInit |> KDStackelberg.initKS
-    let kd = KDStackelberg.knowledgeDist cmprtr
-    makeCA ftnss cmprtr pop b kd KDStackelberg.stkInfluence
+let kdWeightedCA    = kdWeightedCA (basePop parms fitness) parms fitness
+let kdIpdCA         = kdIpdCA (basePop parms fitness) parms fitness
+let kdSchCA         = kdSchelligCA (basePop parms fitness) parms fitness
+let kdShCA          = shCA (basePop parms fitness) parms fitness
+let kdStkCA         = kdStkCA (basePop parms fitness) parms fitness
 
 let inline sqr x = x * x
 
-//dispersion between parms of two individuals
-let disp (p1:float[]) (p2:float[]) =
-    (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
-    |> sqrt
+////dispersion between parms of two individuals
+//let disp (p1:float[]) (p2:float[]) =
+//    (0.,p1,p2) |||> Array.fold2 (fun acc p1 p2 -> acc + sqr (p1 - p2))
+//    |> sqrt
 
-//pop dispersion 
-let dispPop (pop:Population<_>) (network:Network<_>) =
-    let n = network pop 0
-    let esum = 
-        (0.,pop) 
-        ||> Array.fold (fun acc indv -> 
-            (acc,network pop indv.Id) 
-            ||> Array.fold(fun acc n -> disp indv.Parms n.Parms))
-    let st = esum / float n.Length
-    st
+////pop dispersion 
+//let dispPop (pop:Population<_>) (network:Network<_>) =
+//    let n = network pop 0
+//    let esum = 
+//        (0.,pop) 
+//        ||> Array.fold (fun acc indv -> 
+//            (acc,network pop indv.Id) 
+//            ||> Array.fold(fun acc n -> disp indv.Parms n.Parms))
+//    let st = esum / float n.Length
+//    st
 
 let step envChanged st = CARunner.step envChanged st 2
 
-let vmx = (0.2, 0.9)
+let fClrIpd ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
+let fClrStk ((k,_):KDStackelberg.StkKnowledge) = Viz.brgColors.[Viz.ks k]
+let fClrSh ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
 
-
-//let startCA = kdIpdCA vmx fitness comparator parmDefs defaultNetwork
-//let fClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
-//let fSeg = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)
-
-let startCA = kdShCA fitness comparator parmDefs defaultNetwork
-let fClr ((k,_):KDStagHunt.ShKnowledge) = Viz.brgColors.[Viz.ks k]
-let fSeg = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
-
-//let startCA = kdStkCA fitness comparator parmDefs defaultNetwork
-//let fClr ((k,_):KDStackelberg.StkKnowledge) = Viz.brgColors.[Viz.ks k]
-//let fSeg = (fun (x:Individual<KDStackelberg.StkKnowledge>) -> Social.ksNum (fst x.KS))
-
-//let startCA = kdWeightedCA fitness comparator parmDefs defaultNetwork
-//let fClr = Viz.clrKnowledge
-//let fSeg = Social.baseSeg
-
-
+//let startCA,primKS,fClr = kdWeightedCA,KDWeightedMajority.primKS,Viz.clrKnowledge
+//let startCA,primKS,fClr = kdIpdCA,KDIPDGame.primKS,fClrIpd
+let startCA,primKS,fClr = kdShCA,KDStagHunt.primKS,fClrSh
+//let startCA,primKS,fClr = kdStkCA,KDStackelberg.primKS,fClrStk
 
 let startStep = {CA=startCA; Best=[]; Count=0; Progress=[]}
 
@@ -204,7 +167,7 @@ let postObs() =
                   (1.0 / float Social.ksSegments.Length)            //proportion of each segment or group at start
                   Social.ksSegments                                 //list of segments
                   st.Value.CA                                       //current state of CA
-                  fSeg
+                  (segF primKS)
     let minDist = st.Value.CA.Population |> Array.map (fun i-> Array.zip i.Parms maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt) |> Array.min
     fpMaxCone (maxCone.Value.H)
     if st.Value.Best.IsEmpty |> not then fpMax  st.Value.Best.[0].MFitness
@@ -217,7 +180,7 @@ let postObs() =
     do fpNorm dNorm
     do fpHist dHist
     do fpTopo dTopo
-    do fpDispersion (st.Value.Count,dispPop st.Value.CA.Population st.Value.CA.Network)
+    do fpDispersion (st.Value.Count,Social.diffusion st.Value.CA)
     do fpSeg dSeg
     do fbDfsn dfsn
     do fpDist minDist; printfn "d: %f" minDist
@@ -276,7 +239,11 @@ let changeEnvironment() =
         envChangedCount := !envChangedCount + 1
     }
 
-let ENV_CHANGE_COUNT = 200 //change environment after this many generations
+let ENV_CHANGE_COUNT = 100 //change environment after this many generations
+
+let printPop st =
+    let ps = (!st).CA.Population |> Array.take 10
+    ps |> Array.iter (fun i -> printfn "%d: %A - %A" i.Id (primKS i.KS) i.Parms)
 
 let run startStep =
     let go = ref true
@@ -291,7 +258,9 @@ let run startStep =
                 true
               else 
                 false
+            if envCh then printPop st
             st := step envCh !st
+            if envCh then printPop st
             let (bfit,gb) = best !st
             let dist = Array.zip gb maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
             //fpDist dist

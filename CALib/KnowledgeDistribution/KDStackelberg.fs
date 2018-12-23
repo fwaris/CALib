@@ -12,6 +12,8 @@ type Action = W seq //each player plays fitness
 type Payout = Action
 
 let MAX_RETAIN = 20
+
+let primKS (k:StkKnowledge) = fst k
     
 let updatePop sign (pop:Population<StkKnowledge>) (payouts:Payout array) : Population<StkKnowledge> = 
 
@@ -69,24 +71,6 @@ let payoff  _ indv indvActn (nhbrActns:Action seq) : Payout =
     let natcs = nhbrActns |> Seq.collect (fun x->x) |> Seq.filter (fun (_,nid,_,_) -> indv.Id=nid)
     seq {yield (indv.Id,indv.Id,fst indv.KS,indv.Fitness); yield! natcs}
 
-let rec outcome  cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
-    let cmp = if cmprtr 1. 0. then 1.0 else -1.
-    let pop' = updatePop cmp pop payouts
-    pop',
-    beliefSpace,
-    {
-        Play = play
-        Payoff = payoff
-        Outcome = outcome
-    }
-    
-let game () =
-    {
-        Play = play
-        Payoff = payoff
-        Outcome = outcome 
-    }
-
 let influenceLevels =
     dict
         [
@@ -98,18 +82,8 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let initKS (pop:Population<Knowledge>) : Population<StkKnowledge> = 
-    pop 
-    |> Array.Parallel.map (fun indv -> 
-        {
-            Id = indv.Id
-            Fitness = indv.Fitness
-            Parms = indv.Parms
-            KS=indv.KS,0
-        })
-
-let stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
-    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+let private stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
@@ -126,6 +100,35 @@ let stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
             p)
     pop 
 
-let knowledgeDist comparator =
+let rec outcome  cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+    let cmp = if cmprtr 1. 0. then 1.0 else -1.
+    let pop = updatePop cmp pop payouts
+    let pop = stkInfluence beliefSpace pop
+    pop,
+    beliefSpace,
+    {
+        Play = play
+        Payoff = payoff
+        Outcome = outcome
+    }
+    
+let game () =
+    {
+        Play = play
+        Payoff = payoff
+        Outcome = outcome 
+    }
+
+let initKS (pop:Population<Knowledge>) : Population<StkKnowledge> = 
+    pop 
+    |> Array.Parallel.map (fun indv -> 
+        {
+            Id = indv.Id
+            Fitness = indv.Fitness
+            Parms = indv.Parms
+            KS=indv.KS,0
+        })
+
+let influence =
     let g = game ()
-    KDContinousStrategyGame.knowledgeDist comparator g
+    KDContinousStrategyGame.influence g

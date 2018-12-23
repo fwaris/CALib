@@ -10,10 +10,8 @@ open FSharp.Control
 let initWTD basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
-    let kDist =
-        let ksSet = CAUtils.flatten bsp |> List.map (fun ks->ks.Type) |> set
-        KD(KDWeightedMajority.knowledgeDist ksSet 8 defaultComparator)
-    let ca = makeCA f defaultComparator pop bsp kDist KDWeightedMajority.wtdMajorityInfluence defaultNetwork
+    let influence = KDWeightedMajority.influence bsp 3
+    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     WtdSt (step,Community.basePrimKs)
 
@@ -21,8 +19,8 @@ let initWTD basePop f =
 let initSH basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let kDist = KDStagHunt.knowledgeDist None 5 defaultComparator bsp pop
-    let ca = makeCA f defaultComparator pop bsp kDist KDStagHunt.shInfluence defaultNetwork
+    let influence = KDStagHunt.influence None 5 bsp pop
+    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     ShSt (step,Community.fstPrimKs)
 
@@ -30,8 +28,8 @@ let initSH basePop f =
 let initSTK basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let kDist = KDStackelberg.knowledgeDist defaultComparator
-    let ca = makeCA f defaultComparator pop bsp kDist KDStackelberg.stkInfluence defaultNetwork
+    let influence = KDStackelberg.influence
+    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     StkSt (step,Community.fstPrimKs)
 
@@ -39,11 +37,11 @@ let initSTK basePop f =
 let initIPD basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> KDIPDGame.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let kDist,inflnc = 
+    let influence = 
         let ada = KDIPDGame.Geometric(0.9,0.01)
         let vmx = (0.2, 0.9)
-        KDIPDGame.knowledgeDist Domain ada vmx defaultComparator pop
-    let ca = makeCA f defaultComparator pop bsp kDist inflnc defaultNetwork
+        KDIPDGame.influence Domain ada vmx defaultComparator pop
+    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     IpdSt (step,Community.gamePrimKs)
 
@@ -86,13 +84,13 @@ let runLandscapeGens rsc lndscpCfg =
             
             let! steps = lndscpCfg.Steps |> (runSteps lndscpCfg.EnvCh)
             let lndscpCfg = {lndscpCfg with Steps=steps; EnvCh=false}
-            let stats = lndscpCfg.Steps |> Array.map (statRec rsc lndscpCfg)
+            let stats = lndscpCfg.Steps |> Array.Parallel.map (statRec rsc lndscpCfg)
             return Some((stats,lndscpCfg),lndscpCfg)
     }
 
 let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
     async {
-        if lndscpCfg.Landscape > rsc.NumLandscapes then 
+        if lndscpCfg.Landscape >= rsc.NumLandscapes then 
             return None
         else
             let ws = changeEnv lndscpCfg.Ws
@@ -121,7 +119,7 @@ let runConfig rsc =
                 Ws        = ws
                 A         = a
                 Net       = n
-                Landscape = 1
+                Landscape = 0
                 SampleNum = i
                 EnvCh     = true
                 Steps     = initSteps rsc basePop f

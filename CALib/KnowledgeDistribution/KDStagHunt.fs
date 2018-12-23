@@ -8,8 +8,17 @@ type ShKnowledge = Knowledge*int
 type W = int*int*Knowledge*float
 type Action = W seq //each player plays fitness
 type Payout = Action
-type ShState = {InitialFitness:float[]; CoopGens:int; GensSinceInit: int; KSOrder:Knowledge[]; KSRange:float*float}
 
+let primKS (k:ShKnowledge) = fst k
+
+type ShState = 
+    {
+        FitnessAtInit   : float[]
+        GensSinceInit   : int
+        CoopGens        : int
+        KSOrder         : Knowledge[]
+        KSRange         : float*float
+    }
 
 let fitVal sign (_,_,_,f) = sign*f
 
@@ -20,36 +29,23 @@ let private sqr x = x * x
 let private std mean n xs = (xs |> Seq.map (fun x -> mean - x |> sqr) |> Seq.sum) / float n |> sqrt
 
 let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>) = 
-  let payout = payouts.[indv.Id]
-  let maxFit = payout |> Seq.maxBy (fitVal sign)
-  let minFit = payout |> Seq.minBy (fitVal sign)
+  let ind_pouts = payouts.[indv.Id]
+  let maxFit = ind_pouts |> Seq.maxBy (fitVal sign)
+  let minFit = ind_pouts |> Seq.minBy (fitVal sign)
   let toRange = fitVal sign minFit, fitVal sign maxFit
   let mn = fst toRange
   let mx = snd toRange
   if CAUtils.isValidNum mn && CAUtils.isValidNum mx && mn <> mx then
-      let scaledRank = CAUtils.scaler st.KSRange toRange (sign * indv.Fitness) 
+      let scaledRank = CAUtils.scaler st.KSRange toRange (sign * indv.Fitness) //rank individual among its peers (neighbors)
       let newKS = st.KSOrder.[int scaledRank |> min (st.KSOrder.Length - 1)]
       let _,c = indv.KS
       {indv with KS=newKS,c+1}
   else
       indv
 
-let updateIndv_CoopGen1  st sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>) = 
-  let payout = payouts.[indv.Id]
-  let fits  = payout |> Seq.map (fitVal sign)
-  let mean = Seq.average fits
-  let stdv = std mean (Seq.length fits) fits
-  let minFit = mean - (1.*stdv)
-  let maxFit = mean + (1.*stdv)
-  let indFit = (sign * indv.Fitness) |> max minFit |> min maxFit
-  let scaledRank = CAUtils.scaler st.KSRange (minFit,maxFit) indFit
-  let newKS = st.KSOrder.[int scaledRank]
-  let _,c = indv.KS
-  {indv with KS=newKS,c+1}
-
-let updateIndv_EvalGen st sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>)= 
-  if indv.Fitness * sign > st.InitialFitness.[indv.Id] * sign then
-    let ks,_ = indv.KS
+let updateIndv_EvalGen state sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>)= 
+  if indv.Fitness * sign > state.FitnessAtInit.[indv.Id] * sign then
+    //let ks,_ = indv.KS
     //{indv with KS=ks,0}
     indv
   else
@@ -69,7 +65,7 @@ let updatePop st cmprtr (pop:Population<ShKnowledge>) (payouts:Payout array) : P
     else
       pop |> Array.Parallel.map (updateIndv_CoopGen st cmprtr pop payouts)
 
-let play state _ (indv:Individual<_>) neighbors payoff : Action = 
+let play _ _ (indv:Individual<_>) neighbors payoff : Action = 
     neighbors |> Seq.map (fun p -> indv.Id,p.Id,fst indv.KS,indv.Fitness)
 
 let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout = 
@@ -81,40 +77,10 @@ let updateState state (pop:Population<ShKnowledge>) =
   if nextGen > state.CoopGens then
     {state with
       GensSinceInit = 0
-      InitialFitness = pop |> Array.map (fun i->i.Fitness)
+      FitnessAtInit = pop |> Array.map (fun i->i.Fitness)
     }
   else
     {state with GensSinceInit = nextGen}
-
-let rec outcome state cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
-    let cmp = if cmprtr 1. 0. then 1.0 else -1.0
-    let pop' = updatePop state cmp pop payouts
-    let genPlus = state.GensSinceInit + 1
-    let state = updateState state pop
-    pop',
-    beliefSpace,
-    {
-        Play = play state
-        Payoff = payoff state
-        Outcome = outcome state
-    }
-
-
-let game ksOrder ksSet coopGens (pop:Population<ShKnowledge>) =
-    
-    let state = 
-      {
-        InitialFitness = pop |> Array.map (fun i-> i.Fitness)
-        CoopGens = coopGens
-        GensSinceInit = 0
-        KSOrder = ksOrder |> Array.filter (fun k -> ksSet |> Set.contains k)
-        KSRange = (0.0,defaultKSOrder.Length - 1|>float)
-      }
-    {
-        Play = play state
-        Payoff = payoff state
-        Outcome = outcome state 
-    }
 
 let influenceLevels =
     dict
@@ -127,19 +93,8 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let initKS (pop:Population<Knowledge>) : Population<ShKnowledge> = 
-    pop 
-    |> Array.Parallel.map (fun indv -> 
-        {
-            Id = indv.Id
-            Fitness = indv.Fitness
-            Parms = indv.Parms
-            KS=indv.KS,0
-        })
-
-
-let shInfluence beliefSpace (pop:Population<ShKnowledge>) =
-    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+let private shInfluence _ beliefSpace (pop:Population<ShKnowledge>) =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
@@ -156,8 +111,47 @@ let shInfluence beliefSpace (pop:Population<ShKnowledge>) =
             p)
     pop 
 
-let knowledgeDist ksOrder coopGens comparator beliefSpace pop =
+let rec outcome state cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+    let cmp = if cmprtr 1. 0. then 1.0 else -1.0
+    let pop = updatePop state cmp pop payouts
+    let pop = shInfluence state beliefSpace pop
+    let state = updateState state pop
+    pop,
+    beliefSpace,
+    {
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state
+    }
+
+let game ksOrder ksSet coopGens (pop:Population<ShKnowledge>) =
+    
+    let state = 
+      {
+        FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
+        CoopGens = coopGens
+        GensSinceInit = 0
+        KSOrder = ksOrder |> Array.filter (fun k -> ksSet |> Set.contains k)
+        KSRange = (0.0,defaultKSOrder.Length - 1|>float)
+      }
+    {
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state 
+    }
+
+let initKS (pop:Population<Knowledge>) : Population<ShKnowledge> = 
+    pop 
+    |> Array.Parallel.map (fun indv -> 
+        {
+            Id = indv.Id
+            Fitness = indv.Fitness
+            Parms = indv.Parms
+            KS=indv.KS,0
+        })
+
+let influence ksOrder coopGens beliefSpace pop =
     let ksOrder = ksOrder |> Option.defaultValue defaultKSOrder
     let ksSet = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type) |> set //use only KS used in belief space
     let g = game ksOrder ksSet coopGens pop
-    KDContinousStrategyGame.knowledgeDist comparator g
+    KDContinousStrategyGame.influence g

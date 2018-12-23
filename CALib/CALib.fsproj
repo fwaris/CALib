@@ -73,7 +73,7 @@
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
-    <Compile Include="BeliefSpace\DomainKS2.fs" />
+    <Compile Include="BeliefSpace\DomainKS.fs" />
     <Compile Include="BeliefSpace\KMeans.fs" />
     <Compile Include="BeliefSpace\TopographicKS.fs" />
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
@@ -106,13 +106,6 @@
     <None Include="Testing\SocSeqViz.fsx" />
     <None Include="Testing\Trace.fsx" />
     <None Include="Testing\TraceDynamic.fsx" />
-    <None Include="Testing\StatsDynamic.fsx" />
-    <None Include="Testing\StatDynamicSeq.fsx" />
-    <None Include="Testing\DispIndex.fsx" />
-    <None Include="Testing\IPD_Weighted_Comparo.fsx" />
-    <None Include="Testing\TestIPDPerf.fsx" />
-    <None Include="Testing\TestDF1.fsx" />
-    <None Include="Testing\TestDF1Gen.fsx" />
     <None Include="Testing\TestCA3D.fsx" />
     <None Include="Testing\TestDomain.fsx" />
     <None Include="Testing\TestHistorical.fsx" />

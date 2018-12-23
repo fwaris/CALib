@@ -8,7 +8,7 @@ let defaultBeliefSpace parmDefs minmax fitness =
         Node (SituationalKS.create parmDefs minmax 15,
             [
                 Leaf (HistoricalKS.create parmDefs minmax 100)
-                Leaf (DomainKS2.create parmDefs minmax fitness)
+                Leaf (DomainKS.create parmDefs minmax fitness)
             ])
         Leaf (NormativeKS.create parmDefs minmax)
         Leaf (TopographicKS.create parmDefs minmax fitness)
@@ -46,14 +46,6 @@ let update envChanged beliefSpace bestInds  =
                                             Leaf ks
     update bestInds beliefSpace
 
-///default population influence function
-let baseInfluence beliefSpace pop =
-    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
-    let pop =
-        pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
-    pop
-
 let detectChange (fitness:Fitness) (best:Marker list) =
     if not Settings.isDynamic then
       false
@@ -68,31 +60,31 @@ let detectChange (fitness:Fitness) (best:Marker list) =
 let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
     let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
-    let best = 
+    let oldBest = 
         if envChanged then 
             match best with 
             | []   -> [] 
             | x::_ -> 
-                let f = ca.Fitness.Value x.MParms
+                let f = ca.Fitness.Value x.MParms //re-evaluate old best under new fitness landscape
                 [{x with MFitness=f}]
         else 
             best
     let newBest = 
-        match best,topInds with
-        | _ ,[||]   -> best
+        match oldBest,topInds with
+        | _ ,[||]   -> oldBest
         | [],is     -> [CAUtils.toMarker is.[0]]
-        | b::_,is when ca.Comparator is.[0].Fitness b.MFitness -> (CAUtils.toMarker is.[0]::best) |> List.truncate maxBest
-        | _         -> best
+        | b::_,is when ca.Comparator is.[0].Fitness b.MFitness -> (CAUtils.toMarker is.[0]::oldBest) |> List.truncate maxBest
+        | _         -> oldBest
     let blSpc           = ca.Update envChanged ca.BeliefSpace topInds
-    let fkdist          = match ca.KnowlegeDistribution with KD(k) -> k
-    let pop,blSpc,kdist = fkdist (pop,blSpc) ca.Network
-    let pop             = ca.Influence blSpc pop
+    let fInfluence      = match ca.Influence with Influence(k) -> k
+    let pop,blSpc,finf = fInfluence envChanged pop blSpc ca.Network ca.Fitness ca.Comparator 
+    //let pop             = ca.Influence blSpc pop
     {
         CA =
             {ca with
-                Population           = pop
-                BeliefSpace          = blSpc
-                KnowlegeDistribution = kdist
+                Population   = pop
+                BeliefSpace  = blSpc
+                Influence    = finf
             }
         Best = newBest
         Progress = newBest.[0].MFitness::p |> List.truncate 100

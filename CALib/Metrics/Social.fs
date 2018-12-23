@@ -42,8 +42,8 @@ let segregationAt radius prop segs ca seg indv =
 
 let segregation radius prop segs ca seg =
     ca.Population 
-    |> PSeq.map (segregationAt radius prop segs ca seg)
-    |> PSeq.average
+    |> Array.Parallel.map (segregationAt radius prop segs ca seg)
+    |> Array.average
 
 let rmseDist (a:Individual<_>) (b:Individual<_>) = 
   Array.zip a.Parms b.Parms 
@@ -60,5 +60,5 @@ let diffusionAt<'a> (ca:CA<'a>) (i:Individual<'a>) =
 
 let diffusion  (ca:CA<'a>) = 
     ca.Population 
-    |> PSeq.map (diffusionAt ca)
-    |> PSeq.average
+    |> Array.Parallel.map (diffusionAt ca)
+    |> Array.average

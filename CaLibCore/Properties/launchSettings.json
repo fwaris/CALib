@@ -2,7 +2,7 @@
   "profiles": {
     "CaLibCore": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Repos\\CALib\\CaLibCore\\bin\\Debug\\netcoreapp2.1\\Config.xml"
+      "commandLineArgs": "D:\\repodata\\calib\\dbg_cfg\\Config.xml"
     }
   }
 }

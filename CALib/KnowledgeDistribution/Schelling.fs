@@ -36,25 +36,6 @@ let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
     let natcs = nhbrActns |> Seq.collect (fun x->x) |> Seq.filter (fun (_,nid,_,_) -> indv.Id=nid)
     seq {yield (indv.Id,indv.Id,indv.KS,indv.Fitness); yield! natcs}
 
-let rec outcome state rule cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
-    let cmp = fun (x:float) -> if cmprtr 1. 0. then x else -x
-    let pop' = updatePop state rule cmp pop payouts
-    pop',
-    beliefSpace,
-    {
-        Play = play state
-        Payoff = payoff state
-        Outcome = outcome state rule
-    }
-
-let game rule (pop:Population<SchKs>) =
-    let state = {Indx=0}
-    {
-        Play = play state
-        Payoff = payoff state
-        Outcome = outcome state rule
-    }
-
 let influenceLevels =
     dict
         [
@@ -66,8 +47,8 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let ipdInfluence beliefSpace (pop:Population<SchKs>) =
-    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+let private schlInfluecne beliefSpace (pop:Population<SchKs>) =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
@@ -76,8 +57,28 @@ let ipdInfluence beliefSpace (pop:Population<SchKs>) =
             p)
     pop 
 
-let knowledgeDist rule comparator pop =
-    let g = game rule pop
-    KDContinousStrategyGame.knowledgeDist comparator g
+let rec outcome state rule cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+    let cmp = fun (x:float) -> if cmprtr 1. 0. then x else -x
+    let pop = updatePop state rule cmp pop payouts
+    let pop = schlInfluecne beliefSpace pop
+    pop,
+    beliefSpace,
+    {
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state rule
+    }
+
+let game rule =
+    let state = {Indx=0}
+    {
+        Play = play state
+        Payoff = payoff state
+        Outcome = outcome state rule
+    }
+
+let influence rule =
+    let g = game rule
+    KDContinousStrategyGame.influence g
 
 

@@ -15,6 +15,8 @@ type W = Set<Id> * float
 type Action = W list
 type Payout = Action
 
+let primKS ({KS=ks;Level=_},_) = ks
+
 //for logging
 open TracingGame
 let obsNetW,fpNetW = Observable.createObservableAgent<SG<IpdKS>> Tracing.cts.Token
@@ -30,9 +32,9 @@ type IpdState =
         SumDiversity    : float
         Gen             : int
         NormalizedFit   : float array
+        PrevNrmlzdFit   : float array
         VMin            : float
         VMax            : float
-        P1Fit           : float array
         Stability       : float array
         KSCount         : Map<Knowledge,float>
         KSAdjust        : Ada 
@@ -107,7 +109,7 @@ let cooperation
     let d = parmDiversity indv.Parms neighbor.Parms / state.SumDiversity  //normalize diversity
     let fNbr = state.NormalizedFit.[neighbor.Id]
     let fI = state.NormalizedFit.[indv.Id]
-    let pf1I = state.P1Fit.[indv.Id]
+    let pf1I = state.PrevNrmlzdFit.[indv.Id]
     let stability = state.Stability.[indv.Id]
     let ({KS=ksI;Level=_},md) = indv.KS
     let ({KS=ksN;Level=_},_) = neighbor.KS
@@ -158,14 +160,13 @@ let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
 
 let other i s = if Set.minElement s = i then Set.maxElement s else Set.minElement s
 
-let prmryKS ({KS=ks;Level=_},_) = ks
 
 let updtScndryKS (pop:Population<IpdKS>) payout indv =
     let ksw = 
         payout 
         |> List.map (fun (idSet,f) ->  //set<id>, float [0-2]
             let nhbrId = other indv.Id idSet
-            let pks = prmryKS pop.[nhbrId].KS
+            let pks = primKS pop.[nhbrId].KS
             pks,f / 2.)    //payout is in range [0., 2.] so normalize to max 1.0
         |> List.groupBy fst
         |> List.map (fun (ks,fs)->
@@ -184,8 +185,8 @@ let removeExpScndryKS state primaryKS m = if isExplorative state primaryKS then 
 
 let logI st newKs indv = 
     let ps = indv.Parms 
-    let pksOld = prmryKS indv.KS
-    let pksNew = prmryKS newKs
+    let pksOld = primKS indv.KS
+    let pksNew = primKS newKs
     {id=indv.Id; x=ps.[0]; y=ps.[1]; ks=pksNew; ksp=pksOld; gen=st.Gen; fit=indv.Fitness;} 
     |> MIndv |> fpGame
 
@@ -242,12 +243,32 @@ let updatePop st vmx cmprtr (pop:Population<IpdKS>) (payouts:Payout array) =
     )
     pop
 
+let private ipdInfluence state beliefSpace (pop:Population<IpdKS>) =
+    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
+    let pop =
+        pop
+        |> Array.Parallel.map (fun p -> 
+        //|> Array.map (fun p -> 
+            let {KS=mainKS;Level=lvl},otherKs = p.KS
+            let beforeP = Array.copy p.Parms
+            let p = ksMap.[mainKS].Influence lvl p
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k <> state.ExploitativeKS then ksMap.[k].Influence w p else p) //explorative ks go first
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k = state.ExploitativeKS then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
+            //if p.Parms = [|1.0; 1.0|] then
+            //  let ps = p.Parms
+            //  ()
+            p)
+    //let oneP = pop |> Array.filter (fun i->i.Parms =[| 1.0; 1.0 |]) |> Array.length
+    //let zeroP = pop |> Array.filter (fun i->i.Parms =[| 0.0; 0.0 |]) |> Array.length
+    //printfn "1=%d; 0=%d; t=%d" oneP zeroP pop.Length
+    pop 
+
 let createState exploitativeKS ksAdjust gen stability prevFitOpt (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
     let nrmlzdFit = normalizePopFitness (0., 1.0) cmprtr pop
     let ksc = 
         pop 
 //        |> Seq.collect(fun i-> let ({KS=ks;Level=l},m) = i.KS in (ks,l)::(Map.toList m))  
-        |> Seq.map(fun i-> let pks = prmryKS i.KS in pks,1.0)  
+        |> Seq.map(fun i-> let pks = primKS i.KS in pks,1.0)  
         |> Seq.groupBy fst 
         |> Seq.map (fun (k,xs)->k, xs |>Seq.sumBy snd)
     let totalKsc = ksc |> Seq.sumBy snd
@@ -257,7 +278,7 @@ let createState exploitativeKS ksAdjust gen stability prevFitOpt (vmin,vmax) cmp
         NormalizedFit = nrmlzdFit
         VMin = vmin
         VMax = vmax
-        P1Fit = match prevFitOpt with Some (f,_) -> f | None -> nrmlzdFit
+        PrevNrmlzdFit = match prevFitOpt with Some (f,_) -> f | None -> nrmlzdFit
         Stability = stability
         KSCount = ksc
         Gen = gen + 1
@@ -271,15 +292,19 @@ let updateStability f = function
 
 //let logNetwork popSz state (payouts:Payout array) = TracingGame.fpNetW({popSz, state.VMin,payouts)
 
+
 let rec outcome state cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop' = updatePop state vmx cmprtr pop payouts
-    let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (prmryKS pop'.[i].KS, prmryKS pop.[i].KS))
-    let state = createState state.ExploitativeKS state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.P1Fit)) vmx cmprtr pop'
+    let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (primKS pop'.[i].KS, primKS pop.[i].KS))
+    let pop = ipdInfluence state beliefSpace pop'
+    let state = createState state.ExploitativeKS state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.PrevNrmlzdFit)) vmx cmprtr pop
   
+    #if _LOG_
     fpNetW {Pop=pop';Net=network; Vmin=state.VMin; Links=payouts}
+    #endif
 
-    pop',
+    pop,
     beliefSpace,
     {
         Play = play state
@@ -306,27 +331,7 @@ let game exploitativeKS ksAdjust  (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
         Outcome = outcome state
     }
 
-let private ipdInfluence explotiativeKs beliefSpace (pop:Population<IpdKS>) =
-    let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
-    let pop =
-        pop
-        |> Array.Parallel.map (fun p -> 
-        //|> Array.map (fun p -> 
-            let {KS=mainKS;Level=lvl},otherKs = p.KS
-            let beforeP = Array.copy p.Parms
-            let p = ksMap.[mainKS].Influence lvl p
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k <> explotiativeKs then ksMap.[k].Influence w p else p) //explorative ks go first
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k = explotiativeKs then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
-            //if p.Parms = [|1.0; 1.0|] then
-            //  let ps = p.Parms
-            //  ()
-            p)
-    //let oneP = pop |> Array.filter (fun i->i.Parms =[| 1.0; 1.0 |]) |> Array.length
-    //let zeroP = pop |> Array.filter (fun i->i.Parms =[| 0.0; 0.0 |]) |> Array.length
-    //printfn "1=%d; 0=%d; t=%d" oneP zeroP pop.Length
-    pop 
-
-let knowledgeDist exploitativeKs ksAdjust (vmin,vmax) comparator pop =
+let influence exploitativeKs ksAdjust (vmin,vmax) comparator pop =
     let g = game exploitativeKs ksAdjust (vmin,vmax)  comparator pop
-    KDContinousStrategyGame.knowledgeDist comparator g, ipdInfluence exploitativeKs
+    KDContinousStrategyGame.influence g
 

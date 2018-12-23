@@ -35,10 +35,18 @@ let private locallyWeightedMajority comparator (indv,friends:Individual<Knowledg
     let kd,_ = nrmlzdCnts |> Array.maxBy snd
     {indv with KS = kd}
 
-let rec knowledgeDist comparator (pop,b) network =
+let rec influence
+    envCh
+    pop
+    beliefSpace
+    network
+    fitness
+    cmprtr
+    =
     let pop =
         pop
         |> Array.Parallel.map (fun ind -> 
             (ind,network pop ind.Id) 
-            |> locallyWeightedMajority comparator)
-    pop,b,KD(knowledgeDist comparator)
+            |> locallyWeightedMajority cmprtr)
+    let pop = CAUtils.defaultInfluence beliefSpace pop   
+    pop,beliefSpace,Influence(influence)

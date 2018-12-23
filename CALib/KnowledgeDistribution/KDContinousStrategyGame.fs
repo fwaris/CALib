@@ -38,10 +38,13 @@ let playGame cmprtr play payoff (network:Network<_>) pop indv =
     action
 
 let rec private csStrategy 
-    cmprtr
     game 
-    (pop,beliefSpace)
-    (network:Network<_>) 
+    envCh
+    pop
+    beliefSpace
+    network
+    fitness
+    cmprtr
     =
     let actions = 
         pop 
@@ -59,7 +62,7 @@ let rec private csStrategy
             game.Payoff cmprtr indv indvActn  nhbrActns)
 
     let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace,network) payoffs
-    pop,beliefSpace,KD(csStrategy cmprtr game)
+    pop,beliefSpace,Influence(csStrategy game)
 
-let knowledgeDist comparator gameConfig =
-    KD(csStrategy comparator gameConfig)
+let influence gameConfig =
+    Influence(csStrategy gameConfig)
