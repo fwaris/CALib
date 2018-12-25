@@ -57,7 +57,7 @@ let private schlInfluecne beliefSpace (pop:Population<SchKs>) =
             p)
     pop 
 
-let rec outcome state rule cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state rule envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = fun (x:float) -> if cmprtr 1. 0. then x else -x
     let pop = updatePop state rule cmp pop payouts
     let pop = schlInfluecne beliefSpace pop

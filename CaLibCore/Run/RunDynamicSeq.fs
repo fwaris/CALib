@@ -19,7 +19,7 @@ let initWTD basePop f =
 let initSH basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStagHunt.influence None 5 bsp pop
+    let influence = KDStagHunt.influence defaultComparator 5 bsp pop
     let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     ShSt (step,Community.fstPrimKs)

@@ -76,6 +76,7 @@
     <Compile Include="BeliefSpace\DomainKS.fs" />
     <Compile Include="BeliefSpace\KMeans.fs" />
     <Compile Include="BeliefSpace\TopographicKS.fs" />
+    <Compile Include="KnowledgeDistribution\MetaLrn.fs" />
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />

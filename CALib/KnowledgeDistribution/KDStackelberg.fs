@@ -100,7 +100,7 @@ let private stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
             p)
     pop 
 
-let rec outcome  cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = if cmprtr 1. 0. then 1.0 else -1.
     let pop = updatePop cmp pop payouts
     let pop = stkInfluence beliefSpace pop

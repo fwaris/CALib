@@ -20,7 +20,8 @@ type Play<'action,'payout,'k> =
         -> 'action
 
 type Outcome<'action,'payout,'k> = 
-    Comparator
+    bool //env changed
+        -> Comparator
         -> Population<'k> * BeliefSpace<'k> * Network<'k>
         -> 'payout array 
         ->  Population<'k> * BeliefSpace<'k> * CSGame<'action,'payout,'k>
@@ -61,7 +62,7 @@ let rec private csStrategy
                 |> Seq.ofArray
             game.Payoff cmprtr indv indvActn  nhbrActns)
 
-    let pop,beliefSpace,game = game.Outcome cmprtr (pop,beliefSpace,network) payoffs
+    let pop,beliefSpace,game = game.Outcome envCh cmprtr (pop,beliefSpace,network) payoffs
     pop,beliefSpace,Influence(csStrategy game)
 
 let influence gameConfig =

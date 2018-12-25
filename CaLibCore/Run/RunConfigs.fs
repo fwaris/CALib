@@ -55,7 +55,7 @@ let createJobs() =
              {
                   SaveFolder    = fnOut
                   KDs            = k
-                  PopulationSize = 360
+                  PopulationSize = 72
                   NumCones      = 500
                   RunToMax      = true
                   CalcSocMetrics = true

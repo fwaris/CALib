@@ -3,6 +3,10 @@
 
 open CA
 open KDContinousStrategyGame
+open MetaLrn
+
+let ksOrder1 = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
+let ksOrder2 = [|Topgraphical; Normative; Historical; Situational; Domain|]
 
 type ShKnowledge = Knowledge*int
 type W = int*int*Knowledge*float
@@ -11,19 +15,30 @@ type Payout = Action
 
 let primKS (k:ShKnowledge) = fst k
 
+type KSOrder = {Order:Knowledge[]; Range:float*float}
+
 type ShState = 
     {
         FitnessAtInit   : float[]
         GensSinceInit   : int
         CoopGens        : int
-        KSOrder         : Knowledge[]
-        KSRange         : float*float
+        Schemes          : MLState<KSOrder>
+        Current         : KSOrder
+    }
+
+let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
+    let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
+    let policies = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
+    let schemes = MetaLrn.initML cmprtr policies
+    {
+        FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
+        CoopGens = coopGens
+        GensSinceInit = 0
+        Schemes = schemes
+        Current = MetaLrn.currentScheme schemes
     }
 
 let fitVal sign (_,_,_,f) = sign*f
-
-//let defaultKSOrder = [|Topgraphical; Normative; Historical; Situational; Domain|]
-let defaultKSOrder = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
 
 let private sqr x = x * x
 let private std mean n xs = (xs |> Seq.map (fun x -> mean - x |> sqr) |> Seq.sum) / float n |> sqrt
@@ -36,8 +51,9 @@ let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[])
   let mn = fst toRange
   let mx = snd toRange
   if CAUtils.isValidNum mn && CAUtils.isValidNum mx && mn <> mx then
-      let scaledRank = CAUtils.scaler st.KSRange toRange (sign * indv.Fitness) //rank individual among its peers (neighbors)
-      let newKS = st.KSOrder.[int scaledRank |> min (st.KSOrder.Length - 1)]
+      let order = st.Current
+      let scaledRank = CAUtils.scaler order.Range toRange (sign * indv.Fitness) //rank individual among its peers (neighbors)
+      let newKS = order.Order.[int scaledRank |> min (order.Order.Length - 1)]
       let _,c = indv.KS
       {indv with KS=newKS,c+1}
   else
@@ -111,7 +127,20 @@ let private shInfluence _ beliefSpace (pop:Population<ShKnowledge>) =
             p)
     pop 
 
-let rec outcome state cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+    let state = 
+        if envCh then 
+            let schemes = MetaLrn.regimeChanged state.Schemes
+            let curr = MetaLrn.currentScheme schemes
+            { state with 
+                Schemes = schemes
+                Current = curr
+            }
+        else
+            let schemes = MetaLrn.updateRegime state.Schemes pop
+            { state with
+                Schemes = schemes
+            }
     let cmp = if cmprtr 1. 0. then 1.0 else -1.0
     let pop = updatePop state cmp pop payouts
     let pop = shInfluence state beliefSpace pop
@@ -124,16 +153,7 @@ let rec outcome state cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
         Outcome = outcome state
     }
 
-let game ksOrder ksSet coopGens (pop:Population<ShKnowledge>) =
-    
-    let state = 
-      {
-        FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
-        CoopGens = coopGens
-        GensSinceInit = 0
-        KSOrder = ksOrder |> Array.filter (fun k -> ksSet |> Set.contains k)
-        KSRange = (0.0,defaultKSOrder.Length - 1|>float)
-      }
+let game state =    
     {
         Play = play state
         Payoff = payoff state
@@ -150,8 +170,8 @@ let initKS (pop:Population<Knowledge>) : Population<ShKnowledge> =
             KS=indv.KS,0
         })
 
-let influence ksOrder coopGens beliefSpace pop =
-    let ksOrder = ksOrder |> Option.defaultValue defaultKSOrder
+let influence cmprtr coopGens beliefSpace pop =
     let ksSet = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type) |> set //use only KS used in belief space
-    let g = game ksOrder ksSet coopGens pop
+    let state = initState cmprtr ksSet coopGens pop
+    let g = game state
     KDContinousStrategyGame.influence g

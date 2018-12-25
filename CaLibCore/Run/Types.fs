@@ -28,36 +28,6 @@ type NetId = Square | Hexagon | Octagon
 //type RunId = {Id:string; SampleNum:int; Net:NetId; A:float}
 type WorldState = {W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
-type GenStats = 
-    {
-        KD              : string
-        A               : float
-        Sample          : int
-        LandscapeNum    : int
-        GenCount        : int
-        Net             : string
-        Max             : float
-        Seg             : float
-        Dffsn           : float
-        IndvSeg         : float[]
-        IndvDfsn        : float[]
-        IndvKs          : int[]
-    }
-
-//type RunStep<'k> =
-//    {
-//        KD        : string
-//        A         : float
-//        PrimKS    : 'k->Knowledge
-//        Ws        : WorldState
-//        EnvCh     : bool
-//        Step      : TimeStep<'k>
-//        Landscape : int
-//        SampleNum : int
-//        StrWComm  : StreamWriter
-//        //StrWRun   : StreamWriter
-//    }
-
 type Step = 
     | WtdSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
     | IpdSt of TimeStep<KDIPDGame.IpdKS> * (KDIPDGame.IpdKS->Knowledge)
@@ -74,5 +44,22 @@ type LandscapeConfig =
     EnvCh     : bool
     Steps     : Step array
   }
+
+type GenStats = 
+    {
+        KD              : string
+        A               : float
+        Sample          : int
+        LandscapeNum    : int
+        GenCount        : int
+        Net             : string
+        Best            : float
+        Max             : float
+        Seg             : float
+        Dffsn           : float
+        IndvSeg         : float[]
+        IndvDfsn        : float[]
+        IndvKs          : int[]
+    }
 
 

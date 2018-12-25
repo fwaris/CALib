@@ -77,7 +77,8 @@ let statRec rsc lndscpCfg step =
         GenCount=genCount lndscpCfg
         Seg=seg
         Dffsn=dffsn
-        Max=stepBestFitness step
+        Best=stepBestFitness step
+        Max=lndscpCfg.Ws.M.H
         Net=sprintf "%A" lndscpCfg.Net
         IndvSeg = iSeg
         IndvDfsn = iDffsn
@@ -89,19 +90,19 @@ let initStatFile rsc fileName =
     let path = Path.Combine(rsc.SaveFolder,fileName)
     if File.Exists path |> not then 
         use fn = new StreamWriter(File.OpenWrite(path))
-        fn.WriteLine("Sample\tKD\tLandscapeNum\tA\tGenCount\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS")
+        fn.WriteLine("Sample\tKD\tLandscapeNum\tA\tGenCount\tBest\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS")
 
-let writeStats rsc fileName ls =
+let writeStats rsc fileName gs =
     let path = Path.Combine(rsc.SaveFolder,fileName)
     use fn = File.AppendText(path)
     let line = 
-        sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%s" 
-            ls.Sample ls.KD ls.LandscapeNum ls.A ls.GenCount ls.Max ls.Seg ls.Dffsn ls.Net
+        sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%f\t%s" 
+            gs.Sample gs.KD gs.LandscapeNum gs.A gs.GenCount gs.Best gs.Max gs.Seg gs.Dffsn gs.Net
     fn.Write(line)
     fn.Write("\t")
-    ls.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    gs.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
     fn.Write("\t")
-    ls.IndvDfsn |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    gs.IndvDfsn |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
     fn.Write("\t")
-    ls.IndvKs |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
+    gs.IndvKs |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))
     fn.WriteLine()

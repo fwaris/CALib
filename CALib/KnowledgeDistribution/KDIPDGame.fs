@@ -293,7 +293,7 @@ let updateStability f = function
 //let logNetwork popSz state (payouts:Payout array) = TracingGame.fpNetW({popSz, state.VMin,payouts)
 
 
-let rec outcome state cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
+let rec outcome state envCh cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
     let pop' = updatePop state vmx cmprtr pop payouts
     let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (primKS pop'.[i].KS, primKS pop.[i].KS))
