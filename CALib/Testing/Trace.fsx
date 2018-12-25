@@ -59,8 +59,8 @@ let kdStkCA         = kdStkCA (basePop parms fitness) parms fitness
 
 //let startCA,primKS = kdWeightedCA,KDWeightedMajority.primKS
 //let startCA,primKS = kdIpdCA,KDIPDGame.primKS
-//let startCA,primKS = kdShCA,KDStagHunt.primKS
-let startCA,primKS = kdStkCA,KDStackelberg.primKS
+let startCA,primKS = kdShCA,KDStagHunt.primKS
+//let startCA,primKS = kdStkCA,KDStackelberg.primKS
 
 let inline sqr x = x * x
 

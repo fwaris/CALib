@@ -93,7 +93,7 @@ let kdIpdCA basePop parmDefs fitness  =
 let shCA basePop parmDefs fitness = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
     let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStagHunt.influence None 5 bsp pop
+    let influence = KDStagHunt.influence defaultComparator 5 bsp pop
     makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
 let kdStkCA basePop parmDefs fitness  = 

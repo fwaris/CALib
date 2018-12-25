@@ -49,7 +49,7 @@ let updateRegime mlState (pop:Population<_>) =
     { mlState with Regimes=regime::rest}
 
 let roundRobbinRegime state = 
-    let idx = (List.head state.Regimes).Scheme + 1 % state.Schemes.Count
+    let idx = ((List.head state.Regimes).Scheme + 1) % state.Schemes.Count
     let scheme = state.Schemes.[idx]
     let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
     let rgm = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=idx}
@@ -60,17 +60,23 @@ let roundRobbinRegime state =
 let perfBasedRegime state =
     let wtdSchms = 
         state.Regimes 
-        |> List.map(fun r -> r.Scheme, float r.GensToBest / float r.RegimeGens) 
+        |> List.filter (fun r->r.RegimeGens > 0)
+        |> List.map (fun r -> r.Scheme, abs(1.0 - ( float r.GensToBest / float r.RegimeGens))) 
         |> List.groupBy fst
         |> List.map (fun (s,xs) -> s,xs |> List.averageBy snd)
         |> List.toArray
-    let (_,wheel) = Probability.createWheel wtdSchms
-    let idx = Probability.spinWheel wheel
-    let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
-    let rgm = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=idx}
-    { state with
-        Regimes = rgm::state.Regimes
-    }
+    if wtdSchms.Length = 0 then
+        printfn "wtdSchms empty"
+        roundRobbinRegime state
+    else
+        let (_,wheel) = Probability.createWheel wtdSchms
+        let idx = Probability.spinWheel wheel
+        printfn "wtdSchms %A" wtdSchms
+        let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+        let rgm = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=idx}
+        { state with
+            Regimes = rgm::state.Regimes
+        }
 
 let regimeChanged state = 
     if state.Regimes.Length < WARM_UP

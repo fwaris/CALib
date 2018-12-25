@@ -245,6 +245,8 @@ let printPop st =
     let ps = (!st).CA.Population |> Array.take 10
     ps |> Array.iter (fun i -> printfn "%d: %A - %A" i.Id (primKS i.KS) i.Parms)
 
+let ENVCH_MAX = 20
+
 let run startStep =
     let go = ref true
     async {
@@ -252,7 +254,7 @@ let run startStep =
             do! Async.Sleep 250
             //TODO: detect change from indv performance - change in fitness for same location at different gen
             let envCh =
-              if st.Value.Count > 0 && st.Value.Count % ENV_CHANGE_COUNT = 0 && !envChangedCount < 4 then
+              if st.Value.Count > 0 && st.Value.Count % ENV_CHANGE_COUNT = 0 && !envChangedCount < ENVCH_MAX then
                 changeEnvironment() |> Async.RunSynchronously
                 printf "env changed"
                 true
@@ -266,7 +268,7 @@ let run startStep =
             //fpDist dist
             let solFound = dist < 0.001
             if solFound then 
-                if !envChangedCount >= 4 then
+                if !envChangedCount >= ENVCH_MAX then
                   go := false
                   let m = new Mat(Size(512,512), MatType.CV_8UC3)
                   m |> Viz.visualizePopHex 512 fClr  st.Value.CA.Network st.Value.CA.Population
