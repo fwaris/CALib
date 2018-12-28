@@ -25,6 +25,7 @@
     <Compile Include="..\CALib\BeliefSpace\KMeans.fs" Link="BeliefSpace\KMeans.fs" />
     <Compile Include="..\CALib\BeliefSpace\TopographicKS.fs" Link="BeliefSpace\TopographicKS.fs" />
     <Folder Include="KnowledgeDistribution\" />
+    <Compile Include="..\CALib\KnowledgeDistribution\MetaLrn2.fs" Link="KnowledgeDistribution\MetaLrn2.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\MetaLrn.fs" Link="KnowledgeDistribution\MetaLrn.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDSimpleMajority.fs" Link="KnowledgeDistribution\KDSimpleMajority.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDLocallyWeightedMajority.fs" Link="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />

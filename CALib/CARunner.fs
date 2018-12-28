@@ -91,6 +91,18 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
         Count = c + 1
     }
 
+let DEFAULT_ENV_CHANGE_EPSILON = 0.000001
+
+//step function for dynamic environments
+let dynStep envChangeEpsilon timeStep maxBest = 
+    match timeStep.Best with
+    | [] -> step false timeStep maxBest
+    | x::_->
+        let prevFit = x.MFitness
+        let newFit = timeStep.CA.Fitness.Value x.MParms
+        let envCh =  abs(newFit - prevFit) > envChangeEpsilon
+        step envCh timeStep maxBest
+
 ///run till termination
 let run desc termination maxBest ca =
     let rec loop stp = 

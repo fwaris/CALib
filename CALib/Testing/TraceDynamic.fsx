@@ -183,7 +183,7 @@ let postObs() =
     do fpDispersion (st.Value.Count,Social.diffusion st.Value.CA)
     do fpSeg dSeg
     do fbDfsn dfsn
-    do fpDist minDist; printfn "d: %f" minDist
+    do fpDist minDist; //printfn "d: %f" minDist
 
 let obsMinDist = obsDist |> Observable.withI
 
@@ -256,13 +256,13 @@ let run startStep =
             let envCh =
               if st.Value.Count > 0 && st.Value.Count % ENV_CHANGE_COUNT = 0 && !envChangedCount < ENVCH_MAX then
                 changeEnvironment() |> Async.RunSynchronously
-                printf "env changed"
+                //printf "env changed"
                 true
               else 
                 false
-            if envCh then printPop st
+            //if envCh then printPop st
             st := step envCh !st
-            if envCh then printPop st
+            //if envCh then printPop st
             let (bfit,gb) = best !st
             let dist = Array.zip gb maxCone.Value.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt 
             //fpDist dist
@@ -275,7 +275,7 @@ let run startStep =
                   VizUtils.win "m1" m
                   m.SaveImage(@"D:\repodata\calib\run1\game399.png") |> ignore
 
-                printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
+                //printfn "sol @ %d - B=%A - C=%A" st.Value.Count (bfit,gb) m
             postObs()
     }
 

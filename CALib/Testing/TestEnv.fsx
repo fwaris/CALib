@@ -99,7 +99,7 @@ let shCA basePop parmDefs fitness =
 let kdStkCA basePop parmDefs fitness  = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator fitness
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStackelberg.influence
+    let influence = KDStackelberg.influence defaultComparator pop
     makeCA fitness defaultComparator pop bsp influence defaultNetwork
 
     

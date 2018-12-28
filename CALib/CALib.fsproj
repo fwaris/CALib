@@ -77,12 +77,13 @@
     <Compile Include="BeliefSpace\KMeans.fs" />
     <Compile Include="BeliefSpace\TopographicKS.fs" />
     <Compile Include="KnowledgeDistribution\MetaLrn.fs" />
+    <Compile Include="KnowledgeDistribution\MetaLrn2.fs" />
     <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
     <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
-    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="KnowledgeDistribution\Schelling.fs" />
+    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
     <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
     <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
     <Compile Include="CAConstants.fs" />

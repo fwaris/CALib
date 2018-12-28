@@ -28,7 +28,7 @@ let initSH basePop f =
 let initSTK basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStackelberg.influence
+    let influence = KDStackelberg.influence defaultComparator pop
     let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     StkSt (step,Community.fstPrimKs)

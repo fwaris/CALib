@@ -4,9 +4,10 @@
 open CA
 open KDContinousStrategyGame
 open MetaLrn
+open System.Collections.Generic
 
 let ksOrder1 = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
-let ksOrder2 = [|Topgraphical; Normative; Historical; Situational; Domain|]
+let ksOrder2 = [|Topgraphical; Topgraphical; Normative; Historical; Situational; Domain|]
 
 type ShKnowledge = Knowledge*int
 type W = int*int*Knowledge*float
@@ -22,21 +23,40 @@ type ShState =
         FitnessAtInit   : float[]
         GensSinceInit   : int
         CoopGens        : int
-        Schemes          : MLState<KSOrder>
-        Current         : KSOrder
+        Schemes         : MLState<float>
+        CurrOrder       : KSOrder
+        CurrInfLvls     : IDictionary<Knowledge,float>
+    }
+
+let defaultInfluenceLevels =
+        [
+            Domain, 0.8 
+            Normative, 1.0
+            Situational, 1.0
+            Historical, 1.0
+        ]
+
+let updateScheme state =
+    let schem = MetaLrn.currentScheme state.Schemes 
+    let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,schem*i) |> dict
+    { state with
+        CurrInfLvls = lvls
     }
 
 let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
     let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
-    let policies = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
+    let ksorders = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
+    let policies = [| 0.75; 1.0; 1.25 |]
     let schemes = MetaLrn.initML cmprtr policies
     {
         FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
         CoopGens = coopGens
         GensSinceInit = 0
         Schemes = schemes
-        Current = MetaLrn.currentScheme schemes
+        CurrOrder = ksorders.[0]
+        CurrInfLvls = dict defaultInfluenceLevels 
     }
+    |> updateScheme
 
 let fitVal sign (_,_,_,f) = sign*f
 
@@ -51,7 +71,7 @@ let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[])
   let mn = fst toRange
   let mx = snd toRange
   if CAUtils.isValidNum mn && CAUtils.isValidNum mx && mn <> mx then
-      let order = st.Current
+      let order = st.CurrOrder
       let scaledRank = CAUtils.scaler order.Range toRange (sign * indv.Fitness) //rank individual among its peers (neighbors)
       let newKS = order.Order.[int scaledRank |> min (order.Order.Length - 1)]
       let _,c = indv.KS
@@ -98,44 +118,40 @@ let updateState state (pop:Population<ShKnowledge>) =
   else
     {state with GensSinceInit = nextGen}
 
-let influenceLevels =
-    dict
-        [
-            Domain, 0.8 
-            Normative, 1.0
-            Situational, 1.0
-            Historical, 1.0
-        ]
+let il state ks = match state.CurrInfLvls.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
-
-let private shInfluence _ beliefSpace (pop:Population<ShKnowledge>) =
+let private shInfluence state beliefSpace (pop:Population<ShKnowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
             let ks,i = p.KS
-            let lvl = il ks 
+            let lvl = il state ks 
             let lvl = 
               match ks with 
               | Domain -> 
                 let l = lvl ** (float i) |> max 0.00001
-                //printfn "dm lvl: %d %f" i l
+                //if i > 10 then
+                //    printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
             let p = ksMap.[ks].Influence lvl  p
             p)
     pop 
 
+let resetCounts pop = pop |> Array.map(fun indv -> {indv with KS=fst indv.KS,0})
+
 let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+    let pop = if envCh then resetCounts pop else pop
     let state = 
         if envCh then 
             let schemes = MetaLrn.regimeChanged state.Schemes
             let curr = MetaLrn.currentScheme schemes
+            printfn "scheme %d" schemes.Regimes.Head.Scheme
             { state with 
                 Schemes = schemes
-                Current = curr
             }
+            |> updateScheme
         else
             let schemes = MetaLrn.updateRegime state.Schemes pop
             { state with

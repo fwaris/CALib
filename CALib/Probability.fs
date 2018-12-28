@@ -27,6 +27,10 @@ type XorshiftPRNG(seed) =
         if min > max then failwith "min > max" 
         let r = max - min in (float r) * (x.NextDouble()) + (float min) |> int
 
+    member x.Next(min:float,max:float) = 
+        if min > max then failwith "min > max" 
+        let r = max - min in (float r) * (x.NextDouble()) + (float min) 
+
     new()=XorshiftPRNG(System.Environment.TickCount)
 
 //thread-safe random number generator

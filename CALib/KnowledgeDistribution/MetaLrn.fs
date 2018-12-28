@@ -2,6 +2,7 @@
 open CA
 
 (*
+Meta learning based on multi-arm bandit approach
 scheme performance: 
 how quickly best was achieved
 track the number of genations to best relative 
@@ -10,6 +11,7 @@ to total number of generations in regime (i.e. before environment change)
 *)
 
 let WARM_UP = 5
+let MAX_REGIMES = 100
 
 type Scheme<'s> = {SchId:int; Scheme:'s}
 
@@ -50,9 +52,8 @@ let updateRegime mlState (pop:Population<_>) =
 
 let roundRobbinRegime state = 
     let idx = ((List.head state.Regimes).Scheme + 1) % state.Schemes.Count
-    let scheme = state.Schemes.[idx]
-    let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
-    let rgm = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=idx}
+    let extremum = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+    let rgm = {Best=extremum; GensToBest=0; RegimeGens=0; Scheme=idx}
     { state with
         Regimes = rgm::state.Regimes
     }
@@ -72,13 +73,17 @@ let perfBasedRegime state =
         let (_,wheel) = Probability.createWheel wtdSchms
         let idx = Probability.spinWheel wheel
         printfn "wtdSchms %A" wtdSchms
-        let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
-        let rgm = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=idx}
+        let extremum = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+        let rgm = {Best=extremum; GensToBest=0; RegimeGens=0; Scheme=idx}
         { state with
             Regimes = rgm::state.Regimes
         }
 
 let regimeChanged state = 
-    if state.Regimes.Length < WARM_UP
-    then roundRobbinRegime state 
-    else perfBasedRegime state
+    let state = 
+        if state.Regimes.Length < WARM_UP
+        then roundRobbinRegime state 
+        else perfBasedRegime state
+    { state with
+        Regimes = state.Regimes |> List.truncate MAX_REGIMES
+    }
