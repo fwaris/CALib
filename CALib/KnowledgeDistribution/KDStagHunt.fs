@@ -3,7 +3,6 @@
 
 open CA
 open KDContinousStrategyGame
-open MetaLrn
 open System.Collections.Generic
 
 let ksOrder1 = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
@@ -18,12 +17,12 @@ let primKS (k:ShKnowledge) = fst k
 
 type KSOrder = {Order:Knowledge[]; Range:float*float}
 
-type ShState = 
+type ShState<'a> = 
     {
         FitnessAtInit   : float[]
         GensSinceInit   : int
         CoopGens        : int
-        Schemes         : MLState<float>
+        Schemes         : MetaLrn.MLState<'a>
         CurrOrder       : KSOrder
         CurrInfLvls     : IDictionary<Knowledge,float>
     }
@@ -38,6 +37,7 @@ let defaultInfluenceLevels =
 
 let updateScheme state =
     let schem = MetaLrn.currentScheme state.Schemes 
+    printfn "curr scheme %A" schem
     let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,schem*i) |> dict
     { state with
         CurrInfLvls = lvls
@@ -46,7 +46,7 @@ let updateScheme state =
 let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
     let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
     let ksorders = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
-    let policies = [| 0.75; 1.0; 1.25 |]
+    let policies = [| 0.50; 0.75; 1.0; 1.25; 1.50 |]
     let schemes = MetaLrn.initML cmprtr policies
     {
         FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
@@ -147,7 +147,7 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
         if envCh then 
             let schemes = MetaLrn.regimeChanged state.Schemes
             let curr = MetaLrn.currentScheme schemes
-            printfn "scheme %d" schemes.Regimes.Head.Scheme
+            printfn "scheme %f" curr
             { state with 
                 Schemes = schemes
             }

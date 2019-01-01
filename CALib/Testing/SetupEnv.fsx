@@ -24,6 +24,7 @@
 //#load "../KnowledgeDistribution/KDLocallyWeightedMajority.fs"
 //#load "../KnowledgeDistribution/KDHedonicGame.fs"
 #load "../KnowledgeDistribution/MetaLrn.fs"
+#load "../KnowledgeDistribution/MetaLrn2.fs"
 #load "../KnowledgeDistribution/KDWeightedMajority.fs"
 #load "../KnowledgeDistribution/KDContinousStrategyGame.fs"
 #load "../KnowledgeDistribution/KDIpDGame.fs"
