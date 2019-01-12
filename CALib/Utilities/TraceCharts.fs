@@ -26,7 +26,7 @@ let round' x = System.Math.Round((x:float),2)
 
 let chPoints bg title obs =
     let ch =
-        LiveChart.Point(obs , Title=title) 
+        LiveChart.FastPoint(obs , Title=title) 
         |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
@@ -44,8 +44,8 @@ let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let ch =
         [
-          LiveChart.Point(obs1); 
-          LiveChart.Point(obs2) 
+          LiveChart.FastPoint(obs1); 
+          LiveChart.FastPoint(obs2) 
           |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 
@@ -60,7 +60,7 @@ let chPointsN bg title obss =
     let ch =
       obss
       |> List.map (fun (t,obs) -> 
-            LiveChart.Point(obs)
+            LiveChart.FastPoint(obs)
             |> Chart.WithStyling(Name=t)
             |> Chart.WithSeries.Marker(Size=10)
         )
@@ -78,8 +78,8 @@ let chPtsLine bg title obs =
     let obsB = obs2 |> Observable.map box
     let ch =
         [
-          LiveChart.Point(obs1); 
-          LiveChart.Line(obsB) 
+          LiveChart.FastPoint(obs1); 
+          LiveChart.FastLine(obsB) 
           |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 

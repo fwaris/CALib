@@ -1,8 +1,9 @@
-﻿module MetaLrn2
+﻿[<RequireQualifiedAccess>]
+module MetaLrn2
 open CA
 
 (*
-Meta learning based on multi-arm bandit approach
+Meta learning based on multi-arm bandit approach and thompson sampling
 scheme performance: 
 how quickly best was achieved
 track the number of genations to best relative 
@@ -12,33 +13,32 @@ to total number of generations in regime (i.e. before environment change)
 
 let MAX_REGIMES = 100
 
-type Regime = {Best:float; GensToBest:int; RegimeGens:int; Scheme:float}
+type Scheme<'s> = {SchId:int; Scheme:'s}
 
-type MLState =
+type Regime = {Best:float; ImprovementCount:int; GensToBest:int; RegimeGens:int; Scheme:int}
+
+let newRegime sign = 
+    let extremum = if sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+    {Best=extremum; ImprovementCount=0; GensToBest=0; RegimeGens=0; Scheme=0}
+
+type MLState<'a> =
     {
-        BaseLevel   : float
-        Range       : float*float
-        Regimes     : Regime list
-        Sign        : float
+        Schemes : Map<int,Scheme<'a>>
+        Regimes : Regime list
+        Sign    : float
     }
 
-let currentScheme state = state.Regimes.Head.Scheme
+let currentScheme state = state.Schemes.[state.Regimes.Head.Scheme].Scheme
 
-let addRegime level state =
-    let extrema = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
-    { state with
-        Regimes = {Best=extrema; GensToBest=0; RegimeGens=0; Scheme=level}::state.Regimes |> List.truncate MAX_REGIMES
-    }
-
-let initML cmprtr range (baseScheme:float) =
+let initML cmprtr (schemes:'a seq) =
+    let sMap = schemes |> Seq.mapi (fun i s-> i,{SchId=i;Scheme=s}) |> Map.ofSeq
     let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0
+    let extremum = if sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
     {
-        BaseLevel   = baseScheme
-        Range       = range
-        Regimes     = []
-        Sign        = sign
+        Schemes = sMap
+        Regimes = [newRegime sign]
+        Sign    = sign
     }
-    |> addRegime baseScheme
 
 let updateRegime mlState (pop:Population<_>) =
     let sign = mlState.Sign
@@ -50,23 +50,54 @@ let updateRegime mlState (pop:Population<_>) =
         { regime with
             Best = if foundBetter then cndtBst else regime.Best
             GensToBest = if foundBetter then gen else regime.GensToBest
+            ImprovementCount = if foundBetter then regime.ImprovementCount + 1 else regime.ImprovementCount
             RegimeGens = gen
         }
     { mlState with Regimes=regime::rest}
 
-let perf {GensToBest=b; RegimeGens=r} = 1.0 - (float b/float r)
+let roundRobbinRegime state = 
+    let idx = 
+        match state.Regimes with 
+        | [] -> 0
+        | x::_ -> x.Scheme + 1 % state.Schemes.Count
+    let extremum = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+    let rgm = {Best=extremum; GensToBest=0; ImprovementCount = 0; RegimeGens=0; Scheme=idx}
+    { state with
+        Regimes = rgm::state.Regimes
+    }
 
-let regimeChanged state =
-    let newLevel = 
-        match state.Regimes with
-        | [] -> failwith "empty regimes not expected"
-        | [x] -> Probability.RNG.Value.Next(fst state.Range,snd state.Range)
-        | a::b::_ ->
-            match perf a, perf b, a.Scheme, b.Scheme with
-            | pa,pb,a,b when  pa > pb && a > b -> Probability.RNG.Value.Next(a,snd state.Range)
-            | pa,pb,a,b when  pa > pb && a < b -> Probability.RNG.Value.Next(fst state.Range, a)
-            | pa,pb,a,b when  pa < pb && a > b -> Probability.RNG.Value.Next(fst state.Range,b)
-            | pa,pb,a,b when  pa < pb && a < b -> Probability.RNG.Value.Next(b,snd state.Range)
-            | _                                ->  Probability.RNG.Value.Next(fst state.Range,snd state.Range)
-    addRegime newLevel state
+let gaussianPosterior (rewards: (int*float) list) = 
+    let mu = rewards |> List.averageBy snd
+    let sgma  = 1.0 / float (rewards.Length + 1)
+    mu,sgma
 
+let perfBasedRegime state =
+    let wtdSchms = 
+        state.Regimes 
+        |> List.filter (fun r->r.RegimeGens > 0)
+        //|> List.map (fun r -> r.Scheme, abs(1.0 - ( float r.GensToBest / float r.RegimeGens / float r.ImprovementCount))) //map reward for each try
+        //|> List.map (fun r -> r.Scheme, state.Sign * r.Best)// abs(1.0 - ( float r.GensToBest / float r.RegimeGens / float r.ImprovementCount))) //map reward for each try
+        |> List.map (fun r -> r.Scheme, state.Sign * r.Best * abs(1.0 - ( float r.GensToBest / float r.RegimeGens))) //map reward for each try
+        |> List.groupBy fst
+        |> List.map (fun (s,xs) -> s,gaussianPosterior xs)
+        |> List.toArray
+    if wtdSchms.Length = 0 then
+        printfn "wtdSchms empty"
+        roundRobbinRegime state
+    else
+        let samples = wtdSchms |> Array.map(fun (s,(mu,sgma)) -> s, Probability.GAUSS mu sgma) //thompson sampling with gaussian priors
+        let arm,_ = samples |> Array.maxBy snd
+        let extremum = if state.Sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+        let rgm = {newRegime state.Sign with Scheme=arm}
+        { state with
+            Regimes = rgm::state.Regimes
+        }
+
+let regimeChanged state = 
+    let state = 
+        if state.Regimes.Length < state.Schemes.Count //sample each scheme at least once
+        then roundRobbinRegime state 
+        else perfBasedRegime state
+    { state with
+        Regimes = state.Regimes |> List.truncate MAX_REGIMES
+    }

@@ -36,14 +36,15 @@ let loadConfig file =
 let createJobs() =
     let folder = @"D:\repodata\calib\jobs"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
-    let kds = [WTD; IPD; SH; STK]
+    //let kds = [WTD; IPD; SH; STK]
+    let kds = [SH]                              //***** limited kd
     let avals = [1.0; 3.6; 3.9]
     //let kdav = seq {for kd in kds do  
     //                    for av in avals do
     //                        for s in 1..30 do
     //                            yield kd,av,s}
     let kdav = seq {for av in avals do
-                            for s in 1..30 do
+                            for s in 1..100 do
                                 yield kds,av,s}
     let ser = FsPickler.CreateXmlSerializer(indent=true)
     let saveFolder = "/wsu/home/ar/ar86/ar8623/calib/jobout"
@@ -55,12 +56,12 @@ let createJobs() =
              {
                   SaveFolder    = fnOut
                   KDs            = k
-                  PopulationSize = 72
-                  NumCones      = 500
+                  PopulationSize = 36
+                  NumCones      = 1000
                   RunToMax      = true
                   CalcSocMetrics = true
                   MaxGen        = 250
-                  NumLandscapes = 50
+                  NumLandscapes = 100
                   Samples       = 1
                   DistTh        = 0.001
                   AValues       = [a]

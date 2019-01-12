@@ -6,7 +6,7 @@ open CAUtils
 //let defaultNetwork = CAUtils.hexagonNetwork
 let defaultNetwork = CAUtils.hexagonNetworkViz
 let defaultComparator = CAUtils.Maximize
-let POP_SIZE = 72
+let POP_SIZE = 36
 
 let inline makeCA fitness comparator pop bspace influence network =
         {

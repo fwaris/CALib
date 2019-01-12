@@ -24,7 +24,7 @@ let parms =
         F(0.,-1.,1.) // y
     |]
 
-let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
+let w = createWorld 1000 2 (5.,15.) (20., 10.) None None (Some 3.99) |> ref
 let m,f = DF1.landscape !w
 let fitness = ref f
 let maxCone = ref m
@@ -239,13 +239,13 @@ let changeEnvironment() =
         envChangedCount := !envChangedCount + 1
     }
 
-let ENV_CHANGE_COUNT = 100 //change environment after this many generations
+let ENV_CHANGE_COUNT = 250 //change environment after this many generations
 
 let printPop st =
     let ps = (!st).CA.Population |> Array.take 10
     ps |> Array.iter (fun i -> printfn "%d: %A - %A" i.Id (primKS i.KS) i.Parms)
 
-let ENVCH_MAX = 20
+let ENVCH_MAX = 50
 
 let run startStep =
     let go = ref true

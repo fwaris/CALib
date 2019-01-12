@@ -42,8 +42,6 @@
     <Compile Include="Run\Types.fs" />
     <Compile Include="Run\Environment.fs" />
     <Compile Include="Run\Stats.fs" />
-    <Compile Include="Run\TestEnv.fsx" />
-    <Compile Include="Run\StatDynamicSeq.fsx" />
     <Compile Include="Run\RunDynamicSeq.fs" />
     <Compile Include="Run\RunConfigs.fs" />
     <Compile Include="Program.fs" />

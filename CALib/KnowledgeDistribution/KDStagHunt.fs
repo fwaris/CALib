@@ -4,6 +4,7 @@
 open CA
 open KDContinousStrategyGame
 open System.Collections.Generic
+open System.Runtime.InteropServices
 
 let ksOrder1 = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
 let ksOrder2 = [|Topgraphical; Topgraphical; Normative; Historical; Situational; Domain|]
@@ -12,6 +13,7 @@ type ShKnowledge = Knowledge*int
 type W = int*int*Knowledge*float
 type Action = W seq //each player plays fitness
 type Payout = Action
+type Policy = {Start:float; End:float}
 
 let primKS (k:ShKnowledge) = fst k
 
@@ -24,7 +26,11 @@ type ShState<'a> =
         CoopGens        : int
         Schemes         : MetaLrn.MLState<'a>
         CurrOrder       : KSOrder
+        CurrentTmprtr   : float
         CurrInfLvls     : IDictionary<Knowledge,float>
+        NormdBest       : float
+        GensSinceBest   : int
+        Sign            : float
     }
 
 let defaultInfluenceLevels =
@@ -38,16 +44,52 @@ let defaultInfluenceLevels =
 let updateScheme state =
     let schem = MetaLrn.currentScheme state.Schemes 
     printfn "curr scheme %A" schem
-    let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,schem*i) |> dict
+    let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,schem.Start*i) |> dict
     { state with
         CurrInfLvls = lvls
+        CurrentTmprtr = schem.Start
     }
+
+let DECAY = 0.995
+
+let setLevels tmprtr state  = 
+    let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,tmprtr*i) |> dict   
+    { state with
+        CurrentTmprtr = tmprtr
+        CurrInfLvls = lvls
+    }
+
+let updateLevels state =
+    let schem = MetaLrn.currentScheme state.Schemes 
+    let tmprtr = state.CurrentTmprtr * DECAY |> max schem.End
+    //printfn "curr level %A" tmprtr
+    state |> setLevels tmprtr
+
+let STAGNATION_GENS = 30
+let updateForStagnation state =
+    if state.GensSinceBest > STAGNATION_GENS then 
+        let schem = MetaLrn.currentScheme state.Schemes 
+        let tmprtr = schem.Start
+        { state with GensSinceBest = 0 } |> setLevels tmprtr
+    else
+        state
 
 let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
     let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
     let ksorders = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
-    let policies = [| 0.50; 0.75; 1.0; 1.25; 1.50 |]
+    let policies = [| 
+        {Start=3.0; End=0.9}; 
+        {Start=2.75; End=0.9}; 
+        {Start=2.5; End=0.9}; 
+        {Start=2.0; End=0.9}; 
+        {Start=1.5; End=0.9}; 
+        {Start=1.25; End=0.9}; 
+        {Start=1.1; End=0.9}
+        {Start=1.0; End=0.9}
+        {Start=0.9; End=0.8}
+        |]
     let schemes = MetaLrn.initML cmprtr policies
+    let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0
     {
         FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
         CoopGens = coopGens
@@ -55,6 +97,10 @@ let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge
         Schemes = schemes
         CurrOrder = ksorders.[0]
         CurrInfLvls = dict defaultInfluenceLevels 
+        CurrentTmprtr = 1.0
+        NormdBest = System.Double.MinValue 
+        Sign = sign
+        GensSinceBest = 0
     }
     |> updateScheme
 
@@ -110,10 +156,14 @@ let payoff _ _ indv indvActn (nhbrActns:Action seq) : Payout =
 
 let updateState state (pop:Population<ShKnowledge>) =
   let nextGen = state.GensSinceInit + 1
+  let best = pop |> Array.map (fun i->i.Fitness * state.Sign) |> Array.max
+  let newBest, genSince = if best > state.NormdBest then best,0 else state.NormdBest,state.GensSinceBest+1
   if nextGen > state.CoopGens then
     {state with
       GensSinceInit = 0
       FitnessAtInit = pop |> Array.map (fun i->i.Fitness)
+      NormdBest = newBest
+      GensSinceBest = genSince
     }
   else
     {state with GensSinceInit = nextGen}
@@ -147,7 +197,7 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
         if envCh then 
             let schemes = MetaLrn.regimeChanged state.Schemes
             let curr = MetaLrn.currentScheme schemes
-            printfn "scheme %f" curr
+            printfn "scheme %A" curr
             { state with 
                 Schemes = schemes
             }
@@ -160,7 +210,7 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = if cmprtr 1. 0. then 1.0 else -1.0
     let pop = updatePop state cmp pop payouts
     let pop = shInfluence state beliefSpace pop
-    let state = updateState state pop
+    let state = updateState state pop |> updateLevels |> updateForStagnation
     pop,
     beliefSpace,
     {
