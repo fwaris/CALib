@@ -19,6 +19,7 @@ open VizUtils
 open Viz
 open OpenCvSharp
 open OpenCvSharp.ML
+open FSharp.Collections.ParallelSeq
 
 let remE = StringSplitOptions.RemoveEmptyEntries
 
@@ -40,9 +41,9 @@ let toSocrs rows = rows |> Array.map (fun (r:string[]) ->
     A           = r.[3]
     Gen         = int r.[4]
     Sample      = int r.[0]
-    Segs        = r.[9].Split([|'|'|],remE) |> Array.map float
-    Dffns       = r.[10].Split([|'|'|],remE) |> Array.map float
-    KS          = r.[11].Split([|'|'|],remE) |> Array.map int
+    Segs        = r.[10].Split([|'|'|],remE) |> Array.map float
+    Dffns       = r.[11].Split([|'|'|],remE) |> Array.map float
+    KS          = r.[12].Split([|'|'|],remE) |> Array.map int
    })
 
 //let maxSeg = socrs |> Array.map (fun x-> Array.max x.Segs) |> Array.max
@@ -148,10 +149,15 @@ let segClr v =
     Scalar.FromRgb(int clr.R, int clr.G, int clr.B) 
 
 
+let begAft maxGen (xs:SocR array) =
+    xs |> Array.filter (fun x->x.Gen % maxGen = 0 || x.Gen % maxGen = 1)
+
+
 let genVidsByKdA socrs =
     let kdA = socrs |> Array.groupBy (fun r->r.KD,r.A)
 
     kdA |> Array.iter (fun ((kd,a),srs) -> 
+        let srs = begAft 250 srs
         let segs = srs |> Array.map(fun j->j.Segs)
         let dffns = srs |> Array.map(fun j->j.Dffns)
         let kss   = srs |> Array.map(fun j->j.KS)
@@ -173,7 +179,7 @@ let gen1Sample()=
 
 let gen2Sample() =
     let statFile = @"D:\repodata\calib\video_loc\Stats.txt"
-    let rows = File.ReadLines statFile |> Seq.skip 1 |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
-    let socrs = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
-    let maxGen = socrs |> Array.map(fun r->r.Gen) |> Array.max
+    let rows = File.ReadLines statFile |> Seq.skip 1 |> PSeq.map(fun x->x.Split([|'\t'|])) |> PSeq.toArray
+    let socrs_ = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
+    let socrs = socrs_ |> PSeq.sortBy (fun x->x.KD,x.A,x.Sample,x.Landscape,x.Gen ) |> PSeq.toArray
     genVidsByKdA socrs

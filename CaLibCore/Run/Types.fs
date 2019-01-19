@@ -3,12 +3,13 @@ open DF1
 open CA
 open System.IO
 
-type KD = WTD | IPD | SH | STK
+type KD = WTD | IPD | SH | SHS | STK
 
 //a single program run executes according to this config
 type RunConfig = 
   {
     SaveFolder    : string
+    Restartable   : bool
     KDs           : KD list
     PopulationSize : int
     NumCones       : int
@@ -32,6 +33,7 @@ type Step =
     | WtdSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
     | IpdSt of TimeStep<KDIPDGame.IpdKS> * (KDIPDGame.IpdKS->Knowledge)
     | ShSt  of TimeStep<KDStagHunt.ShKnowledge> *  (KDStagHunt.ShKnowledge->Knowledge)
+    | ShSSt  of TimeStep<KDStagHuntStatic.ShKnowledge> *  (KDStagHuntStatic.ShKnowledge->Knowledge)
     | StkSt of TimeStep<KDStackelberg.StkKnowledge> * (KDStackelberg.StkKnowledge->Knowledge)
 
 type LandscapeConfig =

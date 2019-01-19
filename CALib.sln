@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "CaLibCore", "CaLibCore\CaLibCore.fsproj", "{695BEE8F-EC40-4C89-B944-77630B2D65A1}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Compressor", "Compressor\Compressor.fsproj", "{F63AD471-867A-47AE-851E-6541A25821CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{695BEE8F-EC40-4C89-B944-77630B2D65A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{695BEE8F-EC40-4C89-B944-77630B2D65A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{695BEE8F-EC40-4C89-B944-77630B2D65A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F63AD471-867A-47AE-851E-6541A25821CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F63AD471-867A-47AE-851E-6541A25821CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F63AD471-867A-47AE-851E-6541A25821CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F63AD471-867A-47AE-851E-6541A25821CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

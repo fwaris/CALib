@@ -24,6 +24,15 @@ let initSH basePop f =
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
     ShSt (step,Community.fstPrimKs)
 
+//SHS
+let initSHS basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+    let pop = basePop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
+    let influence = KDStagHuntStatic.influence None 5 bsp pop
+    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+    ShSSt (step,Community.fstPrimKs)
+
 //STK
 let initSTK basePop f = 
     let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
@@ -51,6 +60,7 @@ let initSteps rsc basePop f =
         | WTD -> initWTD basePop f
         | IPD -> initIPD basePop f
         | SH  -> initSH  basePop f
+        | SHS -> initSHS basePop f
         | STK -> initSTK basePop f
     |]
 
@@ -63,6 +73,7 @@ let prepStepsForLandscapeRun ws lndscpCfg =
     | WtdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; WtdSt(st,f)
     | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
     | ShSt  (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSt(st,f)
+    | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
     | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
     )
 
@@ -72,6 +83,7 @@ let runSteps envChanged steps =
     | WtdSt (st,f) -> async {return WtdSt(CARunner.step envChanged st defaultMaxBest,f) }
     | IpdSt (st,f) -> async {return IpdSt(CARunner.step envChanged st defaultMaxBest,f) }
     | ShSt  (st,f) -> async {return ShSt(CARunner.step envChanged st defaultMaxBest,f) }
+    | ShSSt (st,f) -> async {return ShSSt(CARunner.step envChanged st defaultMaxBest,f) } 
     | StkSt (st,f) -> async {return StkSt(CARunner.step envChanged st defaultMaxBest,f) }
     )
     |> Async.Parallel
@@ -133,3 +145,5 @@ let run rsc =
     initStatFile rsc fileName
     runConfig rsc |> AsyncSeq.iter (Array.iter (writeStats rsc fileName)) |> Async.RunSynchronously
     printfn "done stats"
+    //if rsc.Restartable then
+    //    Runs.Stat.zipOut rsc
