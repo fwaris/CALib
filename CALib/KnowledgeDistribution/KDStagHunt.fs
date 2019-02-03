@@ -78,15 +78,15 @@ let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge
     let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
     let ksorders = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
     let policies = [| 
-        {Start=3.0; End=0.9}; 
-        {Start=2.75; End=0.9}; 
-        {Start=2.5; End=0.9}; 
-        {Start=2.0; End=0.9}; 
-        {Start=1.5; End=0.9}; 
-        {Start=1.25; End=0.9}; 
-        {Start=1.1; End=0.9}
-        {Start=1.0; End=0.9}
-        {Start=0.9; End=0.8}
+        //{Start=3.0; End=0.9}; 
+        //{Start=2.75; End=0.9}; 
+        //{Start=2.5; End=0.7}; 
+        {Start=2.0; End=0.7}; 
+        //{Start=1.5; End=0.9}; 
+        {Start=1.25; End=0.7}; 
+        //{Start=1.1; End=0.9}
+        {Start=1.0; End=0.7}
+        {Start=0.9; End=0.6}
         |]
     let schemes = MetaLrn.initML cmprtr policies
     let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0

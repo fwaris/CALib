@@ -35,12 +35,12 @@ let loadConfig file =
   config
 
 let createJobs() =
-    let folder = @"c:\s\repodata\calib\jobs"
+    let folder = @"d:\calib\jobs"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
     let kds = [WTD; IPD; SH; SHS; STK]
-    //let kds = [SH]                              //***** limited kd
+    //let kds = [SH; SHS]                              //***** limited kd
     let avals = [1.0; 3.6; 3.9]
-    let NUM_SAMPLES = 100
+    let NUM_SAMPLES = 200
     //let kdav = seq {for kd in kds do  
     //                    for av in avals do
     //                        for s in 1..30 do
@@ -49,7 +49,7 @@ let createJobs() =
                             for s in 1..NUM_SAMPLES do
                                 yield kds,av,s}
     let ser = FsPickler.CreateXmlSerializer(indent=true)
-    let saveFolder = "/wsu/home/ar/ar86/ar8623/calib/jobout_amp"
+    let saveFolder = "/wsu/home/ar/ar86/ar8623/calib/jobout_sh"
     kdav |> Seq.iteri (fun i (k,a,s) -> 
         let fnJob = Path.Combine(folder,sprintf "job_%d.xml" i)
         //let fnOut = sprintf "%s/%A_%A_%d" saveFolder k a s
@@ -59,11 +59,11 @@ let createJobs() =
                   SaveFolder    = fnOut
                   Restartable   = true
                   KDs            = k
-                  PopulationSize = 36
-                  NumCones      = 1000
+                  PopulationSize = 72
+                  NumCones      = 500
                   RunToMax      = true
                   CalcSocMetrics = true
-                  MaxGen        = 250
+                  MaxGen        = 500
                   NumLandscapes = 100
                   Samples       = 1
                   DistTh        = 0.001
@@ -79,6 +79,7 @@ let createJobs() =
  (*  //amped environment 
              {
                   SaveFolder    = fnOut
+                  Restartable   = true
                   KDs            = k
                   PopulationSize = 36
                   NumCones      = 1000
