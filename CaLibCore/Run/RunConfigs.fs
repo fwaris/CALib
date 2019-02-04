@@ -38,7 +38,7 @@ let createJobs() =
     let folder = @"d:\calib\jobs"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
     let kds = [WTD; IPD; SH; SHS; STK]
-    //let kds = [SH; SHS]                              //***** limited kd
+    let kds = [SH; SHS]                              //***** limited kd
     let avals = [1.0; 3.6; 3.9]
     let NUM_SAMPLES = 200
     //let kdav = seq {for kd in kds do  

@@ -28,7 +28,10 @@ type MLState<'a> =
         Sign    : float
     }
 
-let currentScheme state = state.Schemes.[state.Regimes.Head.Scheme].Scheme
+let currentScheme state = 
+    match state.Regimes with 
+    | []    -> state.Schemes.[0].Scheme
+    | _     -> state.Schemes.[state.Regimes.Head.Scheme].Scheme
 
 let initML cmprtr (schemes:'a seq) =
     let sMap = schemes |> Seq.mapi (fun i s-> i,{SchId=i;Scheme=s}) |> Map.ofSeq
@@ -36,7 +39,7 @@ let initML cmprtr (schemes:'a seq) =
     let extremum = if sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
     {
         Schemes = sMap
-        Regimes = [newRegime sign]
+        Regimes = []//[newRegime sign]
         Sign    = sign
     }
 

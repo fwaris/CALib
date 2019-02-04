@@ -45,7 +45,7 @@ let main argv =
         printfn "usage: configFile | -j jobsFolder"
         printfn "config file missing sample saved" 
         RunConfigs.saveConfig()
-        RunConfigs.createJobs()
+        //RunConfigs.createJobs()
         1
     | Cfg (loc) -> 
         let rsc = RunConfigs.loadConfig loc

@@ -35,7 +35,7 @@ let range = function
     | I(_,mn,mx)   ->  mx-mn |> float
 
 let evolveS' rangeScaler range influenceLevel sigma v = 
-    assert (influenceLevel > 0.0 && influenceLevel <= 2.0)
+    assert (influenceLevel > 0.0 && influenceLevel <= 5.0)
     assert (sigma > 0.0 && sigma <= 1.0)
     let z = zsample() * range * rangeScaler // pick something in proportion to the allowable range
     let z' = z * influenceLevel * sigma

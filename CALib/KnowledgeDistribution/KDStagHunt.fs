@@ -43,14 +43,14 @@ let defaultInfluenceLevels =
 
 let updateScheme state =
     let schem = MetaLrn.currentScheme state.Schemes 
-    printfn "curr scheme %A" schem
+   // printfn "curr scheme %A" schem
     let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,schem.Start*i) |> dict
     { state with
         CurrInfLvls = lvls
         CurrentTmprtr = schem.Start
     }
 
-let DECAY = 0.995
+let DECAY = 0.997
 
 let setLevels tmprtr state  = 
     let lvls = defaultInfluenceLevels |> List.map (fun (k,i)->k,tmprtr*i) |> dict   
@@ -80,13 +80,13 @@ let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge
     let policies = [| 
         //{Start=3.0; End=0.9}; 
         //{Start=2.75; End=0.9}; 
-        //{Start=2.5; End=0.7}; 
-        {Start=2.0; End=0.7}; 
+        {Start=2.5; End=0.7}; 
+        {Start=2.0; End=0.8}; 
         //{Start=1.5; End=0.9}; 
-        {Start=1.25; End=0.7}; 
+        {Start=1.25; End=0.8}; 
         //{Start=1.1; End=0.9}
-        {Start=1.0; End=0.7}
-        {Start=0.9; End=0.6}
+        {Start=1.0; End=0.8}
+        {Start=0.9; End=0.7}
         |]
     let schemes = MetaLrn.initML cmprtr policies
     let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0
@@ -197,7 +197,7 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
         if envCh then 
             let schemes = MetaLrn.regimeChanged state.Schemes
             let curr = MetaLrn.currentScheme schemes
-            printfn "scheme %A" curr
+            //printfn "scheme %A" curr
             { state with 
                 Schemes = schemes
             }
@@ -209,6 +209,7 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
             }
     let cmp = if cmprtr 1. 0. then 1.0 else -1.0
     let pop = updatePop state cmp pop payouts
+    //printfn "%A" state.CurrentTmprtr
     let pop = shInfluence state beliefSpace pop
     let state = updateState state pop |> updateLevels |> updateForStagnation
     pop,
