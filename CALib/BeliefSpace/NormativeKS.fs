@@ -97,13 +97,13 @@ let defaultInfluence {Norms=norms; ParmDefs=parmDefs} s (ind:Individual<_>) =
     ind
 
 let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> array) =
+
     //assumes that individuals are sorted best fitness first
     let norms = 
-        if envChanged then 
-            printfn "changing norms"
-            createNorms state.ParmDefs state.IsBetter
-        else 
-            state.Norms
+        match Settings.TrackEnv, envChanged with
+        | true, true -> createNorms state.ParmDefs state.IsBetter
+        | _          -> state.Norms
+
     let updatedNorms = voters |> Array.fold (updateNorms state.IsBetter) norms
     //printfn "%A" updatedNorms
     #if _LOG_

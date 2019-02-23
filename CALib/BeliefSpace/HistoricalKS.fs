@@ -60,7 +60,12 @@ let rec defaultAcceptance
     state
     envChanged
     (voters:Individual<_> array) =
-    let {Window=win;Events=events} = if envChanged then {state with Events=[]} else state
+ 
+    let {Window=win;Events=events} = 
+        match Settings.TrackEnv, envChanged with
+        | true,true -> {state with Events=[]}
+        | _         -> state
+
     match voters with
     | [||] -> voters,construct state defaultAcceptance fInfluence
     | inds ->

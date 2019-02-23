@@ -113,7 +113,12 @@ let rec defaultAcceptance
     state
     envChanged
     (voters : Individual<_> array) =
-    let state = if envChanged then {state with Exemplars=[||]; SpinWheel=[||]} else state
+
+    let state =
+        match Settings.TrackEnv, envChanged with
+        | true,true -> {state with Exemplars=[||]; SpinWheel=[||]} 
+        | _         -> state
+
     let explrs = pickExamplars state.IsBetter state.Exemplars voters |> List.truncate state.MaxExemplars |> List.toArray
 //        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
 //        printfn ""

@@ -6,7 +6,7 @@ open System
 
 let configToSave = 
     {
-      SaveFolder    = @"c:\s\repodata\calib\dsst_stats"
+      SaveFolder    = @"c:\s\calib\dsst_stats"
       Restartable   = false
       KDs            = [WTD; IPD; SH; STK]
       PopulationSize = 72
@@ -38,7 +38,7 @@ let createJobs() =
     let folder = @"d:\calib\jobs"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
     let kds = [WTD; IPD; SH; SHS; STK]
-    let kds = [SH; SHS]                              //***** limited kd
+    //let kds = [SH; SHS]                              //***** limited kd
     let avals = [1.0; 3.6; 3.9]
     let NUM_SAMPLES = 200
     //let kdav = seq {for kd in kds do  
@@ -59,12 +59,12 @@ let createJobs() =
                   SaveFolder    = fnOut
                   Restartable   = true
                   KDs            = k
-                  PopulationSize = 72
-                  NumCones      = 500
+                  PopulationSize = 36
+                  NumCones      = 1000
                   RunToMax      = true
                   CalcSocMetrics = true
-                  MaxGen        = 500
-                  NumLandscapes = 100
+                  MaxGen        = 2500
+                  NumLandscapes = 50
                   Samples       = 1
                   DistTh        = 0.001
                   AValues       = [a]

@@ -115,29 +115,30 @@ let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
     }
 
 let runConfig rsc = 
-   asyncSeq {
-    for a in rsc.AValues do
-    for n in [Hexagon] do
-    for i in 1..rsc.Samples do
-        let ws = createEnv rsc a
-        let f : Fitness = ref ws.F
+    asyncSeq {
+        for a in rsc.AValues do
+            MetaLrn.Dbg.A <- a
+            for n in [Hexagon] do
+                for i in 1..rsc.Samples do
+                    let ws = createEnv rsc a
+                    let f : Fitness = ref ws.F
 
-        let basePop = 
-            let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
-            CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
+                    let basePop = 
+                        let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+                        CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
 
-        let lndscpCfg = 
-            {
-                Ws        = ws
-                A         = a
-                Net       = n
-                Landscape = 0
-                SampleNum = i
-                EnvCh     = true
-                Steps     = initSteps rsc basePop f
-            }
-        let stats = AsyncSeq.unfoldAsync (runLandscapeSeq rsc) lndscpCfg
-        yield! stats
+                    let lndscpCfg = 
+                        {
+                            Ws        = ws
+                            A         = a
+                            Net       = n
+                            Landscape = 0
+                            SampleNum = i
+                            EnvCh     = true
+                            Steps     = initSteps rsc basePop f
+                        }
+                    let stats = AsyncSeq.unfoldAsync (runLandscapeSeq rsc) lndscpCfg
+                    yield! stats
     }
    
 let run rsc = 

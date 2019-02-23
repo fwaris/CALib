@@ -11,6 +11,25 @@ to total number of generations in regime (i.e. before environment change)
 
 *)
 
+module Dbg =
+    open System.IO
+    open System
+    let outPath = @"D:\calib\dsst_stats\schemes.txt"
+    let mutable A = 1.0
+
+    let reset() =
+        if File.Exists outPath then File.Delete outPath |> ignore
+   
+    let log (nrmdPerBySchm:(int*(float*float))[])  (samples:(int*float)[]) (arm:int) =
+        let wrtHdr = File.Exists outPath
+        use str = File.AppendText outPath
+        if wrtHdr |> not then 
+            str.WriteLine(String.Join("\t","SchemeIdx","Mu","Sigma","Select","Arm","A"))
+        (Array.sortBy fst nrmdPerBySchm, Array.sortBy fst samples) ||> Array.zip |> Array.iter (fun ((i,(mu,sigma)),(_,sel)) ->
+            let ln = String.Join("\t",i,mu,sigma,sel,arm,A)
+            str.WriteLine(ln))
+
+
 let MAX_REGIMES = 100
 
 type Scheme<'s> = {SchId:int; Scheme:'s}
@@ -79,7 +98,7 @@ let perfBasedRegime state =
         state.Regimes 
         |> List.filter (fun r->r.RegimeGens > 0)
         //|> List.map (fun r -> r.Scheme, abs(1.0 - ( float r.GensToBest / float r.RegimeGens / float r.ImprovementCount))) //map reward for each try
-        |> List.map (fun r -> r.Scheme, state.Sign * r.Best, abs(1.0 - ( float r.GensToBest / float r.RegimeGens )))// abs(1.0 - ( float r.GensToBest / float r.RegimeGens / float r.ImprovementCount))) //map reward for each try
+        |> List.map (fun r -> r.Scheme, state.Sign * r.Best, abs(1.0 - ( float r.GensToBest / float r.RegimeGens )))
         |> List.groupBy (fun (k,_,_) -> k)
     if perfBySchm.Length = 0 then
         printfn "perfBySchm empty"
@@ -88,13 +107,15 @@ let perfBasedRegime state =
         let hithertoBest = perfBySchm |> Seq.collect (snd>>(Seq.map (fun (_,p,_)->p))) |> Seq.max
         let nrmdPerBySchm = 
             perfBySchm 
-            |> List.map(fun (k,xs) -> k,xs |> List.map(fun (schm,p,r) -> schm, p/hithertoBest * r))
+            //|> List.map(fun (k,xs) -> k,xs |> List.map(fun (schm,p,r) -> schm, p/hithertoBest * r))
+            |> List.map(fun (k,xs) -> k,xs |> List.map(fun (schm,p,r) -> schm, p/hithertoBest))
             |> List.map (fun (s,xs) -> s,gaussianPosterior xs)
             |> List.toArray
         printfn "%A" nrmdPerBySchm
         let samples = nrmdPerBySchm |> Array.map(fun (s,(mu,sgma)) -> s, Probability.GAUSS mu sgma) //thompson sampling with gaussian priors
         let arm,_ = samples |> Array.maxBy snd
         let rgm = {newRegime state.Sign with Scheme=arm}
+        //Dbg.log nrmdPerBySchm  samples arm 
         { state with
             Regimes = rgm::state.Regimes
         }

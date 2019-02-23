@@ -166,7 +166,12 @@ let reset state pop =
     state,pop
 
 let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
-    let state,pop = if envCh then reset state pop else updateState state pop,pop
+
+    let state,pop = 
+        match Settings.TrackEnv, envCh with
+        | true,true -> reset state pop
+        | _         -> updateState state pop, pop
+
     let pop,state =
         if state.Gen % state.DistributeAfterGens = 0 then
             let cmp = if cmprtr 1. 0. then 1.0 else -1.

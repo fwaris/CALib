@@ -85,7 +85,12 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
     }
 
 let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> array) =
-    let state = if envChanged then initialState state.ParmDefs state.IsBetter state.Fitness else state
+
+    let state =
+        match Settings.TrackEnv, envChanged with
+        | true,true -> initialState state.ParmDefs state.IsBetter state.Fitness
+        | _         -> state
+
     let state = updateClusters state voters
     voters,construct state defaultAcceptance fInfluence
 
