@@ -3,15 +3,15 @@ open CA
 open FSharp.Collections.ParallelSeq
 
 ///create the belief space structure that is normally used in CAs
-let defaultBeliefSpace parmDefs minmax fitness =
+let defaultBeliefSpace parmDefs optKind fitness =
     Roots [ 
-        Node (SituationalKS.create parmDefs minmax 15,
+        Node (SituationalKS.create parmDefs optKind 15,
             [
-                Leaf (HistoricalKS.create parmDefs minmax 100)
-                Leaf (DomainKS.create parmDefs minmax fitness)
+                Leaf (HistoricalKS.create parmDefs optKind 100)
+                Leaf (DomainKS.create parmDefs optKind fitness)
             ])
-        Leaf (NormativeKS.create parmDefs minmax)
-        Leaf (TopographicKS.create parmDefs minmax fitness)
+        Leaf (NormativeKS.create parmDefs optKind)
+        Leaf (TopographicKS.create parmDefs optKind fitness)
         ]
 
 ///evaluate the finess of the population
@@ -23,12 +23,11 @@ let evaluate fitness pop =
     pop
 
 ///default acceptance function used in most CAs
-let acceptance topProportion minmax beliefSpace (pop:Population<_>) =
-    let sign = if minmax 2. 1. then -1. else +1. 
+let acceptance topProportion mult beliefSpace (pop:Population<_>) =
     let take = (float pop.Length) * topProportion |> int
     let topInds = 
         pop 
-        |> PSeq.sortBy (fun ind -> sign * ind.Fitness) 
+        |> PSeq.sortBy (fun ind -> mult * ind.Fitness) 
         |> Seq.truncate take
         |> Seq.toArray
     topInds
@@ -57,7 +56,8 @@ let detectChange (fitness:Fitness) (best:Marker list) =
       abs (f2 - b1.MFitness) > 0.00001
 
 ///single step CA
-let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
+let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} maxBest =
+    let mult = CAUtils.mult ca.Optimization
     let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
     let oldBest = 
@@ -69,15 +69,25 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
                 [{x with MFitness=f}]
         else 
             best
+    let ec = if envChanged then ec + 1 else ec
+
+    let reactToEnvChange = 
+        match ca.EnvChngSensitivity with 
+        | Insensintive                              -> NoChange 
+        | Every m when envChanged && (ec % m) = 0   -> Adjust 
+        | Every _ when envChanged                   -> Track
+        | Every _                                   -> NoChange
+
     let newBest = 
         match oldBest,topInds with
         | _ ,[||]   -> oldBest
         | [],is     -> [CAUtils.toMarker is.[0]]
-        | b::_,is when ca.Comparator is.[0].Fitness b.MFitness -> (CAUtils.toMarker is.[0]::oldBest) |> List.truncate maxBest
+        | b::_,is when (mult*is.[0].Fitness) > (mult*b.MFitness) -> (CAUtils.toMarker is.[0]::oldBest) |> List.truncate maxBest
         | _         -> oldBest
-    let blSpc           = ca.Update envChanged ca.BeliefSpace topInds
+
+    let blSpc           = ca.Update reactToEnvChange ca.BeliefSpace topInds
     let fInfluence      = match ca.Influence with Influence(k) -> k
-    let pop,blSpc,finf = fInfluence envChanged pop blSpc ca.Network ca.Fitness ca.Comparator 
+    let pop,blSpc,finf = fInfluence reactToEnvChange pop blSpc ca.Network ca.Fitness ca.Optimization 
     //let pop             = ca.Influence blSpc pop
     {
         CA =
@@ -89,6 +99,7 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p} maxBest =
         Best = newBest
         Progress = newBest.[0].MFitness::p |> List.truncate 100
         Count = c + 1
+        EnvChngCount = ec
     }
 
 let DEFAULT_ENV_CHANGE_EPSILON = 0.000001
@@ -118,7 +129,7 @@ let run desc termination maxBest ca =
             stp
         else
             loop stp
-    loop {CA=ca; Best=[]; Count=0; Progress=[]}
+    loop {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
 
 
 let ``terminate if no improvement in 5 generations`` (step:TimeStep<_>) =

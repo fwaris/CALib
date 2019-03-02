@@ -100,9 +100,9 @@ let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> arra
 
     //assumes that individuals are sorted best fitness first
     let norms = 
-        match Settings.TrackEnv, envChanged with
-        | true, true -> createNorms state.ParmDefs state.IsBetter
-        | _          -> state.Norms
+        match envChanged with
+        | Adjust -> createNorms state.ParmDefs state.IsBetter
+        | _      -> state.Norms
 
     let updatedNorms = voters |> Array.fold (updateNorms state.IsBetter) norms
     //printfn "%A" updatedNorms
@@ -112,6 +112,6 @@ let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> arra
     let state = {state with Norms=updatedNorms}
     voters,construct state defaultAcceptance fInfluence 
 
-let create parmDefs isBetter =    
-    let state = initialState parmDefs isBetter
+let create parmDefs optKind =    
+    let state = initialState parmDefs (CAUtils.comparator optKind)
     construct state defaultAcceptance defaultInfluence

@@ -124,7 +124,7 @@ let createVid ouput size maxGen (ca:CA<_>) clrF =
             let stp = CARunner.step false stp maxBest
             drawFrame stp.CA
             stp
-        let step = {CA=ca; Best=[]; Count=0; Progress=[]}
+        let step = {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
         step 
         |> Seq.unfold (fun s -> let s = loop s in (s,s)  |> Some ) 
     let _ = runCA  2 ca |> Seq.take maxGen |> Seq.toArray
@@ -149,7 +149,7 @@ let createVidHeat ouput size maxGen ca clrF =
             let stp = CARunner.step false stp maxBest
             drawFrame stp.CA
             stp
-        let step = {CA=ca; Best=[]; Count=0; Progress=[]}
+        let step = {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
         step 
         |> Seq.unfold (fun s -> let s = loop s in (s,s)  |> Some ) 
     let _ = runCA  2 ca |> Seq.take maxGen |> Seq.toArray

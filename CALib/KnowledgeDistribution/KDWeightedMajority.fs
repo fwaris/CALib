@@ -55,9 +55,9 @@ let rec kdLoop
     beliefSpace
     network
     fitness
-    cmprtr
+    optKind
     =
-    let nrmlzdFit = CAUtils.normalizePopFitness (0.,1.) cmprtr pop
+    let nrmlzdFit = CAUtils.normalizePopFitness (0.,1.) (CAUtils.mult optKind) pop
     let avgPopFit = Array.average nrmlzdFit
     let ksFit = pop |> PSeq.map(fun indv -> indv.KS, nrmlzdFit.[indv.Id]) |> PSeq.groupBy fst
     let ksFit = ksFit |> PSeq.map(fun (ks,kss) -> ks, kss |> Seq.sumBy snd) |> PSeq.toArray

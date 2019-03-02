@@ -5,24 +5,27 @@ open System.IO
 
 type KD = WTD | IPD | SH | SHS | STK
 
+let envChngSnstvy = function 0 -> Insensintive | x -> Every x
+
 //a single program run executes according to this config
 type RunConfig = 
   {
-    SaveFolder    : string
-    Restartable   : bool
-    KDs           : KD list
-    PopulationSize : int
-    NumCones       : int
-    RunToMax      : bool
-    CalcSocMetrics : bool
-    MaxGen        : int
-    NumLandscapes : int
-    Samples       : int
-    DistTh        : float
-    AValues       : float list
-    ChangeHeight  : bool
-    ChangeRadius  : bool
-    ChangeLoc     : bool
+    SaveFolder          : string
+    EnvChngSensitivity  : int
+    Restartable         : bool
+    KDs                 : KD list
+    PopulationSize      : int
+    NumCones            : int
+    RunToMax            : bool
+    CalcSocMetrics      : bool
+    MaxGen              : int
+    NumLandscapes       : int
+    Samples             : int
+    DistTh              : float
+    AValues             : float list
+    ChangeHeight        : bool
+    ChangeRadius        : bool
+    ChangeLoc           : bool
   }
 
 type NetId = Square | Hexagon | Octagon

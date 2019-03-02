@@ -9,42 +9,49 @@ type CA<'k> =
         Population              : Population<'k>
         Network                 : Network<'k>
         Fitness                 : Fitness
-        Comparator              : Comparator
+        Optimization            : OptimizationKind
+        EnvChngSensitivity      : EnvChngSensitivity                                                  
+                                                                                        
     }
+
+type EnvChngSensitivity = Insensintive | Every of int                                 // positive integer - after how many environmental changes to re-adjust
+                                                                                      // value of 1 means re-adjust to every environment change
+type EnvChngeType = NoChange | Adjust | Track
+
+type OptimizationKind = Minimize | Maximize
 
 type BeliefSpace<'k> = KnowledgeSource<'k> Tree
 
 type KnowledgeSource<'k> = 
     {
         Type        : Knowledge
-        Accept      : bool -> Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
-        Influence   : Temp -> Individual<'k> -> Individual<'k>
+        Accept      : EnvChngeType -> Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
+        Influence   : Temperature -> Individual<'k> -> Individual<'k>
     }
 
 type Tree<'a>        = Leaf of 'a | Node of 'a * Tree<'a> list | Roots of Tree<'a> list
 type Knowledge       = Situational | Historical | Normative | Topgraphical | Domain | Other of string
 type Acceptance<'k>  = BeliefSpace<'k> -> Population<'k> -> Individual<'k> array
-type Update<'k>      = bool -> BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
+type Update<'k>      = EnvChngeType -> BeliefSpace<'k> -> Individual<'k> array -> BeliefSpace<'k>
 
 type Influence<'k>   = Influence of (
-                            bool                                                        //environment change signal
+                            EnvChngeType                                                        //environment change signal
                                 -> Population<'k> 
                                 -> BeliefSpace<'k> 
                                 -> Network<'k> 
                                 -> Fitness 
-                                -> Comparator 
+                                -> OptimizationKind                                         
                                 -> (Population<'k>*BeliefSpace<'k>*Influence<'k>))      //returns updated population, beliefSpace and influence function
 
 type Population<'k>  = Individual<'k> array
 type Individual<'k>  = {Id:Id; Parms:float array; Fitness:float; KS:'k}
 type Network<'k>     = Population<'k> -> Id -> Individual<'k> array
 type Fitness         = (float array -> float) ref
-type Comparator      = float -> float -> bool //compare two fitness values - true when 1st 'is better than' 2nd
 
 type Id = int
-type Temp = float
+type Temperature = float
 type Marker = {MParms:float[]; MFitness:float}
-type TimeStep<'k> = {CA:CA<'k> ; Best:Marker list; Progress:float list; Count:int}
+type TimeStep<'k> = {CA:CA<'k> ; Best:Marker list; Progress:float list; Count:int; EnvChngCount:int}
 type TerminationCondition<'k> = TimeStep<'k> -> bool
 
 type Parm = 

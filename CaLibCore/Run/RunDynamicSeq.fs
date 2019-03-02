@@ -7,61 +7,62 @@ open Runs.Stat
 open FSharp.Control
 
 //WTD
-let initWTD basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+let initWTD envChgSnstvty basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
     let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
     let influence = KDWeightedMajority.influence bsp 3
-    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     WtdSt (step,Community.basePrimKs)
 
 //SH
-let initSH basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+let initSH envChgSnstvty basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
     let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStagHunt.influence defaultComparator 5 bsp pop
-    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+    let influence = KDStagHunt.influence defaultOptKind 5 bsp pop
+    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     ShSt (step,Community.fstPrimKs)
 
 //SHS
-let initSHS basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+let initSHS envChgSnstvty basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
     let pop = basePop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStagHuntStatic.influence None 5 bsp pop
-    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     ShSSt (step,Community.fstPrimKs)
 
 //STK
-let initSTK basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+let initSTK envChgSnstvty basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStackelberg.influence defaultComparator pop
-    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+    let influence = KDStackelberg.influence defaultOptKind pop
+    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     StkSt (step,Community.fstPrimKs)
 
 //IPD
-let initIPD basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+let initIPD envChgSnstvty basePop f = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
     let pop = basePop |> KDIPDGame.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = 
         let ada = KDIPDGame.Geometric(0.9,0.01)
         let vmx = (0.2, 0.9)
-        KDIPDGame.influence Domain ada vmx defaultComparator pop
-    let ca = makeCA f defaultComparator pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]}
+        KDIPDGame.influence Domain ada vmx defaultOptKind pop
+    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     IpdSt (step,Community.gamePrimKs)
 
 let initSteps rsc basePop f =
+    let sns = envChngSnstvy rsc.EnvChngSensitivity
     [|for kd in rsc.KDs ->
         match kd with
-        | WTD -> initWTD basePop f
-        | IPD -> initIPD basePop f
-        | SH  -> initSH  basePop f
-        | SHS -> initSHS basePop f
-        | STK -> initSTK basePop f
+        | WTD -> initWTD sns basePop f
+        | IPD -> initIPD sns basePop f
+        | SH  -> initSH  sns basePop f
+        | SHS -> initSHS sns basePop f
+        | STK -> initSTK sns basePop f
     |]
 
 //set new fitness function for changed landscape
@@ -124,7 +125,7 @@ let runConfig rsc =
                     let f : Fitness = ref ws.F
 
                     let basePop = 
-                        let bsp = CARunner.defaultBeliefSpace parmDefs defaultComparator f
+                        let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
                         CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
 
                     let lndscpCfg = 

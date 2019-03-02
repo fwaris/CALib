@@ -62,20 +62,22 @@ let rec defaultAcceptance
     (voters:Individual<_> array) =
  
     let {Window=win;Events=events} = 
-        match Settings.TrackEnv, envChanged with
-        | true,true -> {state with Events=[]}
+        match envChanged with
+        | Adjust    -> {state with Events=[]}
         | _         -> state
 
     match voters with
     | [||] -> voters,construct state defaultAcceptance fInfluence
     | inds ->
         let rBest = inds.[0] //assume best individual is first 
+
         let nBest = 
             match events with
-            | []                                                -> Some rBest
+            | []                                                     -> Some rBest
             | b::_ when state.IsBetter rBest.Fitness b.MFitness
-                    && isSignificantlyDifferent rBest.Parms b.MParms     -> Some rBest
-            | _                                                 -> None
+                    && isSignificantlyDifferent rBest.Parms b.MParms -> Some rBest
+            | _                                                      -> None
+
         match nBest with
         | None -> voters, construct state defaultAcceptance fInfluence
         | Some nBest ->
@@ -101,9 +103,9 @@ let rec defaultAcceptance
 
 let initialState (parmDefs:Parm[]) isBetter window = {Window=window; Events=[]; IsBetter=isBetter; ParmDefs=parmDefs}
 
-let create (parmDefs:Parm[]) isBetter window =
+let create (parmDefs:Parm[]) optKind window =
 
-    let state = initialState parmDefs isBetter window
+    let state = initialState parmDefs (CAUtils.comparator optKind) window
        
     construct state defaultAcceptance defaultInfluence
 

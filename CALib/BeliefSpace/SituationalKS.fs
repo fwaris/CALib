@@ -115,9 +115,9 @@ let rec defaultAcceptance
     (voters : Individual<_> array) =
 
     let state =
-        match Settings.TrackEnv, envChanged with
-        | true,true -> {state with Exemplars=[||]; SpinWheel=[||]} 
-        | _         -> state
+        match envChanged with
+        | Adjust -> {state with Exemplars=[||]; SpinWheel=[||]} 
+        | _      -> state
 
     let explrs = pickExamplars state.IsBetter state.Exemplars voters |> List.truncate state.MaxExemplars |> List.toArray
 //        for e in explrs do printf "%0.2f [%A]" e.Fitness (parmToFloat e.Parms.[0] ,parmToFloat e.Parms.[1] )
@@ -132,6 +132,6 @@ let rec defaultAcceptance
 
     voters, construct state defaultAcceptance fInfluence
 
-let create parmDefs isBetter maxExemplars =
-    let state = initialState parmDefs isBetter maxExemplars
+let create parmDefs optKind maxExemplars =
+    let state = initialState parmDefs (CAUtils.comparator optKind) maxExemplars
     construct state defaultAcceptance defaultInfluence

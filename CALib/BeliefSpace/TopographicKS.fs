@@ -87,9 +87,9 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> array) =
 
     let state =
-        match Settings.TrackEnv, envChanged with
-        | true,true -> initialState state.ParmDefs state.IsBetter state.Fitness
-        | _         -> state
+        match envChanged with
+        | Adjust -> initialState state.ParmDefs state.IsBetter state.Fitness
+        | _      -> state
 
     let state = updateClusters state voters
     voters,construct state defaultAcceptance fInfluence
@@ -102,6 +102,6 @@ let defaultInfluence state s (indv:Individual<_>) =
     p2 |> Array.iteri (fun i p -> evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p)
     indv
     
-let create parmDefs isBetter (fitness:Fitness) =
-    let state = initialState parmDefs isBetter fitness
+let create parmDefs optKind (fitness:Fitness) =
+    let state = initialState parmDefs (CAUtils.comparator optKind) fitness
     construct state defaultAcceptance defaultInfluence

@@ -12,6 +12,11 @@ let inline yourself x = x
 
 let isValidNum n = (System.Double.IsInfinity n || System.Double.IsNaN n) |> not
 
+let mult = function Minimize -> -1.0 | Maximize -> 1.0
+
+let comparator = function Maximize -> (fun a b -> a > b) | Minimize  -> (fun a b -> a < b)
+type Comparator = float -> float -> bool
+
 
 let scaler (sMin,sMax) (vMin,vMax) (v:float) =
     //if v < vMin then failwith "out of min range for scaling"
@@ -26,8 +31,6 @@ let scaler (sMin,sMax) (vMin,vMax) (v:float) =
     scaler (0.1, 0.9) (-200., -100.) -110.
     *)
 
-//function to turn minimzation problems into maximization for solving
-let maximization compartor =  if compartor 2. 1. then fun x -> x * -1. else fun x -> x
 
 let flatten tree =
     let rec loop acc = function
@@ -229,8 +232,6 @@ let pop = [|for i in 0 .. 100 -> {Individual.Id=i; Parms=[||]; KS=Domain; Fitnes
 squareNetwork pop 25
 *)
 
-let Maximize a b = a >= b
-let Minimize a b = a <= b
 
 let vF   = function F(v,_,_) -> v   | _ -> failwith "invalid type"
 let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"
@@ -238,9 +239,8 @@ let vI   = function I(v,_,_) -> v   | _ -> failwith "invalid type"
 let toVF (v:float) mn mx = F(clamp mn mx v, mn, mx)
 let toVI (v:float) mn mx = I(clamp mn mx (int v), mn, mx)
 
-let normalizePopFitness target cmprtr (pop:Individual<_>[]) =
-    let sign = if cmprtr 2. 1. then 1. else -1.
-    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * sign) //converts minimization to maximization (higher fitness is better)
+let normalizePopFitness target mult (pop:Individual<_>[]) =
+    let currentFit = pop |> Array.Parallel.map (fun p -> p.Fitness * mult) //converts minimization to maximization (higher fitness is better)
     let minFit = currentFit |> PSeq.min
     let maxFit = currentFit |> PSeq.max
     let scaler = scaler target (minFit,maxFit) 

@@ -52,14 +52,13 @@ let currentScheme state =
     | []    -> state.Schemes.[0].Scheme
     | _     -> state.Schemes.[state.Regimes.Head.Scheme].Scheme
 
-let initML cmprtr (schemes:'a seq) =
+let initML mult (schemes:'a seq) =
     let sMap = schemes |> Seq.mapi (fun i s-> i,{SchId=i;Scheme=s}) |> Map.ofSeq
-    let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0
-    let extremum = if sign > 0.0 then System.Double.MinValue else System.Double.MaxValue
+    let extremum = if mult > 0.0 then System.Double.MinValue else System.Double.MaxValue
     {
         Schemes = sMap
         Regimes = []//[newRegime sign]
-        Sign    = sign
+        Sign    = mult
     }
 
 let updateRegime mlState (pop:Population<_>) =

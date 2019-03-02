@@ -6,25 +6,25 @@ open CA
 type Neighbors<'k> = Individual<'k> array
 
 type Payoff<'action,'payout,'k> = 
-    Comparator 
+    OptimizationKind 
         -> Individual<'k>
         -> 'action 
         -> 'action seq 
         -> 'payout
 
 type Play<'action,'payout,'k> = 
-    Comparator 
+    OptimizationKind 
         -> Individual<'k> 
         -> Neighbors<'k> 
         -> Payoff<'action,'payout,'k> 
         -> 'action
 
 type Outcome<'action,'payout,'k> = 
-    bool //env changed
-        -> Comparator
+    EnvChngeType
+        -> OptimizationKind
         -> Population<'k> * BeliefSpace<'k> * Network<'k>
         -> 'payout array 
-        ->  Population<'k> * BeliefSpace<'k> * CSGame<'action,'payout,'k>
+        -> Population<'k> * BeliefSpace<'k> * CSGame<'action,'payout,'k>
 
 and CSGame<'action,'payout,'k> =
     {

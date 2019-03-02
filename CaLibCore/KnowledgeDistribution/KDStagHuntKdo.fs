@@ -1,4 +1,4 @@
-﻿module KDStagHunt
+﻿module KDStagHunt_
 //knowledge distribution based on Stag Hunt game
 
 open CA
@@ -215,14 +215,15 @@ let updateRegimeChange state =
 let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
 
     let pop = 
-        match Settings.TrackEnv, envCh with
-        | true,true -> resetCounts pop
-        | _         -> pop
+        match envCh with
+        | Adjust -> resetCounts pop
+        | _      -> pop
 
     let state = 
-        if envCh then 
+        match envCh with
+        | Adjust | Track ->
             state |> updateRegimeChange |> proposeScheme 
-        else
+        | NoChange ->
             state |> updateBest pop |> updateLevels |> updateForStagnation
 
     let pop = updatePop state state.Sign pop payouts

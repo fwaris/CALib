@@ -7,6 +7,7 @@ open System
 let configToSave = 
     {
       SaveFolder    = @"c:\s\calib\dsst_stats"
+      EnvChngSensitivity = 1
       Restartable   = false
       KDs            = [WTD; IPD; SH; STK]
       PopulationSize = 72
@@ -40,23 +41,26 @@ let createJobs() =
     let kds = [WTD; IPD; SH; SHS; STK]
     //let kds = [SH; SHS]                              //***** limited kd
     let avals = [1.0; 3.6; 3.9]
-    let NUM_SAMPLES = 200
+    let NUM_SAMPLES = 30
+    let envChSens = [0; 1; 5; 10]
     //let kdav = seq {for kd in kds do  
     //                    for av in avals do
     //                        for s in 1..30 do
     //                            yield kd,av,s}
     let kdav = seq {for av in avals do
                             for s in 1..NUM_SAMPLES do
-                                yield kds,av,s}
+                                for sn in envChSens do
+                                    yield kds,av,s,sn}
     let ser = FsPickler.CreateXmlSerializer(indent=true)
     let saveFolder = "/wsu/home/ar/ar86/ar8623/calib/jobout_sh"
-    kdav |> Seq.iteri (fun i (k,a,s) -> 
+    kdav |> Seq.iteri (fun i (k,a,s,sn) -> 
         let fnJob = Path.Combine(folder,sprintf "job_%d.xml" i)
         //let fnOut = sprintf "%s/%A_%A_%d" saveFolder k a s
         let fnOut = sprintf "%s/KD_%A_%d" saveFolder a s
         let cfg = 
              {
                   SaveFolder    = fnOut
+                  EnvChngSensitivity = sn
                   Restartable   = true
                   KDs            = k
                   PopulationSize = 36
@@ -68,9 +72,9 @@ let createJobs() =
                   Samples       = 1
                   DistTh        = 0.001
                   AValues       = [a]
-                  ChangeHeight  = false
+                  ChangeHeight  = true
                   ChangeRadius  = false
-                  ChangeLoc     = true
+                  ChangeLoc     = false
             }
         use f = File.CreateText(fnJob)
         ser.Serialize(f,cfg)

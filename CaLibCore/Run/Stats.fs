@@ -94,7 +94,7 @@ let statRec rsc lndscpCfg step =
 let initStatFile rsc fileName = 
     if Directory.Exists rsc.SaveFolder |> not then Directory.CreateDirectory rsc.SaveFolder |> ignore
     let path = Path.Combine(rsc.SaveFolder,fileName)
-    let header = "Sample\tKD\tLandscapeNum\tA\tGenCount\tBest\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS"
+    let header = "Sample\tKD\EnvSnsty\tLandscapeNum\tA\tGenCount\tBest\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS"
     match rsc.Restartable,File.Exists path with
     | true,_ ->
         use fn = new StreamWriter(File.Create(path))
@@ -108,8 +108,8 @@ let writeStats rsc fileName gs =
     let path = Path.Combine(rsc.SaveFolder,fileName)
     use fn = File.AppendText(path)
     let line = 
-        sprintf "%d\t%s\t%d\t%f\t%d\t%f\t%f\t%f\t%f\t%s" 
-            gs.Sample gs.KD gs.LandscapeNum gs.A gs.GenCount gs.Best gs.Max gs.Seg gs.Dffsn gs.Net
+        sprintf "%d\t%s\t%d\t%d\t%f\t%d\t%f\t%f\t%f\t%f\t%s" 
+            gs.Sample gs.KD rsc.EnvChngSensitivity gs.LandscapeNum gs.A gs.GenCount gs.Best gs.Max gs.Seg gs.Dffsn gs.Net
     fn.Write(line)
     fn.Write("\t")
     gs.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))

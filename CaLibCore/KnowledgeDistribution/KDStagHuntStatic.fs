@@ -111,8 +111,8 @@ let private shInfluence _ beliefSpace (pop:Population<ShKnowledge>) =
             p)
     pop 
 
-let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
-    let cmp = if cmprtr 1. 0. then 1.0 else -1.0
+let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
+    let cmp = CAUtils.mult optKind
     let pop = updatePop state cmp pop payouts
     let pop = shInfluence state beliefSpace pop
     let state = updateState state pop

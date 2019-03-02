@@ -1,4 +1,4 @@
-﻿module KDStagHunt_
+﻿module KDStagHunt
 //knowledge distribution based on Stag Hunt game
 
 open CA
@@ -74,7 +74,7 @@ let updateForStagnation (schem,state) =
     else
         state
 
-let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
+let initState mult (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge>) =
     let orders = [|ksOrder1; ksOrder2|] |> Array.map (Array.filter ksSet.Contains)
     let ksorders = orders |> Array.map (fun o -> {Order=o; Range=0.0, o.Length - 1 |> float})
     let policies = [| 
@@ -87,8 +87,7 @@ let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge
         {Start=1.2; End=0.7}
         {Start=1.5; End=0.6}
         |]
-    let schemes = MetaLrn.initML cmprtr policies
-    let sign = if cmprtr 1.0 0.0 then 1.0 else -1.0
+    let schemes = MetaLrn.initML mult policies
     {
         FitnessAtInit = pop |> Array.map (fun i-> i.Fitness)
         CoopGens = coopGens
@@ -98,7 +97,7 @@ let initState cmprtr (ksSet:Set<Knowledge>) coopGens (pop:Population<ShKnowledge
         CurrInfLvls = dict defaultInfluenceLevels 
         CurrentTmprtr = 1.0
         NormdBest = System.Double.MinValue 
-        Sign = sign
+        Sign = mult
         GensSinceBest = 0
     }
     |> updateScheme
@@ -190,15 +189,16 @@ let private shInfluence state beliefSpace (pop:Population<ShKnowledge>) =
 
 let resetCounts pop = pop |> Array.map(fun indv -> {indv with KS=fst indv.KS,0})
 
-let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
 
     let pop = 
-        match Settings.TrackEnv, envCh with
-        | true,true -> resetCounts pop
+        match envCh with
+        | Adjust    -> resetCounts pop
         | _         -> pop
 
     let state = 
-        if envCh then 
+        match envCh with
+        | Adjust | Track ->
             let schemes = MetaLrn.regimeChanged state.Schemes
             let curr = MetaLrn.currentScheme schemes
             //printfn "scheme %A" curr
@@ -206,13 +206,13 @@ let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
                 Schemes = schemes
             }
             |> updateScheme
-        else
+        | NoChange ->
             let schemes = MetaLrn.updateRegime state.Schemes pop
             { state with
                 Schemes = schemes
             }
 
-    let cmp = if cmprtr 1. 0. then 1.0 else -1.0
+    let cmp = CAUtils.mult optKind
     let pop = updatePop state cmp pop payouts
     //printfn "%A" state.CurrentTmprtr
     let pop = shInfluence state beliefSpace pop
@@ -242,8 +242,8 @@ let initKS (pop:Population<Knowledge>) : Population<ShKnowledge> =
             KS=indv.KS,0
         })
 
-let influence cmprtr coopGens beliefSpace pop =
+let influence optKind coopGens beliefSpace pop =
     let ksSet = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type) |> set //use only KS used in belief space
-    let state = initState cmprtr ksSet coopGens pop
+    let state = initState (CAUtils.mult optKind) ksSet coopGens pop
     let g = game state
     KDContinousStrategyGame.influence g

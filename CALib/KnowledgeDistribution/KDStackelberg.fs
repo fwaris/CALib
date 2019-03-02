@@ -165,16 +165,16 @@ let reset state pop =
     let pop = pop |> Array.map(fun indv -> {indv with KS=fst indv.KS,0})
     state,pop
 
-let rec outcome state envCh cmprtr (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
 
     let state,pop = 
-        match Settings.TrackEnv, envCh with
-        | true,true -> reset state pop
-        | _         -> updateState state pop, pop
+        match envCh with
+        | Adjust -> reset state pop
+        | _      -> updateState state pop, pop
 
     let pop,state =
         if state.Gen % state.DistributeAfterGens = 0 then
-            let cmp = if cmprtr 1. 0. then 1.0 else -1.
+            let cmp = CAUtils.mult optKind
             updatePop state cmp pop payouts,
             resetState state pop
         else
@@ -209,8 +209,8 @@ let initKS (pop:Population<Knowledge>) : Population<StkKnowledge> =
         })
 
 
-let influence cmprtr pop =
-    let sign = if cmprtr 1.0 0.0 then +1.0 else -1.0
-    let state = initState sign pop
+let influence optKind pop =
+    let mult = CAUtils.mult optKind
+    let state = initState mult pop
     let g = game state
     KDContinousStrategyGame.influence g

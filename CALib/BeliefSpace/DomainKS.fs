@@ -58,8 +58,8 @@ let defaultInfluence state influenceLevel (ind:Individual<_>) =
             | Flat -> p)//evolveS s eSigma p)
     ind
 
-let create parmDefs isBetter (fitness:Fitness) =
+let create parmDefs optKind (fitness:Fitness) =
 
-    let state = initialState parmDefs isBetter fitness
+    let state = initialState parmDefs (CAUtils.comparator optKind) fitness
 
     construct state defaultAcceptance defaultInfluence

@@ -293,12 +293,13 @@ let updateStability f = function
 //let logNetwork popSz state (payouts:Payout array) = TracingGame.fpNetW({popSz, state.VMin,payouts)
 
 
-let rec outcome state envCh cmprtr (pop,beliefSpace,network) (payouts:Payout array) =
+let rec outcome state envCh optKind (pop,beliefSpace,network) (payouts:Payout array) =
     let vmx = (state.VMin, state.VMax)
-    let pop' = updatePop state vmx cmprtr pop payouts
+    let mult = CAUtils.mult optKind
+    let pop' = updatePop state vmx mult pop payouts
     let stability = state.Stability |> Array.mapi (fun i f -> updateStability f (primKS pop'.[i].KS, primKS pop.[i].KS))
     let pop = ipdInfluence state beliefSpace pop'
-    let state = createState state.ExploitativeKS state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.PrevNrmlzdFit)) vmx cmprtr pop
+    let state = createState state.ExploitativeKS state.KSAdjust state.Gen stability (Some (state.NormalizedFit,state.PrevNrmlzdFit)) vmx mult pop
   
     #if _LOG_
     fpNetW {Pop=pop';Net=network; Vmin=state.VMin; Links=payouts}
@@ -331,7 +332,7 @@ let game exploitativeKS ksAdjust  (vmin,vmax) cmprtr (pop:Population<IpdKS>) =
         Outcome = outcome state
     }
 
-let influence exploitativeKs ksAdjust (vmin,vmax) comparator pop =
-    let g = game exploitativeKs ksAdjust (vmin,vmax)  comparator pop
+let influence exploitativeKs ksAdjust (vmin,vmax) optKind pop =
+    let g = game exploitativeKs ksAdjust (vmin,vmax)  (CAUtils.mult optKind) pop
     KDContinousStrategyGame.influence g
 

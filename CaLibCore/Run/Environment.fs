@@ -11,22 +11,23 @@ let parmDefs =
         F(0.,-1.,1.) // y
     |]
 
-let defaultComparator = CAUtils.Maximize
+let defaultOptKind = Maximize
 let defaultNetwork = CAUtils.hexagonNetworkViz
 let defaultMaxBest = 2
 let SEG_RAD = 2
 
 
-let inline makeCA fitness comparator pop bspace influence network =
+let inline makeCA fitness envChgSensitivity optKind pop bspace influence network =
         {
             Population           = pop
             Network              = network
             BeliefSpace          = bspace
-            Acceptance           = CARunner.acceptance 0.25 comparator
+            Acceptance           = CARunner.acceptance 0.25 (CAUtils.mult optKind)
             Influence            = influence
             Update               = CARunner.update
             Fitness              = fitness
-            Comparator           = comparator
+            Optimization         = optKind
+            EnvChngSensitivity   = envChgSensitivity
         }
 
 
