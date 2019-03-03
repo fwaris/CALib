@@ -56,17 +56,17 @@ let log exmplrs = exmplrs |> Seq.map (fun e -> e.MParms) |> Seq.toList |> Metric
 let pickExamplars isBetter (prevE:Marker[]) (voters:Individual<_> seq) =
     let tx = if isBetter 2. 1. then -1. else 1.
     let voters = voters |> Seq.map (fun indv -> toMarker indv)
-    let ex = Seq.append prevE  voters |> Seq.toArray
-    let ex = Array.sortBy (fun x -> tx * x.MFitness) ex
-    let best = ex.[0]
+    let ex1 = Seq.append prevE  voters |> Seq.toArray
+    let ex2 = Array.sortBy (fun x -> tx * x.MFitness) ex1
+    let best = ex2.[0]
     let within10Pct = best.MFitness * 0.15
 //    let ex = ex.[1..] |> Array.filter(fun i -> i.Fitness - best.Fitness |> abs <= within10Pct) //all others, i.e. not best
-    let ex = ex.[1..] 
-    let divsM = ex |> Array.mapi (fun i indv -> i, parmDiversity best.MParms indv.MParms) |> Map.ofArray
+    let exRest = ex2.[1..] 
+    let divsM = exRest |> Array.mapi (fun i indv -> i, parmDiversity best.MParms indv.MParms) |> Map.ofArray
     let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
     let (_,mnD) = divsM |> Map.toArray |> Seq.minBy snd
     let bins = makeBins mnD (mxD + 0.0001) 5.
-    let binned = (Map.empty,ex |> Array.mapi (fun i exm ->i,exm)) ||> Array.fold (fun acc (i,exm) -> 
+    let binned = (Map.empty,exRest |> Array.mapi (fun i exm ->i,exm)) ||> Array.fold (fun acc (i,exm) -> 
         let d = divsM.[i]
         let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
         match acc |> Map.tryFind b with

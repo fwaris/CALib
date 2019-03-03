@@ -200,17 +200,21 @@ let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
         match envCh with
         | Adjust | Track ->
             let schemes = MetaLrn.regimeChanged state.Schemes
-            let curr = MetaLrn.currentScheme schemes
-            //printfn "scheme %A" curr
             { state with 
                 Schemes = schemes
             }
             |> updateScheme
-        | NoChange ->
+        | NoChange when state.Schemes.Regimes.IsEmpty |> not ->
             let schemes = MetaLrn.updateRegime state.Schemes pop
             { state with
                 Schemes = schemes
             }
+        | NoChange  ->
+            let schemes = MetaLrn.regimeChanged state.Schemes
+            { state with 
+                Schemes = schemes
+            }
+            |> updateScheme
 
     let cmp = CAUtils.mult optKind
     let pop = updatePop state cmp pop payouts

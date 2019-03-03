@@ -94,7 +94,7 @@ let statRec rsc lndscpCfg step =
 let initStatFile rsc fileName = 
     if Directory.Exists rsc.SaveFolder |> not then Directory.CreateDirectory rsc.SaveFolder |> ignore
     let path = Path.Combine(rsc.SaveFolder,fileName)
-    let header = "Sample\tKD\EnvSnsty\tLandscapeNum\tA\tGenCount\tBest\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS"
+    let header = "Sample\tKD\tEnvSnsty\tLandscapeNum\tA\tGenCount\tBest\tMax\tSeg\tDffsn\tNet\tIndvSeg\tIndvDffsn\tIndvKS"
     match rsc.Restartable,File.Exists path with
     | true,_ ->
         use fn = new StreamWriter(File.Create(path))

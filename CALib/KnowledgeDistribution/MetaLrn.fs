@@ -63,18 +63,20 @@ let initML mult (schemes:'a seq) =
 
 let updateRegime mlState (pop:Population<_>) =
     let sign = mlState.Sign
-    let regime,rest = match mlState.Regimes with h::t -> h,t | _ -> failwith "empty regimes list"
-    let gen = regime.RegimeGens + 1
     let cndtBst = pop |> Array.map (fun i->i.Fitness*sign) |> Array.max
-    let foundBetter = cndtBst > regime.Best
-    let regime =
-        { regime with
-            Best = if foundBetter then cndtBst else regime.Best
-            GensToBest = if foundBetter then gen else regime.GensToBest
-            ImprovementCount = if foundBetter then regime.ImprovementCount + 1 else regime.ImprovementCount
-            RegimeGens = gen
-        }
-    { mlState with Regimes=regime::rest}
+    let newRegime,rest = 
+        let regime,rest = match mlState.Regimes with h::t -> h,t | _ -> failwith "empty regimes list"
+        let gen = regime.RegimeGens + 1
+        let foundBetter = cndtBst > regime.Best
+        let regime =
+            { regime with
+                Best = if foundBetter then cndtBst else regime.Best
+                GensToBest = if foundBetter then gen else regime.GensToBest
+                ImprovementCount = if foundBetter then regime.ImprovementCount + 1 else regime.ImprovementCount
+                RegimeGens = gen
+            }
+        regime,rest
+    { mlState with Regimes=newRegime::rest}
 
 let roundRobbinRegime state = 
     let idx = 

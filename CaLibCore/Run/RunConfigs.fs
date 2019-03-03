@@ -6,9 +6,9 @@ open System
 
 let configToSave = 
     {
-      SaveFolder    = @"c:\s\calib\dsst_stats"
+      SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = 1
-      Restartable   = false
+      Restartable   = true
       KDs            = [WTD; IPD; SH; STK]
       PopulationSize = 72
       NumCones      = 500
@@ -56,7 +56,7 @@ let createJobs() =
     kdav |> Seq.iteri (fun i (k,a,s,sn) -> 
         let fnJob = Path.Combine(folder,sprintf "job_%d.xml" i)
         //let fnOut = sprintf "%s/%A_%A_%d" saveFolder k a s
-        let fnOut = sprintf "%s/KD_%A_%d" saveFolder a s
+        let fnOut = sprintf "%s/KD_%A_%d_%d" saveFolder a s sn
         let cfg = 
              {
                   SaveFolder    = fnOut

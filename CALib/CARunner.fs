@@ -27,7 +27,7 @@ let acceptance topProportion mult beliefSpace (pop:Population<_>) =
     let take = (float pop.Length) * topProportion |> int
     let topInds = 
         pop 
-        |> PSeq.sortBy (fun ind -> mult * ind.Fitness) 
+        |> PSeq.sortBy (fun ind -> -mult * ind.Fitness) //sort in descending order so best is first
         |> Seq.truncate take
         |> Seq.toArray
     topInds
@@ -73,7 +73,8 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} max
 
     let reactToEnvChange = 
         match ca.EnvChngSensitivity with 
-        | Insensintive                              -> NoChange 
+        | Insensintive when envChanged              -> Track
+        | Insensintive                              -> NoChange
         | Every m when envChanged && (ec % m) = 0   -> Adjust 
         | Every _ when envChanged                   -> Track
         | Every _                                   -> NoChange
