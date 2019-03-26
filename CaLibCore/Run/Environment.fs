@@ -1,4 +1,5 @@
 ﻿module Runs.Environment
+open Config.Types
 open Runs.Types
 open CA
 open DF1
@@ -41,7 +42,7 @@ let step envChanged st = CARunner.step envChanged st 2
 
 let vmx = (0.2, 0.9)
 
-let createEnv rsc a =
+let createEnv (rsc:RunConfig) a =
   let aH = if rsc.ChangeHeight then Some a else None
   let aR = if rsc.ChangeRadius then Some a else None
   let aC = if rsc.ChangeLoc then Some a else None
@@ -54,7 +55,7 @@ let changeEnv ws =
   let (c,f) = landscape w
   {W=w; M=c; F=f; EnvChangeCount = ws.EnvChangeCount + 1}
   
-let saveEnv rsc id (ws:WorldState) =
+let saveEnv (rsc:RunConfig) id (ws:WorldState) =
   let fn = sprintf "Env_%s_%d.env" id (System.DateTime.Now.ToFileTime())
   let path = Path.Combine(rsc.SaveFolder,fn)
   DF1.saveEnv path  ws.W.Cones

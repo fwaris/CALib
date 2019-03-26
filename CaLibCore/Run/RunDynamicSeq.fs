@@ -2,6 +2,7 @@
 open CA
 open CAUtils
 open Runs.Types
+open Config.Types
 open Runs.Environment
 open Runs.Stat
 open FSharp.Control
@@ -54,8 +55,7 @@ let initIPD envChgSnstvty basePop f =
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     IpdSt (step,Community.gamePrimKs)
 
-let initSteps rsc basePop f =
-    let sns = envChngSnstvy rsc.EnvChngSensitivity
+let initSteps rsc sns basePop f =
     [|for kd in rsc.KDs ->
         match kd with
         | WTD -> initWTD sns basePop f
@@ -101,6 +101,8 @@ let runLandscapeGens rsc lndscpCfg =
             return Some((stats,lndscpCfg),lndscpCfg)
     }
 
+let envChngSnstvy = function 0 -> Insensintive | x -> Every x
+
 let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
     async {
         if lndscpCfg.Landscape >= rsc.NumLandscapes then 
@@ -114,32 +116,33 @@ let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
             let lndscpCfg = (Array.last>>snd) runResults
             return Some(stats,lndscpCfg)
     }
-
 let runConfig rsc = 
     asyncSeq {
         for a in rsc.AValues do
             MetaLrn.Dbg.A <- a
             for n in [Hexagon] do
-                for i in 1..rsc.Samples do
-                    let ws = createEnv rsc a
-                    let f : Fitness = ref ws.F
+                for sn in rsc.EnvChngSensitivity do
+                    for i in 1..rsc.Samples do
+                        let ws = createEnv rsc a
+                        let f : Fitness = ref ws.F
 
-                    let basePop = 
-                        let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
-                        CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
+                        let basePop = 
+                            let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+                            CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
 
-                    let lndscpCfg = 
-                        {
-                            Ws        = ws
-                            A         = a
-                            Net       = n
-                            Landscape = 0
-                            SampleNum = i
-                            EnvCh     = true
-                            Steps     = initSteps rsc basePop f
-                        }
-                    let stats = AsyncSeq.unfoldAsync (runLandscapeSeq rsc) lndscpCfg
-                    yield! stats
+                        let lndscpCfg = 
+                            {
+                                Ws                  = ws
+                                A                   = a
+                                Net                 = n
+                                Landscape           = 0
+                                SampleNum           = i
+                                EnvCh               = true
+                                EnvChngSensitivity  = sn
+                                Steps               = initSteps rsc (envChngSnstvy sn) basePop f
+                            }
+                        let stats = AsyncSeq.unfoldAsync (runLandscapeSeq rsc) lndscpCfg
+                        yield! stats
     }
    
 let run rsc = 

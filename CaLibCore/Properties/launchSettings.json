@@ -1,8 +1,7 @@
 {
   "profiles": {
     "CaLibCore": {
-      "commandName": "Project",
-      "commandLineArgs": "\"D:\\calib\\dbg_cfg\\Config.xml\""
+      "commandName": "Project"
     }
   }
 }

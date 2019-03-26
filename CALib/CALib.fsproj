@@ -101,7 +101,6 @@
     <None Include="Landscapes\test_cone3.99.csv" />
     <None Include="Landscapes\Backgrounds.fsx" />
     <None Include="Testing\Tail.fsx" />
-    <None Include="Testing\SetupEnv.fsx" />
     <None Include="Testing\SetupVideo.fsx" />
     <None Include="Testing\TestEnv.fsx" />
     <None Include="Testing\TestViz.fsx" />
@@ -121,6 +120,7 @@
     <None Include="Testing\CecBenchmark.fsx" />
     <None Include="Testing\L-Shade.fsx" />
     <None Include="Testing\ViewVideo.fsx" />
+    <None Include="Testing\SetupEnv.fsx" />
     <None Include="paket.references" />
     <Content Include="packages.config" />
   </ItemGroup>

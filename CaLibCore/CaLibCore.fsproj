@@ -41,6 +41,7 @@
     <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
     <Compile Include="..\CALib\Utilities\FPGrowth.fs" Link="Utilities\FPGrowth.fs" />
     <Compile Include="Utilities\Community.fs" />
+    <Compile Include="Run\ConfigTypes.fs" />
     <Compile Include="Run\Types.fs" />
     <Compile Include="Run\Environment.fs" />
     <Compile Include="Run\Stats.fs" />

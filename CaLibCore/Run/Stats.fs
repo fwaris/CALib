@@ -3,6 +3,7 @@ open CA
 open FSharp.Collections.ParallelSeq
 open Runs.Environment
 open Runs.Types
+open Config.Types
 open System.IO
 open System.IO.Compression
 
@@ -78,6 +79,7 @@ let statRec rsc lndscpCfg step =
     {
         Sample=lndscpCfg.SampleNum
         KD=kdId step
+        EnvCgnSnstvy = lndscpCfg.EnvChngSensitivity
         LandscapeNum=lndscpCfg.Landscape
         A=lndscpCfg.A
         GenCount=genCount lndscpCfg
@@ -109,7 +111,7 @@ let writeStats rsc fileName gs =
     use fn = File.AppendText(path)
     let line = 
         sprintf "%d\t%s\t%d\t%d\t%f\t%d\t%f\t%f\t%f\t%f\t%s" 
-            gs.Sample gs.KD rsc.EnvChngSensitivity gs.LandscapeNum gs.A gs.GenCount gs.Best gs.Max gs.Seg gs.Dffsn gs.Net
+            gs.Sample gs.KD gs.EnvCgnSnstvy gs.LandscapeNum gs.A gs.GenCount gs.Best gs.Max gs.Seg gs.Dffsn gs.Net
     fn.Write(line)
     fn.Write("\t")
     gs.IndvSeg |> Array.iter (fun x -> fn.Write(x); fn.Write("|"))

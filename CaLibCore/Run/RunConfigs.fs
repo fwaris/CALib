@@ -1,24 +1,23 @@
 ﻿module RunConfigs
 open MBrace.FsPickler
-open Runs.Types
+open Config.Types
 open System.IO
-open System
 
 let configToSave = 
     {
       SaveFolder    = @"d:\calib\dsst_stats"
-      EnvChngSensitivity = 1
+      EnvChngSensitivity = [0; 1; 5; 10]
       Restartable   = true
       KDs            = [WTD; IPD; SH; STK]
-      PopulationSize = 72
-      NumCones      = 500
+      PopulationSize = 360
+      NumCones      = 1000
       RunToMax      = false
       CalcSocMetrics = false
       MaxGen        = 250
       NumLandscapes = 50
       Samples       = 2
       DistTh        = 0.001
-      AValues       = [1.0; 3.0;3.3; 3.6; 3.8; 3.9]
+      AValues       = [1.0; 3.1; 3.6; 3.9]
       ChangeHeight  = false
       ChangeRadius  = false
       ChangeLoc     = true
@@ -35,14 +34,20 @@ let loadConfig file =
   let config:RunConfig = ser.Deserialize(f)
   config
 
+let serializeConfig (ser:XmlSerializer) folder i (cfg:RunConfig) =
+    let fnJob = Path.Combine(folder,sprintf "job_%d.xml" i)
+    use f = File.CreateText(fnJob)
+    ser.Serialize(f,cfg)
+
 let createJobs() =
     let folder = @"d:\calib\jobs"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
-    let kds = [WTD; IPD; SH; SHS; STK]
+    let kds = [WTD; IPD; SHS; STK]
     //let kds = [SH; SHS]                              //***** limited kd
-    let avals = [1.0; 3.6; 3.9]
-    let NUM_SAMPLES = 30
-    let envChSens = [0; 1; 5; 10]
+    let avals = [1.0; 3.1; 3.6; 3.9]
+    let NUM_SAMPLES = 200
+    //let envChSens = [0; 1; 5; 10]
+    let envChSens = [0; 1]
     //let kdav = seq {for kd in kds do  
     //                    for av in avals do
     //                        for s in 1..30 do
@@ -60,7 +65,7 @@ let createJobs() =
         let cfg = 
              {
                   SaveFolder    = fnOut
-                  EnvChngSensitivity = sn
+                  EnvChngSensitivity = [sn]
                   Restartable   = true
                   KDs            = k
                   PopulationSize = 36
@@ -76,8 +81,7 @@ let createJobs() =
                   ChangeRadius  = false
                   ChangeLoc     = false
             }
-        use f = File.CreateText(fnJob)
-        ser.Serialize(f,cfg)
+        serializeConfig ser folder i cfg
    )
 
  (*  //amped environment 
