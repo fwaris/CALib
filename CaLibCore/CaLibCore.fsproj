@@ -24,7 +24,6 @@
     <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\KMeans.fs" Link="BeliefSpace\KMeans.fs" />
     <Compile Include="..\CALib\BeliefSpace\TopographicKS.fs" Link="BeliefSpace\TopographicKS.fs" />
-    <Compile Include="KnowledgeDistribution\MetaLrnKdo.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\MetaLrn2.fs" Link="KnowledgeDistribution\MetaLrn2.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\MetaLrn.fs" Link="KnowledgeDistribution\MetaLrn.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDSimpleMajority.fs" Link="KnowledgeDistribution\KDSimpleMajority.fs" />
@@ -32,9 +31,9 @@
     <Compile Include="..\CALib\KnowledgeDistribution\KDWeightedMajority.fs" Link="KnowledgeDistribution\KDWeightedMajority.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDContinousStrategyGame.fs" Link="KnowledgeDistribution\KDContinousStrategyGame.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDIPDGame.fs" Link="KnowledgeDistribution\KDIPDGame.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDIPD.fs" Link="KnowledgeDistribution\KDIPD.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDStagHunt.fs" Link="KnowledgeDistribution\KDStagHunt.fs" />
-    <Compile Include="KnowledgeDistribution\KDStagHuntKdo.fs" />
-    <Compile Include="KnowledgeDistribution\KDStagHuntStatic.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDStagHuntStatic.fs" Link="KnowledgeDistribution\KDStagHuntStatic.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDStackelberg.fs" Link="KnowledgeDistribution\KDStackelberg.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\Schelling.fs" Link="KnowledgeDistribution\Schelling.fs" />
     <Compile Include="..\CALib\CAConstants.fs" Link="CAConstants.fs" />
@@ -50,10 +49,9 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.5.4" />
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
     <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.1.2" />
     <PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.21" />
     <PackageReference Include="FsPickler" Version="5.2.0" />
-    <PackageReference Include="Microsoft.ML" Version="0.10.0" />
   </ItemGroup>
 </Project>

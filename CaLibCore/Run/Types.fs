@@ -11,7 +11,7 @@ type WorldState = {W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
 type Step = 
     | WtdSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
-    | IpdSt of TimeStep<KDIPDGame.IpdKS> * (KDIPDGame.IpdKS->Knowledge)
+    | IpdSt of TimeStep<KDIPD.IpKnowledge> * (KDIPD.IpKnowledge->Knowledge)
     | ShSt  of TimeStep<KDStagHunt.ShKnowledge> *  (KDStagHunt.ShKnowledge->Knowledge)
     | ShSSt  of TimeStep<KDStagHuntStatic.ShKnowledge> *  (KDStagHuntStatic.ShKnowledge->Knowledge)
     | StkSt of TimeStep<KDStackelberg.StkKnowledge> * (KDStackelberg.StkKnowledge->Knowledge)

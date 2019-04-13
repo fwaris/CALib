@@ -8,6 +8,7 @@ let MAX_ALT_KS_INFLUENCE    = 1.0 //cap influence of secondary ks
 //let KS_ADJUST             = 0.9 //adjustment mutliplier to influence level if indiv keeps same KS next gen
 let SCNRY_EXPL_KS_BOOST     = 0.9 //aggressiveness boost for secondary exploitative KS
 let MIN_INFLUENCE_LEVEL     = 0.001 //floor for influence level
+let LOST_KS_WT = 0.20 // percentage of pop that is randomly assigned a KS that was pushed out
 
 type PrimaryKS = {KS:Knowledge; Level:float}
 type IpdKS = PrimaryKS * Map<Knowledge,float> //each indv has a primary ks and partial influece KSs
@@ -39,6 +40,7 @@ type IpdState =
         KSCount         : Map<Knowledge,float>
         KSAdjust        : Ada 
         ExploitativeKS  : Knowledge
+        KSSet           : Set<Knowledge>
         }
 
 let parmDiversity p1 p2 = 
@@ -273,6 +275,7 @@ let createState exploitativeKS ksAdjust gen stability prevFitOpt (vmin,vmax) cmp
         |> Seq.map (fun (k,xs)->k, xs |>Seq.sumBy snd)
     let totalKsc = ksc |> Seq.sumBy snd
     let ksc = ksc |> Seq.map (fun (k,v) -> k, v / totalKsc) |> Map.ofSeq
+    let ksSet = ksc |> Map.toSeq |> Seq.map fst |> set
     {
         SumDiversity = sampleAvgDiversity pop * float pop.Length
         NormalizedFit = nrmlzdFit
@@ -284,6 +287,7 @@ let createState exploitativeKS ksAdjust gen stability prevFitOpt (vmin,vmax) cmp
         Gen = gen + 1
         KSAdjust = ksAdjust
         ExploitativeKS = exploitativeKS
+        KSSet = ksSet
     }
 
 let updateStability f = function
@@ -304,6 +308,17 @@ let rec outcome state envCh optKind (pop,beliefSpace,network) (payouts:Payout ar
     #if _LOG_
     fpNetW {Pop=pop';Net=network; Vmin=state.VMin; Links=payouts}
     #endif
+    let pop =
+        if  state.Gen % 5 = 0 then
+            let missingKS = pop |> Array.Parallel.map (fun i -> primKS i.KS) |> set |> Set.difference state.KSSet
+            for ks in missingKS do
+                for _ in 1 .. (float pop.Length * LOST_KS_WT |> int) do
+                    let indx = CAUtils.rnd.Value.Next(pop.Length)
+                    //mutate local copy of pop array
+                    pop.[indx] <- createWthKS state  pop.[indx] {KS=ks;Level=1.0} Map.empty 
+            pop
+        else
+            pop
 
     pop,
     beliefSpace,

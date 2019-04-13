@@ -57,82 +57,6 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Probability.fs" />
-    <Compile Include="DF1.fs" />
-    <Compile Include="CA.fs" />
-    <Compile Include="CAUtils.fs" />
-    <Compile Include="CAEvolve.fs" />
-    <Compile Include="Settings.fs" />
-    <Compile Include="Metrics\ObservableExt.fs" />
-    <Compile Include="Metrics\Metrics.fs" />
-    <Compile Include="Metrics\Tracing.fs" />
-    <Compile Include="Metrics\TracingGame.fs" />
-    <Compile Include="Metrics\Social.fs" />
-    <Compile Include="BeliefSpace\HistoricalKS.fs" />
-    <Compile Include="BeliefSpace\NormativeKS.fs" />
-    <Compile Include="BeliefSpace\SituationalKS.fs" />
-    <Compile Include="BeliefSpace\DomainKS.fs" />
-    <Compile Include="BeliefSpace\KMeans.fs" />
-    <Compile Include="BeliefSpace\TopographicKS.fs" />
-    <Compile Include="KnowledgeDistribution\MetaLrn.fs" />
-    <Compile Include="KnowledgeDistribution\MetaLrn2.fs" />
-    <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
-    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
-    <Compile Include="KnowledgeDistribution\Schelling.fs" />
-    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
-    <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
-    <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
-    <Compile Include="CAConstants.fs" />
-    <Compile Include="CARunner.fs" />
-    <Compile Include="Utilities\FPGrowth.fs" />
-    <Compile Include="Utilities\VizUtils.fs" />
-    <Compile Include="Utilities\VizNetwork.fs" />
-    <Compile Include="Utilities\TraceCharts.fs" />
-    <Compile Include="Utilities\VizLandscape.fs" />
-    <Compile Include="Utilities\Community.fs" />
-    <None Include="Landscapes\test_cone1.01.csv" />
-    <None Include="Landscapes\test_cone2.0.csv" />
-    <None Include="Landscapes\test_cone3.35.csv" />
-    <None Include="Landscapes\test_cone3.5.csv" />
-    <None Include="Landscapes\test_cone3.99.csv" />
-    <None Include="Landscapes\Backgrounds.fsx" />
-    <None Include="Testing\Tail.fsx" />
-    <None Include="Testing\SetupVideo.fsx" />
-    <None Include="Testing\TestEnv.fsx" />
-    <None Include="Testing\TestViz.fsx" />
-    <None Include="Testing\TestVizSocial.fsx" />
-    <None Include="Testing\SocSeqViz.fsx" />
-    <None Include="Testing\Trace.fsx" />
-    <None Include="Testing\TraceDynamic.fsx" />
-    <None Include="Testing\TestCA3D.fsx" />
-    <None Include="Testing\TestDomain.fsx" />
-    <None Include="Testing\TestHistorical.fsx" />
-    <None Include="Testing\TestNormative.fsx" />
-    <None Include="Testing\TestParms.fsx" />
-    <None Include="Testing\TestSituational.fsx" />
-    <None Include="Testing\IPDLogAnalysis.fsx" />
-    <None Include="Testing\IPDWTDRun.xlsx" />
-    <None Include="Testing\IPDStats.fsx" />
-    <None Include="Testing\CecBenchmark.fsx" />
-    <None Include="Testing\L-Shade.fsx" />
-    <None Include="Testing\ViewVideo.fsx" />
-    <None Include="Testing\SetupEnv.fsx" />
-    <None Include="paket.references" />
-    <Content Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Windows.Forms.DataVisualization" />
-  </ItemGroup>
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7' Or $(TargetFrameworkVersion) == 'v4.7.1')">
       <ItemGroup>
@@ -165,15 +89,7 @@
     </When>
   </Choose>
   <Choose>
-    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7' Or $(TargetFrameworkVersion) == 'v4.7.1')">
-      <ItemGroup>
-        <Reference Include="FSharp.Core">
-          <HintPath>..\packages\FSharp.Core\lib\net45\FSharp.Core.dll</HintPath>
-          <Private>True</Private>
-          <Paket>True</Paket>
-        </Reference>
-      </ItemGroup>
-    </When>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7' Or $(TargetFrameworkVersion) == 'v4.7.1')" />
     <When Condition="($(TargetFrameworkIdentifier) == 'MonoAndroid' And ($(TargetFrameworkVersion) == 'v7.0' Or $(TargetFrameworkVersion) == 'v7.1' Or $(TargetFrameworkVersion) == 'v8.0')) Or ($(TargetFrameworkIdentifier) == 'MonoTouch') Or ($(TargetFrameworkIdentifier) == '.NETCoreApp' And ($(TargetFrameworkVersion) == 'v1.0' Or $(TargetFrameworkVersion) == 'v1.1' Or $(TargetFrameworkVersion) == 'v2.0')) Or ($(TargetFrameworkIdentifier) == '.NETStandard' And ($(TargetFrameworkVersion) == 'v1.6' Or $(TargetFrameworkVersion) == 'v2.0')) Or ($(TargetFrameworkIdentifier) == 'Xamarin.iOS') Or ($(TargetFrameworkIdentifier) == 'Xamarin.Mac') Or ($(TargetFrameworkIdentifier) == 'Xamarin.tvOS') Or ($(TargetFrameworkIdentifier) == 'Xamarin.watchOS')">
       <ItemGroup>
         <Reference Include="FSharp.Core">
@@ -1121,4 +1037,78 @@
       </ItemGroup>
     </When>
   </Choose>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Probability.fs" />
+    <Compile Include="DF1.fs" />
+    <Compile Include="CA.fs" />
+    <Compile Include="CAUtils.fs" />
+    <Compile Include="CAEvolve.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="Metrics\ObservableExt.fs" />
+    <Compile Include="Metrics\Metrics.fs" />
+    <Compile Include="Metrics\Tracing.fs" />
+    <Compile Include="Metrics\TracingGame.fs" />
+    <Compile Include="Metrics\Social.fs" />
+    <Compile Include="BeliefSpace\HistoricalKS.fs" />
+    <Compile Include="BeliefSpace\NormativeKS.fs" />
+    <Compile Include="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="BeliefSpace\DomainKS.fs" />
+    <Compile Include="BeliefSpace\KMeans.fs" />
+    <Compile Include="BeliefSpace\TopographicKS.fs" />
+    <Compile Include="KnowledgeDistribution\MetaLrn.fs" />
+    <Compile Include="KnowledgeDistribution\MetaLrn2.fs" />
+    <Compile Include="KnowledgeDistribution\KDSimpleMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDLocallyWeightedMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
+    <Compile Include="KnowledgeDistribution\KDContinousStrategyGame.fs" />
+    <Compile Include="KnowledgeDistribution\Schelling.fs" />
+    <Compile Include="KnowledgeDistribution\KDIPDGame.fs" />
+    <Compile Include="KnowledgeDistribution\KDStagHunt.fs" />
+    <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
+    <Compile Include="KnowledgeDistribution\KDStagHuntStatic.fs" />
+    <Compile Include="KnowledgeDistribution\KDIPD.fs" />
+    <Compile Include="CAConstants.fs" />
+    <Compile Include="CARunner.fs" />
+    <Compile Include="Utilities\FPGrowth.fs" />
+    <Compile Include="Utilities\VizUtils.fs" />
+    <Compile Include="Utilities\VizNetwork.fs" />
+    <Compile Include="Utilities\TraceCharts.fs" />
+    <Compile Include="Utilities\VizLandscape.fs" />
+    <Compile Include="Utilities\Community.fs" />
+    <None Include="Landscapes\test_cone1.01.csv" />
+    <None Include="Landscapes\test_cone2.0.csv" />
+    <None Include="Landscapes\test_cone3.35.csv" />
+    <None Include="Landscapes\test_cone3.5.csv" />
+    <None Include="Landscapes\test_cone3.99.csv" />
+    <None Include="Landscapes\Backgrounds.fsx" />
+    <None Include="Testing\SetupEnv.fsx" />
+    <None Include="Testing\RunStatsDynamic.fsx" />
+    <None Include="Testing\TraceDynamic.fsx" />
+    <None Include="Testing\Tail.fsx" />
+    <None Include="Testing\SetupVideo.fsx" />
+    <None Include="Testing\TestEnv.fsx" />
+    <None Include="Testing\TestViz.fsx" />
+    <None Include="Testing\TestVizSocial.fsx" />
+    <None Include="Testing\SocSeqViz.fsx" />
+    <None Include="Testing\IPDLogAnalysis.fsx" />
+    <None Include="Testing\IPDStats.fsx" />
+    <None Include="Testing\CecBenchmark.fsx" />
+    <None Include="Testing\L-Shade.fsx" />
+    <None Include="Testing\ViewVideo.fsx" />
+    <None Include="paket.references" />
+    <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\packages\FSharp.Core.4.6.2\lib\net45\FSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
+  </ItemGroup>
 </Project>

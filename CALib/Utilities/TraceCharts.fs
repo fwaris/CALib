@@ -33,12 +33,40 @@ let chPoints bg title obs =
         |> applyBg bg
     ch,bg
 
+let chPointsObs title bgObs obs =
+    let ch =
+        LiveChart.FastPoint(obs , Title=title) 
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+        |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+        |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+    bgObs |> Observable.subscribe (fun bg -> 
+        applyBg bg ch |> ignore) |> ignore
+    ch,None
+
 let box (points:(float*float)seq) =
   if Seq.length points < 2 then []
   else
     let x1,y1 = points |> Seq.item 0
     let x2,y2 = points |> Seq.item 1
     [x1,y1;x2,y1;x2,y2;x1,y2;x1,y1]
+
+
+let chPoints2Obs title bgObs obs =
+    let obs1,obs2 = obs |> Observable.separate
+
+    let ch =
+        [
+          LiveChart.FastPoint(obs1); 
+          LiveChart.FastPoint(obs2) 
+          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+        ]
+        |> Chart.Combine 
+        |> Chart.WithTitle title
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+        |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+        |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+    bgObs |> Observable.subscribe (fun bg -> applyBg bg ch |> ignore) |> ignore
+    ch,None
 
 let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
@@ -73,6 +101,24 @@ let chPointsN bg title obss =
       |> applyBg bg
     ch,bg
 
+let chPointsNObs title bgObs obss =
+    let ch =
+      obss
+      |> List.map (fun (t,obs) -> 
+            LiveChart.FastPoint(obs)
+            |> Chart.WithStyling(Name=t)
+            |> Chart.WithSeries.Marker(Size=10)
+        )
+      |> Chart.Combine 
+      |> Chart.WithTitle title
+      |> Chart.WithLegend(Enabled=true)
+      |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+      |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+      |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+    bgObs |> Observable.subscribe (fun bg -> 
+        applyBg bg ch |> ignore) |> ignore
+    ch,None
+
 let chPtsLine bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let obsB = obs2 |> Observable.map box
@@ -89,6 +135,23 @@ let chPtsLine bg title obs =
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
         |> applyBg bg
     ch,bg
+
+let chPtsLineObs title bgObs obs =
+    let obs1,obs2 = obs |> Observable.separate
+    let obsB = obs2 |> Observable.map box
+    let ch =
+        [
+          LiveChart.FastPoint(obs1); 
+          LiveChart.FastLine(obsB) 
+          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+        ]
+        |> Chart.Combine 
+        |> Chart.WithTitle title
+        |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+        |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+        |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+    bgObs |> Observable.subscribe (fun bg -> applyBg bg ch |> ignore) |> ignore
+    ch,None
 
 let chLines (mn,mx) title obs = 
   let ch = 
