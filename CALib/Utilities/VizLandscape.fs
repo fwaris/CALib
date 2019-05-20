@@ -44,11 +44,13 @@ let cb = [|Color.Lavender; Color.Lavender; Color.DarkBlue;  Color.DarkOrange; Co
 
 #nowarn "9"
 let genImage ((mX,mY,mZ),ftnss) =
-    let imageHeight = 1024
-    let imageWidth = 1024
+    //let imageHeight = 1024
+    //let imageWidth = 1024
+    let imageHeight = 300
+    let imageWidth = 300
     let pH1 = imageHeight - 1
     let pW1 = imageWidth - 1
-    let clamp x = max (min x 1023) 0  
+    let clamp x = max (min x imageHeight-1) 0  
     let bmp = new Bitmap(imageWidth,imageHeight)
     let data = bmp.LockBits(
                 new Rectangle(0, 0, bmp.Width, bmp.Height),

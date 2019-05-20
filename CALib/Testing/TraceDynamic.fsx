@@ -26,7 +26,7 @@ let rsc =
       NumCones      = 1000
       RunToMax      = false
       CalcSocMetrics = false
-      MaxGen        = 2500
+      MaxGen        = 250 //2500
       NumLandscapes = 50
       Samples       = 1
       DistTh        = 0.001
@@ -69,24 +69,26 @@ let forms = ref Map.empty
 
 let makeForms id =
     let o = Tracing.createObservables id 
+    let oBg = Some o.obsBkground
     async {
         do! Async.SwitchToContext utc
         let c =
             TraceCharts.container
                 [ 
-                    chPointsObs "All" o.obsBkground o.obsAll
-                    chPointsObs "Domain" o.obsBkground  o.obsDomain
-                    chPointsObs "Situational" o.obsBkground o.obsSituational
-                    chPointsObs "Normative" o.obsBkground  o.obsNorm
-                    chPointsObs "Historical" o.obsBkground o.obsHist
-                    chPointsObs "Topographical M" o.obsBkground   o.obsTopo
+                    chPointsObs "All" oBg o.obsAll
+                    chPointsObs "Domain" oBg  o.obsDomain
+                    chPointsObs "Situational" oBg o.obsSituational
+                    chPointsObs "Normative" oBg  o.obsNorm
+                    chPointsObs "Historical" oBg o.obsHist
+                    chPointsObs "Topographical M" oBg   o.obsTopo
                     chCounts o.obsKSCounts
                     //chDisp "Distance" o.obsDist
                     //chDisp "Segregation" obsSeg
                     //chDisp "Diffusion" o.obsDfsn
                 ]
         c.Text <- id
-        c.Show()
+        //c.Show()
+
         } |> Async.Start
     let value = o
     forms := forms.Value |> Map.add id value
@@ -103,6 +105,12 @@ let secondaryKS (x:obj) =
     match x with 
     | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> snd ks |> Some
     | _ -> None
+
+let createForms (rsc:RunConfig) =
+    rsc.KDs |> List.iter (fun kd -> 
+        let id = string kd
+        if forms.Value.ContainsKey id |> not then makeForms id |> ignore
+    )
 
 let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) = 
     cfg.Steps
@@ -142,7 +150,12 @@ let genBg c f =
     bg.Save f
     f
 
-let postBg f = forms.Value |> Map.iter(fun k (o) -> o.fpBkground (Some f))
+let postBg f = forms.Value |> Map.iter(fun k (o) -> 
+    async {
+        do! Async.SwitchToContext utc
+        o.fpBkground (Some f)
+    }
+    |> Async.Start)
 
 let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
     async {
@@ -153,7 +166,7 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
         })
 
 (*
-
+createForms rsc
 async {
     let! r = Async.Catch runner
     match r with

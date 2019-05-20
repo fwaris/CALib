@@ -10,14 +10,28 @@ let applyBgHost image (chh:ChartTypes.ChartControl) =
     ch.ChartAreas.[0].BackImage <- image
     ch.ChartAreas.[0].BackImageWrapMode <- System.Windows.Forms.DataVisualization.Charting.ChartImageWrapMode.Scaled
 
-let applyBg imageOpt (c:FSharp.Charting.ChartTypes.GenericChart) = 
+let applyBgChart imageOpt (c:Charting.Chart) = 
     match imageOpt with
     | Some image ->
-        c.ApplyToChart (fun c -> 
-            let a = c.ChartAreas.[0]
-            a.BackImage <- image
-            a.BackImageWrapMode <- System.Windows.Forms.DataVisualization.Charting.ChartImageWrapMode.Scaled)
-    | None -> c
+        let a = c.ChartAreas.[0]
+        a.BackImage <- image
+        a.BackImageWrapMode <- System.Windows.Forms.DataVisualization.Charting.ChartImageWrapMode.Scaled
+        match c.Parent with :? ChartTypes.ChartControl as h -> applyBgHost image h | _ -> ()
+    | None -> ()
+
+let applyBg imageOpt (c:FSharp.Charting.ChartTypes.GenericChart) = c.ApplyToChart (applyBgChart imageOpt)
+
+let withBgSubscription obs (c:FSharp.Charting.ChartTypes.GenericChart)  =
+    let refCh = ref None
+    let _ = obs |> Observable.subscribe (fun imgFile -> 
+        printfn "refCh changed %A" !refCh
+        match !refCh with
+        | Some c -> applyBgChart imgFile c 
+        | None _ ->())
+    c.ApplyToChart(fun c -> 
+        printfn "refCH"
+        refCh := Some c)
+    c
 
 let chGrid = ChartTypes.Grid(Enabled=false,Interval=0.1)
 let ls = ChartTypes.LabelStyle(TruncatedLabels=true, Interval=0.2, Format="{0:F1}")
@@ -39,9 +53,7 @@ let chPointsObs title bgObs obs =
         |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
-    bgObs |> Observable.subscribe (fun bg -> 
-        applyBg bg ch |> ignore) |> ignore
-    ch,None
+    ch,bgObs
 
 let box (points:(float*float)seq) =
   if Seq.length points < 2 then []
@@ -65,8 +77,7 @@ let chPoints2Obs title bgObs obs =
         |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
-    bgObs |> Observable.subscribe (fun bg -> applyBg bg ch |> ignore) |> ignore
-    ch,None
+    ch,bgObs
 
 let chPoints2 bg title obs =
     let obs1,obs2 = obs |> Observable.separate
@@ -115,9 +126,7 @@ let chPointsNObs title bgObs obss =
       |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
       |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
       |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
-    bgObs |> Observable.subscribe (fun bg -> 
-        applyBg bg ch |> ignore) |> ignore
-    ch,None
+    ch,bgObs
 
 let chPtsLine bg title obs =
     let obs1,obs2 = obs |> Observable.separate
@@ -150,8 +159,7 @@ let chPtsLineObs title bgObs obs =
         |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
         |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
         |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
-    bgObs |> Observable.subscribe (fun bg -> applyBg bg ch |> ignore) |> ignore
-    ch,None
+    ch,bgObs
 
 let chLines (mn,mx) title obs = 
   let ch = 
@@ -166,15 +174,23 @@ let chCounts obs =
     let ch =
         LiveChart.Column(obs, Title="Live KS Counts") 
         |> Chart.WithStyling(Color=System.Drawing.Color.Tomato)
-    ch,(None:string option)
+    ch,None
 
 let chDisp title obs =  LiveChart.FastLineIncremental(obs,Title=title),(None:string option)
 
 let containerize (ch,bg) = 
     let chh = new ChartTypes.ChartControl(ch,Dock=DockStyle.Fill)
+    let x = chh.Controls
     match bg with
     | Some image -> applyBgHost image chh
     | None       -> ()
+    chh
+
+let containerizeWithBg (ch,obs) = 
+    let chh = new ChartTypes.ChartControl(ch,Dock=DockStyle.Fill)
+    obs |> Option.iter(fun obs -> 
+        let c = chh.Controls.[0] :?> Charting.Chart
+        obs |> Observable.subscribe (fun image -> applyBgChart image c) |> ignore)
     chh
 
 let chOne ch = 
@@ -201,7 +217,7 @@ let container chlist =
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,50.f)) |> ignore
     grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
     grid.Dock <- DockStyle.Fill
-    let containers = chlist |> List.map containerize 
+    let containers = chlist |> List.map containerizeWithBg 
     containers |> List.iter grid.Controls.Add
     form.Controls.Add(grid)
     form.Show()
