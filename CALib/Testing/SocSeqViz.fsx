@@ -1,24 +1,45 @@
-﻿
-#load "TestEnv.fsx"
-#load "SetupVideo.fsx"
-#load "..\Utilities\VizUtils.fs"
-#load "..\Utilities\VizNetwork.fs"
-#load "..\DF1.fs"
-#load "TestViz.fsx"
-open TestEnv
+﻿#load "TraceDynamic.fsx"
 open CA
 open CAUtils
-open DF1
-open TestEnv
 open OpenCvSharp
-open TestViz
+open Runs.Environment
+open Config.Types
+open Runs.Types
 open System.Drawing
-open System.IO
 open System
-open VizUtils
-open Viz
+open System.IO
 open OpenCvSharp
-open OpenCvSharp.ML
+
+//utility operator for F# implicit conversions 
+let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
+
+let rsc = 
+    {
+      SaveFolder    = @"d:\calib\dsst_stats"
+      EnvChngSensitivity = [0]
+      Restartable   = true
+      KDs            = [WTD; IPD; SH; STK]
+      PopulationSize = 72
+      NumCones      = 1000
+      RunToMax      = false
+      CalcSocMetrics = false
+      MaxGen        = 250 //2500
+      NumLandscapes = 50
+      Samples       = 1
+      DistTh        = 0.001
+      AValues       = [3.1]
+      ChangeHeight  = false
+      ChangeRadius  = false
+      ChangeLoc     = true
+    }
+
+let ws = createEnv rsc 3.1
+let f : Fitness = ref ws.F
+
+let basePop = 
+    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    CAUtils.createPop (baseKsInit bsp) parmDefs rsc.PopulationSize true
+
 open FSharp.Collections.ParallelSeq
 
 let remE = StringSplitOptions.RemoveEmptyEntries
@@ -107,14 +128,14 @@ let visualizePopHeat width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Ma
     //    for n in ns do draw n.Id (fc p.KS))
 
 let drawLabelGen (idx:int) (m:Mat) y gen lndscp =
-    ksMap |> Seq.iteri (fun i kv ->
+    Viz.ksMap |> Seq.iteri (fun i kv ->
         let k = kv.Key
         let l = kv.Value
         let x = 52 * i + 30
-        Cv2.Circle(!>m, Point(x,y),10,clrKnowledge k, Cv2.FILLED)
-        Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., clrKnowledge k)
+        Cv2.Circle(!>m, Point(x,y),10,Viz.clrKnowledge k, Cv2.FILLED)
+        Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., Viz.clrKnowledge k)
        )
-    let x' = (50 * ksMap.Count) + 30
+    let x' = (50 * Viz.ksMap.Count) + 30
     let p = Point(x'+ 15, y + 5)
     Cv2.PutText(!>m, lndscp.ToString(),p, HersheyFonts.HersheyTriplex, 1., Scalar.Wheat)
     Cv2.PutText(!>m, gen.ToString(),Point(p.X + 50, p.Y), HersheyFonts.HersheyTriplex, 1., Scalar.Azure)
@@ -125,7 +146,7 @@ let createVidHeat ouput size popSeq ksSeq clrF (gens:int[]) (lndscps:int[]) =
     let ext = 20
     let margin = 5
     let pSize = Size(size, size + ext + 2 * margin)
-    let enc = encoder ouput 30. (pSize.Width,pSize.Height)
+    let enc = VizUtils.encoder ouput 30. (pSize.Width,pSize.Height)
     let drawFrame i (pop, ks) =
         let mParent = new Mat(pSize, MatType.CV_8UC3,  Scalar(0., 0., 0.))
         let mChild = mParent.SubMat(Rect(0,0,size,size))
