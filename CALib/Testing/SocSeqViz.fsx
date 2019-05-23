@@ -44,8 +44,8 @@ open FSharp.Collections.ParallelSeq
 
 let remE = StringSplitOptions.RemoveEmptyEntries
 
-let joboutFolder =  @"D:\repodata\calib\jobout"
-let outfolder = @"D:\repodata\calib\dsst_soc_all_gen"
+let joboutFolder =  @"D:\calib\jobout"
+let outfolder = @"D:\calib\dsst_soc_all_gen"
 if Directory.Exists outfolder |> not then Directory.CreateDirectory outfolder |> ignore
 let (@@) a b = Path.Combine(a,b)
 
@@ -53,18 +53,21 @@ let jobOuts = Directory.EnumerateDirectories joboutFolder |> Seq.toArray
 let kd_a = jobOuts |> Array.map (fun x->let i = x.LastIndexOf('_') in x.Substring(0,i)) |> Array.distinct
 let sample1s = kd_a |> Array.map(fun x->x + "_1")
 
-type SocR = {KD:string; A:string; Landscape:int; Gen:int; Sample:int; Segs:float[]; Dffns:float[]; KS:int[]}
+type SocR = {KD:string; A:string; Landscape:int; 
+             EnvSnstvty:int;
+             Gen:int; Sample:int; Segs:float[]; Dffns:float[]; KS:int[]}
 
 let toSocrs rows = rows |> Array.map (fun (r:string[]) ->
    {
-    KD          = r.[1]
-    Landscape   = int r.[2]
-    A           = r.[3]
-    Gen         = int r.[4]
     Sample      = int r.[0]
-    Segs        = r.[10].Split([|'|'|],remE) |> Array.map float
-    Dffns       = r.[11].Split([|'|'|],remE) |> Array.map float
-    KS          = r.[12].Split([|'|'|],remE) |> Array.map int
+    KD          = r.[1]
+    EnvSnstvty  = int r.[2]
+    Landscape   = int r.[3]
+    A           = r.[4]
+    Gen         = int r.[5]
+    Segs        = r.[11].Split([|'|'|],remE) |> Array.map float
+    Dffns       = r.[12].Split([|'|'|],remE) |> Array.map float
+    KS          = r.[13].Split([|'|'|],remE) |> Array.map int
    })
 
 //let maxSeg = socrs |> Array.map (fun x-> Array.max x.Segs) |> Array.max
@@ -175,10 +178,11 @@ let begAft maxGen (xs:SocR array) =
 
 
 let genVidsByKdA socrs =
+    let maxGen = socrs |> Array.map (fun g -> g.Gen) |> Array.max
     let kdA = socrs |> Array.groupBy (fun r->r.KD,r.A)
 
     kdA |> Array.iter (fun ((kd,a),srs) -> 
-        let srs = begAft 250 srs
+        let srs = begAft maxGen srs
         let segs = srs |> Array.map(fun j->j.Segs)
         let dffns = srs |> Array.map(fun j->j.Dffns)
         let kss   = srs |> Array.map(fun j->j.KS)
@@ -199,7 +203,7 @@ let gen1Sample()=
 
 
 let gen2Sample() =
-    let statFile = @"D:\repodata\calib\video_loc\Stats.txt"
+    let statFile = @"D:\calib\jobout\Stats.txt"
     let rows = File.ReadLines statFile |> Seq.skip 1 |> PSeq.map(fun x->x.Split([|'\t'|])) |> PSeq.toArray
     let socrs_ = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
     let socrs = socrs_ |> PSeq.sortBy (fun x->x.KD,x.A,x.Sample,x.Landscape,x.Gen ) |> PSeq.toArray
