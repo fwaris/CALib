@@ -184,14 +184,15 @@ let genVidsByKdA socrs =
     kdA |> Array.iter (fun ((kd,a),srs) -> 
         let srs = begAft maxGen srs
         let segs = srs |> Array.map(fun j->j.Segs)
-        let dffns = srs |> Array.map(fun j->j.Dffns)
+        //let dffns = srs |> Array.map(fun j->j.Dffns)
         let kss   = srs |> Array.map(fun j->j.KS)
         let gens  = srs |> Array.map(fun j->j.Gen)
         let lndscps = srs |> Array.map(fun j->j.Landscape)
         let fseg = outfolder @@ (sprintf "%s_%s_segs.mov" kd a)
-        let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
+        //let fdffsn = outfolder @@ (sprintf "%s_%s_dffns.mp4" kd a)
         createVidHeat fseg 1024 segs kss segClr gens lndscps 
-        createVidHeat fdffsn 1024 dffns kss dfsnClr gens lndscps )
+//        createVidHeat fdffsn 1024 dffns kss dfsnClr gens lndscps 
+        )
   
 let gen1Sample()=
     let statFiles = sample1s |> Array.map(fun p-> Path.Combine(p,"Stats.txt"))
@@ -207,4 +208,14 @@ let gen2Sample() =
     let rows = File.ReadLines statFile |> Seq.skip 1 |> PSeq.map(fun x->x.Split([|'\t'|])) |> PSeq.toArray
     let socrs_ = toSocrs rows |> Array.filter(fun r-> r.Sample=1)// && r.Landscape=2)
     let socrs = socrs_ |> PSeq.sortBy (fun x->x.KD,x.A,x.Sample,x.Landscape,x.Gen ) |> PSeq.toArray
+    genVidsByKdA socrs
+
+
+let genVids() =
+    let folder = @"D:\calib\jobout_sample"
+    let files = folder |> Directory.GetFiles
+    let rows = 
+        seq {for f in files do yield! (File.ReadLines f |> Seq.skip 1) } 
+        |> Seq.map(fun x->x.Split([|'\t'|])) |> Seq.toArray
+    let socrs = toSocrs rows |> Array.filter(fun x->x.EnvSnstvty = 0) |> Array.sortBy (fun x->x.KD,x.A,x.Landscape,x.Gen)
     genVidsByKdA socrs
