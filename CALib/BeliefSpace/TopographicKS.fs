@@ -94,7 +94,7 @@ let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> arr
     let state = updateClusters state voters
     voters,construct state defaultAcceptance fInfluence
 
-let defaultInfluence state s (indv:Individual<_>) =
+let defaultInfluence state _ s (indv:Individual<_>) =
     //mutation
     let cntrd = Probability.spinWheel state.SpinWheel 
     let p2 = cntrd.Best

@@ -43,7 +43,7 @@ let private wtdMajorityInfluence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence (il p.KS) p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence pop (il p.KS) p)
     pop
 
 let rec kdLoop 

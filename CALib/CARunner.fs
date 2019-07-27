@@ -14,6 +14,17 @@ let defaultBeliefSpace parmDefs optKind fitness =
         Leaf (TopographicKS.create parmDefs optKind fitness)
         ]
 
+let deBeliefSpace parmDefs optKind fitness =
+    Roots [ 
+        Node (SituationalKS.create parmDefs optKind 15,
+            [
+                Leaf (HistoricalKS.create parmDefs optKind 100)
+                Leaf (DiffEvolutionKS.create parmDefs optKind fitness)
+            ])
+        Leaf (NormativeKS.create parmDefs optKind)
+        Leaf (TopographicKS.create parmDefs optKind fitness)
+        ]
+
 ///evaluate the finess of the population
 let evaluate fitness pop = 
     let pop =

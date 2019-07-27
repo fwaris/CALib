@@ -253,9 +253,9 @@ let private ipdInfluence state beliefSpace (pop:Population<IpdKS>) =
         //|> Array.map (fun p -> 
             let {KS=mainKS;Level=lvl},otherKs = p.KS
             let beforeP = Array.copy p.Parms
-            let p = ksMap.[mainKS].Influence lvl p
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k <> state.ExploitativeKS then ksMap.[k].Influence w p else p) //explorative ks go first
-            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k = state.ExploitativeKS then ksMap.[k].Influence (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
+            let p = ksMap.[mainKS].Influence pop lvl p
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k <> state.ExploitativeKS then ksMap.[k].Influence pop w p else p) //explorative ks go first
+            let p = (p,otherKs) ||> Map.fold (fun p k w -> if k = state.ExploitativeKS then ksMap.[k].Influence pop (w*SCNRY_EXPL_KS_BOOST) p else p) //exploitative ks go last
             //if p.Parms = [|1.0; 1.0|] then
             //  let ps = p.Parms
             //  ()

@@ -7,9 +7,12 @@ open Runs.Environment
 open Runs.Stat
 open FSharp.Control
 
+//let createBsp = CARunner.deBeliefSpace
+let createBsp = CARunner.defaultBeliefSpace
+
 //WTD
 let initWTD envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    let bsp = createBsp parmDefs defaultOptKind f
     let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
     let influence = KDWeightedMajority.influence bsp 3
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
@@ -18,7 +21,7 @@ let initWTD envChgSnstvty basePop f =
 
 //SH
 let initSH envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    let bsp = createBsp parmDefs defaultOptKind f
     let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStagHunt.influence defaultOptKind 5 bsp pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
@@ -27,7 +30,7 @@ let initSH envChgSnstvty basePop f =
 
 //SHS
 let initSHS envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    let bsp = createBsp parmDefs defaultOptKind f
     let pop = basePop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStagHuntStatic.influence None 5 bsp pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
@@ -36,7 +39,7 @@ let initSHS envChgSnstvty basePop f =
 
 //STK
 let initSTK envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    let bsp = createBsp parmDefs defaultOptKind f
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStackelberg.influence defaultOptKind pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
@@ -45,7 +48,7 @@ let initSTK envChgSnstvty basePop f =
 
 //IPD
 let initIPD envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
+    let bsp = createBsp parmDefs defaultOptKind f
     let pop = basePop |> KDIPD.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDIPD.influence defaultOptKind None bsp pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork

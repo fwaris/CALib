@@ -96,7 +96,7 @@ let private shInfluence _ beliefSpace (pop:Population<IpKnowledge>) =
                 //printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
-            let p = ksMap.[ks].Influence lvl  p
+            let p = ksMap.[ks].Influence pop lvl  p
             p)
     pop 
 

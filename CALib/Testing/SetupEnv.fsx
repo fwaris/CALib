@@ -21,6 +21,7 @@
 #load "../BeliefSpace/NormativeKS.fs"
 #load "../BeliefSpace/HistoricalKS.fs"
 #load "../BeliefSpace/DomainKS.fs"
+#load "../BeliefSpace/DiffEvolutionKS.fs"
 #load "../BeliefSpace/KMeans.fs"
 #load "../BeliefSpace/TopographicKS.fs"
 //#load "../KnowledgeDistribution/KDSimpleMajority.fs"

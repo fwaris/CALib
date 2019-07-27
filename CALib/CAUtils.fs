@@ -251,5 +251,5 @@ let defaultInfluence beliefSpace pop =
     let ksMap = flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence 1.0 p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence pop 1.0 p)
     pop

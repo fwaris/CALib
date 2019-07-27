@@ -19,6 +19,7 @@
     <Compile Include="..\CALib\Metrics\Social.fs" Link="Metrics\Social.fs" />
     <Folder Include="BeliefSpace\" />
     <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DiffEvolutionKS.fs" Link="BeliefSpace\DiffEvolutionKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />

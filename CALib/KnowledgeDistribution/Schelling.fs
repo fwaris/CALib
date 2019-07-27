@@ -53,7 +53,7 @@ let private schlInfluecne beliefSpace (pop:Population<SchKs>) =
         pop
         |> Array.Parallel.map (fun p -> 
             let lvl = il p.KS
-            let p = ksMap.[p.KS].Influence lvl p
+            let p = ksMap.[p.KS].Influence pop lvl p
             p)
     pop 
 

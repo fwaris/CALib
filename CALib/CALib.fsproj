@@ -1054,6 +1054,7 @@
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
     <Compile Include="BeliefSpace\DomainKS.fs" />
+    <Compile Include="BeliefSpace\DiffEvolutionKS.fs" />
     <Compile Include="BeliefSpace\KMeans.fs" />
     <Compile Include="BeliefSpace\TopographicKS.fs" />
     <Compile Include="KnowledgeDistribution\MetaLrn.fs" />

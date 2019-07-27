@@ -41,7 +41,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
-let defaultInfluence state influenceLevel (ind:Individual<_>) =
+let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
     //mutation
     let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
     //let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms

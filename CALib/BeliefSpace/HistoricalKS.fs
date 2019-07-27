@@ -41,7 +41,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
-let defaultInfluence state s (ind:Individual<_>) =
+let defaultInfluence state _ s (ind:Individual<_>) =
     //printf "H:%d %0.2f %A->" ind.Id ind.Fitness ind.Parms
     //let iBefore = ind.Parms |> Array.copy
     let ev = state.Events.[rnd.Value.Next(0,state.Events.Length)]

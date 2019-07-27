@@ -92,7 +92,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 
 let initialState parmDefs isBetter = {ParmDefs=parmDefs; IsBetter=isBetter; Norms=createNorms parmDefs isBetter}
 
-let defaultInfluence {Norms=norms; ParmDefs=parmDefs} s (ind:Individual<_>) =
+let defaultInfluence {Norms=norms; ParmDefs=parmDefs} _ s (ind:Individual<_>) =
     (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> normalizeParm parmDefs ind.Parms s i n p)
     ind
 
