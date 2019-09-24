@@ -1,5 +1,8 @@
 ﻿module TopographicKS
 //this version of TopographicalKS is based on Brainstorm Optimization method (BSO)
+
+//*** note check update of CIndvs in state
+
 open CA
 open CAUtils
 open CAEvolve

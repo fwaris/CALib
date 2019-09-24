@@ -32,6 +32,15 @@ let encoder file frameRate (w:int,h:int) =
         member x.Release() = clipOut.Release()
         }
 
+let colorsKs = 
+    [
+        255,0,0          //T
+        255,90,0         //N
+        22,146,68        //D
+        165,226,255      //S
+        81,90,210        //H
+    ]
+
 let colors = 
         [
         255,0,0

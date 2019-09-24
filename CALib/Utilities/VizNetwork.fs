@@ -13,7 +13,26 @@ let ks = function
     | Topgraphical  -> 4
     | _             -> failwith "shoud not happen"
 
-let clrKnowledge (k:Knowledge) = brgColors.[ks k]
+let ksHeat = function 
+    | Topgraphical  -> 0        //not open cv b,r,g format
+    | Normative     -> 1
+    | Domain        -> 2
+    | Situational   -> 3 
+    | Historical    -> 4
+    | _             -> failwith "shoud not happen"
+
+let ksHeat2 = function 
+    | Topgraphical  -> Scalar.Red        //not open cv b,r,g format
+    | Normative     -> Scalar.DarkOrange
+    | Domain        -> Scalar.Green
+    | Situational   -> Scalar.LightBlue
+    | Historical    -> Scalar.RoyalBlue
+    | _             -> failwith "shoud not happen"
+
+
+let ksColorsHeat = colorsKs |> List.map(fun (r,g,b) -> Scalar(float b, float r, float g))
+
+let clrKnowledge (k:Knowledge) = ksHeat2 k
 
 let visualizePopHex<'t> width (fc:'t->Scalar)  (network:Network<'t>) (pop:Population<'t>) (mat:Mat) =
     let rowCount = sqrt (float pop.Length)
