@@ -12,10 +12,10 @@
     <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
     <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
     <Compile Include="..\CALib\Settings.fs" Link="Settings.fs" />
-    <Compile Include="..\CALib\Metrics\Metrics\ObservableExt.fs" Link="Metrics\ObservableExt.fs" />
-    <Compile Include="..\CALib\Metrics\Metrics\Metrics.fs" Link="Metrics\Metrics.fs" />
-    <Compile Include="..\CALib\Metrics\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
-    <Compile Include="..\CALib\Metrics\Metrics\TracingGame.fs" Link="Metrics\TracingGame.fs" />
+    <Compile Include="..\CALib\Metrics\ObservableExt.fs" Link="Metrics\ObservableExt.fs" />
+    <Compile Include="..\CALib\Metrics\Metrics.fs" Link="Metrics\Metrics.fs" />
+    <Compile Include="..\CALib\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
+    <Compile Include="..\CALib\Metrics\TracingGame.fs" Link="Metrics\TracingGame.fs" />
     <Compile Include="..\CALib\Metrics\Social.fs" Link="Metrics\Social.fs" />
     <Folder Include="BeliefSpace\" />
     <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
