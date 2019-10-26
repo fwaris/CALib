@@ -1,4 +1,11 @@
-﻿#load "SetupEnv.fsx"
+﻿(*
+Supporting script to create 
+a dynamic 'Cones World' environment
+with support for differnet 
+knowledge distribution mechanisms
+*)
+
+#load "SetupEnv.fsx"
 open CA
 open CAUtils
 open Runs.Types
@@ -7,7 +14,7 @@ open Runs.Environment
 open Runs.Stat
 open FSharp.Control
 
-//let createBsp = CARunner.deBeliefSpace
+//let createBsp = CARunner.deBeliefSpace           //use differential evolution for domain knowledge
 let createBsp = CARunner.defaultBeliefSpace
 
 //WTD

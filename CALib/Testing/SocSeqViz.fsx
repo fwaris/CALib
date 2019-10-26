@@ -1,4 +1,7 @@
-﻿#load "TraceDynamic.fsx"
+﻿(*
+video generation of landscape sequences (experimental)
+*)
+#load "TraceDynamic.fsx"
 open CA
 open CAUtils
 open OpenCvSharp
@@ -139,6 +142,41 @@ let visualizePopHeat width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Ma
     //    let ns = network pop p.Id
     //    for n in ns do draw n.Id (fc p.KS))
 
+let visualizePop width (pop:float[]) (ks:int[]) (clrF:float->Scalar) (mat:Mat) =
+    let rowCount = sqrt (float pop.Length)
+    let halfRc = rowCount / 2.0 |> ceil
+    let rowLen = int rowCount
+    let w = float width
+    let margin = (w / rowCount) |> ceil
+    //printfn "margin = %f" margin
+    let cl = w - 2. * margin
+    let incr = cl / rowCount 
+    let halfIncr = incr / 4.
+    //printfn "incr %f, half %f " incr halfIncr
+    let rad = incr/2.0 |> ceil |> int 
+    let draw i clr = 
+        let r = i / rowLen 
+        let c = i % rowLen
+        let shiftY = if c % 2 = 0 then halfIncr else -halfIncr
+        let y = margin + (float r * incr + shiftY)
+        let x = margin + (float c * incr)
+        let ctr = Point(int x, int y)
+        let k = ksTags.[ks.[i]]
+        let kLetter = Viz.ksMap.[k]
+        let c2 = Viz.clrKnowledge k
+        //Cv2.Circle(!> mat,ctr,rad,clr,Cv2.FILLED)
+        Cv2.Circle(!> mat,ctr,rad,c2,Cv2.FILLED)
+        Cv2.Circle(!> mat,ctr,rad/2+1,Scalar.Wheat,1)
+        let txtPt = Point(ctr.X-11,ctr.Y+8)
+        //Cv2.PutText(!>mat, (string i), txtPt, HersheyFonts.HersheyPlain, 1., Scalar.DarkBlue)
+        Cv2.PutText(!>mat, kLetter, txtPt, HersheyFonts.HersheyComplexSmall, 1.5, Scalar.DarkBlue)
+    //pop |> Array.iter(fun p->draw p.Id brgColors.[2])
+    pop |> Array.iteri (fun i p -> draw i (clrF p))
+    //pop |> Array.iter (fun p ->
+    //    let i = p.Id
+    //    draw i (fc p.KS)
+    //    let ns = network pop p.Id
+    //    for n in ns do draw n.Id (fc p.KS))
 
 let drawLabelGen (idx:int) (m:Mat) y seg lndscp =
     Viz.ksMap |> Seq.iteri (fun i kv ->
@@ -324,7 +362,8 @@ let drawLabelSeg (idx:int) (m:Mat) y seg  =
 
 let genFramesSegSample() =
     let inputFile =  @"D:\calib\dsst_stats\hi_low_seg_examples.txt"
-    let folder = Path.GetDirectoryName(inputFile) + @"\smpls_seg"
+    //let folder = Path.GetDirectoryName(inputFile) + @"\smpls_seg"
+    let folder = Path.GetDirectoryName(inputFile) + @"\smpls_no_seg"
     if Directory.Exists folder |> not then Directory.CreateDirectory folder |> ignore
     let rs = 
         File.ReadLines inputFile 
@@ -342,7 +381,8 @@ let genFramesSegSample() =
     let saveImage file i (pop, ks) seg =
         let mParent = new Mat(pSize, MatType.CV_8UC3,  Scalar(0., 0., 0.))
         let mChild = mParent.SubMat(Rect(0,0,size,size))
-        visualizePopHeat size pop ks segClr mChild
+        //visualizePopHeat size pop ks segClr mChild
+        visualizePop size pop ks segClr mChild
         drawLabelSeg i mParent (pSize.Height - ext - margin) seg // (gens.[i]) (lndscps.[i])
         mParent.SaveImage(file) |> ignore
         mChild.Release()
@@ -351,7 +391,6 @@ let genFramesSegSample() =
     segs |> Array.iter (fun s->
         let fn = sprintf "%s_%0.1f_%s.png" s.Kd s.A s.Pick
         let file = Path.Combine(folder,fn)
-        saveImage file  0  (s.CalcSegs, s.IndvKS) s.CalcAvgSeg
-    )
+        saveImage file  0  (s.CalcSegs, s.IndvKS) s.CalcAvgSeg )
         
 

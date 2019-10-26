@@ -120,7 +120,7 @@ let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
             let ws = changeEnv lndscpCfg.Ws
             let steps = prepStepsForLandscapeRun ws lndscpCfg
             let lndscpCfg = {lndscpCfg with Ws=ws; EnvCh=true; Steps=steps; Landscape=lndscpCfg.Landscape+1}
-            let runResults = AsyncSeq.unfoldAsync (runLandscapeGens rsc) lndscpCfg |> AsyncSeq.toArray
+            let! runResults = AsyncSeq.unfoldAsync (runLandscapeGens rsc) lndscpCfg |> AsyncSeq.toArrayAsync
             let stats = runResults |> Array.collect fst
             let lndscpCfg = (Array.last>>snd) runResults
             return Some(stats,lndscpCfg)

@@ -30,7 +30,7 @@ let withBgSubscription obs (c:FSharp.Charting.ChartTypes.GenericChart)  =
         | None _ ->())
     c.ApplyToChart(fun c -> 
         printfn "refCH"
-        refCh := Some c)
+        refCh := Some c) |> ignore
     c
 
 let chGrid = ChartTypes.Grid(Enabled=false,Interval=0.1)

@@ -1,4 +1,17 @@
-﻿#load "RunStatsDynamic.fsx"
+﻿(*
+Supporting script for visualization of CA run
+with different knowledge distribution mechanisms
+on a sequence of dynamic 'Cones World'
+landscapes.
+
+The animation runs with 250ms delay per generation
+
+A-Value can adjusted in the 'rsc' config below
+
+Note: To run this script select all the text in the script and hit Alt-Enter
+*)
+
+#load "RunStatsDynamic.fsx"
 #load "SetupVideo.fsx"
 #load @"..\Utilities\TraceCharts.fs"
 #load @"..\Utilities\VizUtils.fs"
@@ -166,12 +179,4 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
         })
 
 (*
-createForms rsc
-async {
-    let! r = Async.Catch runner
-    match r with
-    | Choice1Of2 _ -> ()
-    | Choice2Of2 err -> printfn "%A" err
-} |> Async.Start
-
 *)

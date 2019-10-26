@@ -1,4 +1,8 @@
-﻿#load "SetupVideo.fsx"
+﻿(*
+frame-by-frame viewing of videos (experimental)
+*)
+
+#load "SetupVideo.fsx"
 open OpenCvSharp
 open System.Windows.Forms
 open System.Drawing

@@ -1,6 +1,17 @@
-﻿#r @"../../packages/FSharp.Collections.ParallelSeq\lib\net45\FSharp.Collections.ParallelSeq.dll"
-#r @"..\..\packages\FSharp.Charting\lib\net45\FSharp.Charting.dll"
-#r @"..\..\packages\FSharp.Control.AsyncSeq\lib\net45\FSharp.Control.AsyncSeq.dll"
+﻿(*
+Set up Cultural Algorithms (CA) for interactive use
+This script references all the required DLLs and loads the code 
+so that CA can be use interactively with F# scripting
+
+Normally this is called from another script and not used directly
+
+It only needs to be modified 
+if packages are updated or new code is added
+*)
+
+#r @"..\..\packages\FSharp.Collections.ParallelSeq.1.1.2\lib\net45\FSharp.Collections.ParallelSeq.dll"
+#r @"..\..\packages\FSharp.Charting.2.1.0\lib\net45\FSharp.Charting.dll"
+#r @"..\..\packages\FSharp.Control.AsyncSeq.2.0.22\lib\net45\FSharp.Control.AsyncSeq.dll"
 #r "System.Windows.Forms.DataVisualization"
 #r "System.IO.Compression"
 #r "System.IO.Compression.FileSystem"
@@ -11,7 +22,6 @@
 #load "../Probability.fs"
 #load "../CAUtils.fs"
 #load "../CAEvolve.fs"
-#load "../Settings.fs"
 #load "../Metrics/ObservableExt.fs"
 #load "../Metrics/Metrics.fs"
 #load "../Metrics/Tracing.fs"

@@ -10,9 +10,9 @@ open System.Runtime.InteropServices
 [<assembly: AssemblyTitle("CALib")>]
 [<assembly: AssemblyDescription("")>]
 [<assembly: AssemblyConfiguration("")>]
-[<assembly: AssemblyCompany("Func Shui")>]
+[<assembly: AssemblyCompany("FW")>]
 [<assembly: AssemblyProduct("CALib")>]
-[<assembly: AssemblyCopyright("Copyright Func Shui ©  2016")>]
+[<assembly: AssemblyCopyright("Copyright FW ©  2019")>]
 [<assembly: AssemblyTrademark("")>]
 [<assembly: AssemblyCulture("")>]
 

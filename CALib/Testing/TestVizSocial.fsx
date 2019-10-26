@@ -1,4 +1,7 @@
-﻿#load "TraceDynamic.fsx"
+﻿(*
+video generation of landscape sequences (experimental)
+*)
+#load "TraceDynamic.fsx"
 open CA
 open CAUtils
 open OpenCvSharp

@@ -14,6 +14,9 @@ let defaultBeliefSpace parmDefs optKind fitness =
         Leaf (TopographicKS.create parmDefs optKind fitness)
         ]
 
+//create belief space with Differential Evolution based 
+//Domain KS. Useful for high dimensional search space where
+//determining gradients across individual dimensions could be expensive
 let deBeliefSpace parmDefs optKind fitness =
     Roots [ 
         Node (SituationalKS.create parmDefs optKind 15,
@@ -56,15 +59,6 @@ let update envChanged beliefSpace bestInds  =
                                             Leaf ks
     update bestInds beliefSpace
 
-let detectChange (fitness:Fitness) (best:Marker list) =
-    if not Settings.isDynamic then
-      false
-    elif List.isEmpty best then
-      false
-    else
-      let b1 = best.[0]
-      let f2 = fitness.Value b1.MParms
-      abs (f2 - b1.MFitness) > 0.00001
 
 ///single step CA
 let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} maxBest =

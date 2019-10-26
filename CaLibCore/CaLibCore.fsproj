@@ -11,7 +11,6 @@
     <Compile Include="..\CALib\CA.fs" Link="CA.fs" />
     <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
     <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
-    <Compile Include="..\CALib\Settings.fs" Link="Settings.fs" />
     <Compile Include="..\CALib\Metrics\ObservableExt.fs" Link="Metrics\ObservableExt.fs" />
     <Compile Include="..\CALib\Metrics\Metrics.fs" Link="Metrics\Metrics.fs" />
     <Compile Include="..\CALib\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
@@ -37,7 +36,6 @@
     <Compile Include="..\CALib\KnowledgeDistribution\KDStagHuntStatic.fs" Link="KnowledgeDistribution\KDStagHuntStatic.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDStackelberg.fs" Link="KnowledgeDistribution\KDStackelberg.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\Schelling.fs" Link="KnowledgeDistribution\Schelling.fs" />
-    <Compile Include="..\CALib\CAConstants.fs" Link="CAConstants.fs" />
     <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
     <Compile Include="..\CALib\Utilities\FPGrowth.fs" Link="Utilities\FPGrowth.fs" />
     <Compile Include="Utilities\Community.fs" />
@@ -50,9 +48,10 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="4.6.2" />
+    <PackageReference Update="FSharp.Core" Version="4.7.0" />
     <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.1.2" />
-    <PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.21" />
-    <PackageReference Include="FsPickler" Version="5.2.0" />
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.22" />
+    <PackageReference Include="FsPickler" Version="5.2.2" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>
