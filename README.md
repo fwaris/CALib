@@ -7,11 +7,13 @@ Cultural Algorithms optimization framework
 - During setup, select support for **F# language** and **.Net Core**.
 The Visual Studio setup utility has 'Workloads' that bundle commonly used features. Select appropriate boxes as shown below to get F# and .Net core installed:
 
+
 ![visual studio setup utility view](imgs/setup.jpg)
 
 - After VS is installed, open the 'solution' file CALib.sln with Visual Studio
 
 - In the 'Solution Explorer' window right click on the root of the tree and select "Restore NuGet Packages" as shown below:
+
 
 ![restore nuget packages for the solution](imgs/restore.jpg)
 
