@@ -7,7 +7,7 @@ Cultural Algorithms optimization framework
 - During setup, select support for **F# language** and **.Net Core**.
 The Visual Studio setup utility has 'Workloads' that bundle commonly used features. Select appropriate boxes as shown below to get F# and .Net core installed:
 
-- [More detailed PDF is here](CALib Installation Guide.pdf)
+- [More detailed PDF is here](./CALib%20Installation%20Guide.pdf)
 
 
 ![visual studio setup utility view](imgs/setup.jpg)
