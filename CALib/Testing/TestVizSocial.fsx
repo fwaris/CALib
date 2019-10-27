@@ -1,5 +1,5 @@
 ﻿(*
-video generation of landscape sequences (experimental)
+video generation from CA run over a sequence of dynamic landscapes (experimental)
 *)
 #load "TraceDynamic.fsx"
 open CA
@@ -15,7 +15,7 @@ let rsc =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0]
       Restartable   = true
-      KDs            = [WTD; IPD; SH; STK]
+      KDs            = [WTD; IPD; SHS; STK]
       PopulationSize = 72
       NumCones      = 1000
       RunToMax      = false
@@ -62,7 +62,7 @@ let genVizSoc() =
     
     //Viz.createVidHeat @"D:\repodata\calib\wtd_seg.mp4"  512 1000 kdWeightedCA (segClr Social.baseSeg)
 
-    let fSegSh = (fun (x:Individual<KDStagHunt.ShKnowledge>) -> Social.ksNum (fst x.KS))
+    let fSegSh = (fun (x:Individual<KDStagHuntStatic.ShKnowledge>) -> Social.ksNum (fst x.KS))
     Viz.createVidHeat @"D:\calib\vids\shnt_seg.mp4" 512 1000 shStep.CA (segClr fSegSh)
 
     //let fSegIpd = (fun (x:Individual<KDIPDGame.IpdKS>) -> Social.ksNum (fst x.KS).KS)

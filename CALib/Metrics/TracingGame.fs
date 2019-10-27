@@ -1,5 +1,6 @@
-﻿module TracingGame
-//game specific tracing 
+﻿/// diagnostic code for game specific tracing 
+/// (for diagnostic use only)
+module TracingGame
 open Tracing
 open CA
 

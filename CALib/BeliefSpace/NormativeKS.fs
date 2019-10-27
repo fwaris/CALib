@@ -1,10 +1,12 @@
-﻿module NormativeKS
+﻿///Normative knowledge source
+module NormativeKS
 open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 1.0
+let eSigma = 1.0  //exploratory index constant for Normative
 
+///Structure to store norms
 type Norm = 
     {
         FitnessLo : float
@@ -13,6 +15,7 @@ type Norm =
         ParmHi    : float
     }
 
+///State kept by Normative 
 type NormState = 
     {
         Norms       : Norm[]
@@ -20,6 +23,8 @@ type NormState =
         ParmDefs    : Parm[]
     }
 
+///Update the collection of norms given parameter
+///values of a high performing individual
 let updateNorms isBetter norms highPerfInd =
     norms 
     |> Array.mapi(fun i ({FitnessLo=fLo; ParmLo=pLo; FitnessHi=fHi; ParmHi=pHi} as norm) ->
@@ -64,7 +69,7 @@ let updateNorms isBetter norms highPerfInd =
 let minP = function F(_,mn,_) -> mn | I(_,mn,_) -> float mn
 let maxP = function F(_,_,mx) -> mx | I(_,_,mx) -> float mx
 
-let normalizeParm (parmDefs:Parm[]) indv s i  {ParmLo=pLo; ParmHi=pHi} parm = 
+let updateParm (parmDefs:Parm[]) indv s i  {ParmLo=pLo; ParmHi=pHi} parm = 
     if pLo < parm &&  pHi > parm  then 
         evolveP CAEvolve.RANGE_SCALER s eSigma indv i parmDefs.[i] parm
     else
@@ -90,12 +95,20 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
-let initialState parmDefs isBetter = {ParmDefs=parmDefs; IsBetter=isBetter; Norms=createNorms parmDefs isBetter}
+let initState parmDefs isBetter = 
+    {
+        ParmDefs = parmDefs
+        IsBetter = isBetter
+        Norms    = createNorms parmDefs isBetter
+    }
 
+
+///Normative default influence function
 let defaultInfluence {Norms=norms; ParmDefs=parmDefs} _ s (ind:Individual<_>) =
-    (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> normalizeParm parmDefs ind.Parms s i n p)
+    (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> updateParm parmDefs ind.Parms s i n p)
     ind
 
+///Normative default acceptance function
 let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> array) =
 
     //assumes that individuals are sorted best fitness first
@@ -112,6 +125,7 @@ let rec defaultAcceptance fInfluence state envChanged (voters:Individual<_> arra
     let state = {state with Norms=updatedNorms}
     voters,construct state defaultAcceptance fInfluence 
 
+///Create Normative knowledge source
 let create parmDefs optKind =    
-    let state = initialState parmDefs (CAUtils.comparator optKind)
+    let state = initState parmDefs (CAUtils.comparator optKind)
     construct state defaultAcceptance defaultInfluence

@@ -1,7 +1,7 @@
-﻿module Social
+﻿///Calculation of social metrics e.g. segregation and diffusion
+module Social
 open CA
 open CAUtils
-open FSharp.Collections.ParallelSeq
 
 let ksNum = function
   | Situational   -> 1
@@ -13,6 +13,8 @@ let ksNum = function
 
 let ksSegments = [1;2;3;4;5]
 
+///Return the neighbors of the individual given CA Network function
+///and the number of hops
 let rec nhbrTypes ca (seg:Individual<'a>->int) i ks  =
     seq {
         yield! ks
@@ -22,6 +24,8 @@ let rec nhbrTypes ca (seg:Individual<'a>->int) i ks  =
             yield! nhbrTypes ca seg (i-1) nbrs
     }
 
+///Schelling segregation index of an individual given
+///the radius (hops) of its neighborhood
 let segregationAt radius prop segs ca seg indv =
       let nbrs = nhbrTypes ca seg radius [|indv.Id,seg indv|]
       let nbrsK = 
@@ -40,11 +44,15 @@ let segregationAt radius prop segs ca seg indv =
       let deviations_from_prop = nbrsKComplete |> Seq.map (fun (k,v) -> prop - (v / totK) |> abs) |> Seq.sum
       deviations_from_prop
 
+///Average Schelling segregation index of the population given
+///the radius (hops) of an individuals neighborhood
 let segregation radius prop segs ca seg =
     ca.Population 
     |> Array.Parallel.map (segregationAt radius prop segs ca seg)
     |> Array.average
 
+///Root mean square distance between parameters 
+///of two individuals
 let rmseDist (a:Individual<_>) (b:Individual<_>) = 
   Array.zip a.Parms b.Parms 
   |> Array.map (fun (xa,xb)-> (xa-xb)*(xa-xb)) 
@@ -52,12 +60,15 @@ let rmseDist (a:Individual<_>) (b:Individual<_>) =
   |> fun x -> x / (float a.Parms.Length) 
   |> sqrt
 
+///Average root mean square distance of an individual 
+///with its neighbors
 let diffusionAt<'a> (ca:CA<'a>) (i:Individual<'a>) =
     let nbrs = ca.Network ca.Population i.Id
     let rmse = nbrs |> Array.map (rmseDist i) |> Array.sum
     let avgRmse = rmse / (float nbrs.Length)
     avgRmse
 
+///Average root mean square distance of the population
 let diffusion  (ca:CA<'a>) = 
     ca.Population 
     |> Array.Parallel.map (diffusionAt ca)

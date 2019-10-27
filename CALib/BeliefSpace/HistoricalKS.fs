@@ -1,12 +1,14 @@
-﻿module HistoricalKS
+﻿/// History knowledge source
+module HistoricalKS
 open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.5
-let th_significance = 0.001
+let eSigma = 0.5 //exploratory index constant for history
 
-//determine direction of change
+let th_significance = 0.001 //significant difference threshold
+
+///Determine direction of change of the ith parameter given prev and new values
 let dir (parmDefs:Parm[]) i prevVal newVal  = 
     match parmDefs.[i],prevVal,newVal with 
     | F(_,_,_),pV,iV when pV > iV   -> Up 
@@ -24,6 +26,7 @@ let isSignificantlyDifferent i1 i2 =
     (i1,i2) 
     ||> Array.exists2 (fun p1 p2 ->  p1 - p2 |> abs > th_significance)
 
+//State kept by History
 type HistoryState = 
     {
         Window      : int
@@ -41,20 +44,17 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
+///History default influence function
 let defaultInfluence state _ s (ind:Individual<_>) =
-    //printf "H:%d %0.2f %A->" ind.Id ind.Fitness ind.Parms
-    //let iBefore = ind.Parms |> Array.copy
     let ev = state.Events.[rnd.Value.Next(0,state.Events.Length)]
     let ind' = 
         if state.IsBetter ev.MFitness ind.Fitness then
             ev.MParms |> influenceInd state.ParmDefs s eSigma ind
         else
             evolveInd CAEvolve.RANGE_SCALER state.ParmDefs s eSigma ind
-
-    //printfn "[%d] %A (%A)" ind'.Id ind'.Parms ev.MParms
-    //let iAfter = ind'.Parms |> Array.copy
     ind'
 
+///History default acceptance function
 let rec defaultAcceptance 
     fInfluence 
     state
@@ -82,12 +82,8 @@ let rec defaultAcceptance
         | None -> voters, construct state defaultAcceptance fInfluence
         | Some nBest ->
             let pBest = match events with [] -> nBest.Parms | b::_ -> b.MParms
-            //let eventDirection = (pBest,nBest.Parms) ||> Array.mapi2 (dir parmDefs)
             let changeEvent    = toMarker nBest
             let events         = changeEvent::events |> List.truncate win
-            //let earliestEvent = events.[events.Length - 1]
-            //let distance      = (nBest.Parms,earliestEvent.MParms) ||> Array.map2 (fun p n -> abs ( p - n))
-            //let direction     = (nBest.Parms,earliestEvent.MParms) ||> Array.mapi2 (dir parmDefs)
             let updatedHistory =
                 {state with
                     Window      = win
@@ -101,11 +97,18 @@ let rec defaultAcceptance
             voters, construct updatedHistory defaultAcceptance fInfluence
 
 
-let initialState (parmDefs:Parm[]) isBetter window = {Window=window; Events=[]; IsBetter=isBetter; ParmDefs=parmDefs}
+let initState (parmDefs:Parm[]) isBetter window = 
+    {
+        Window=window
+        Events=[]
+        IsBetter=isBetter
+        ParmDefs=parmDefs
+    }
 
+///Create History KS
 let create (parmDefs:Parm[]) optKind window =
 
-    let state = initialState parmDefs (CAUtils.comparator optKind) window
+    let state = initState parmDefs (CAUtils.comparator optKind) window
        
     construct state defaultAcceptance defaultInfluence
 

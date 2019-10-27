@@ -1,18 +1,18 @@
-﻿module Runs.Types
+﻿///types needed to support Cones World optimization runs 
+///especially on the grid
+module Runs.Types
 open DF1
 open CA
-open System.IO
 
 //a single program run executes according to this config
 
 type NetId = Square | Hexagon | Octagon
-//type RunId = {Id:string; SampleNum:int; Net:NetId; A:float}
+
 type WorldState = {W:World; M:Cone; F:float[]->float; EnvChangeCount:int}
 
 type Step = 
     | WtdSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
     | IpdSt of TimeStep<KDIPD.IpKnowledge> * (KDIPD.IpKnowledge->Knowledge)
-    | ShSt  of TimeStep<KDStagHunt.ShKnowledge> *  (KDStagHunt.ShKnowledge->Knowledge)
     | ShSSt  of TimeStep<KDStagHuntStatic.ShKnowledge> *  (KDStagHuntStatic.ShKnowledge->Knowledge)
     | StkSt of TimeStep<KDStackelberg.StkKnowledge> * (KDStackelberg.StkKnowledge->Knowledge)
 

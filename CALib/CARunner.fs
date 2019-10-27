@@ -1,4 +1,6 @@
-﻿module CARunner
+﻿///Module that contains functions to run CA
+//contains the step function that single steps CA
+module CARunner
 open CA
 open FSharp.Collections.ParallelSeq
 

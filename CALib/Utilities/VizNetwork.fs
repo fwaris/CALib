@@ -1,4 +1,6 @@
-﻿module Viz
+﻿///Module in support for video generation 
+///related to various aspects of CA runs
+module Viz
 open CA
 open Schelling
 open OpenCvSharp

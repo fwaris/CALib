@@ -1,12 +1,15 @@
-﻿module DomainKS
+﻿///Domain knowledge source
+module DomainKS
 open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.003
+let eSigma = 0.003  //exploratory index constant for Domain
 
+///Slope information
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
 
+///State kept by domain
 type DomainState = {ParmDefs:Parm[]; IsBetter:Comparator; Fitness:Fitness}
 
 let rateOfImprovement oldFitness newFitness isBetter denominator =
@@ -30,7 +33,7 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
         partialSlope)
 
 
-let initialState parmDefs isBetter fitness = {ParmDefs=parmDefs; IsBetter=isBetter; Fitness=fitness}
+let initState parmDefs isBetter fitness = {ParmDefs=parmDefs; IsBetter=isBetter; Fitness=fitness}
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
     {
@@ -39,12 +42,13 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
+///Domain default acceptance function
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
+///Domain default influence function
 let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
     //mutation
-    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
-    //let slopes = slopes isBetter fitness.Value ind.Fitness parmDefs ind.Parms
+    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
     let slopes = slopes state.IsBetter state.Fitness.Value oldFit state.ParmDefs ind.Parms
     let parms = ind.Parms
     let z = zsample() |> abs
@@ -58,8 +62,9 @@ let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
             | Flat -> p)//evolveS s eSigma p)
     ind
 
+///Create Domain knowledge source
 let create parmDefs optKind (fitness:Fitness) =
 
-    let state = initialState parmDefs (CAUtils.comparator optKind) fitness
+    let state = initState parmDefs (CAUtils.comparator optKind) fitness
 
     construct state defaultAcceptance defaultInfluence

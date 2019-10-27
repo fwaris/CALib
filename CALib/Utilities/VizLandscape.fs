@@ -1,5 +1,6 @@
-﻿module VizLandscape
-//generate contour map of 2D fitness landscape
+﻿///generate contour map of 2D fitness landscape
+module VizLandscape
+
 open System.Threading.Tasks
 
 open System.IO

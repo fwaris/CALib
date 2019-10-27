@@ -1,7 +1,7 @@
-﻿module KDWeightedMajority
+﻿///Weighte Majority knowledge distribution
+module KDWeightedMajority
 open CA
 open FSharp.Collections.ParallelSeq
-open System.Collections.Generic
 
 let primKS (k:Knowledge) = k
 
@@ -38,7 +38,9 @@ let influenceLevels =
         ]
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
- 
+
+
+///WTD influence function 
 let private wtdMajorityInfluence beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
@@ -78,6 +80,10 @@ let rec kdLoop
     let pop = wtdMajorityInfluence beliefSpace pop
     pop,beliefSpace,Influence(kdLoop allKSSet every (gen + 1))
 
+///Create WTD influence given
+///the belief space and a constant (every) that
+///determines after how many generations 
+///the population will be updated
 let influence beliefSpace every =
     let kss = CAUtils.flatten beliefSpace 
     let allKSSet = kss |> List.map (fun ks->ks.Type) |> set

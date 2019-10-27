@@ -1,7 +1,9 @@
-﻿module CAEvolve
+﻿///Utility functions to support evolution of value
+module CAEvolve
 open CA
 open CAUtils
 
+///Increase parameter value given slope and step size
 let stepUp stepSize slope parmDef v = 
     let z' = stepSize * slope
     //printfn "Up: %f * %f = %f + %f" stepSize slope z' v
@@ -9,6 +11,7 @@ let stepUp stepSize slope parmDef v =
     | F (_,mn,mx)   -> v + z' |> clamp mn mx
     | I (_,mn,mx)   -> v + z' |> clampI mn mx
 
+///Decrease parameter value given slope and step size
 let stepDown stepSize slope parmDef v =
     let z' = stepSize * slope
     //printfn "Dn: %f * %f = %f - %f" stepSize slope z' v
@@ -16,24 +19,13 @@ let stepDown stepSize slope parmDef v =
     | F (_,mn,mx)   -> v - z' |> clamp mn mx
     | I (_,mn,mx)   -> v - z' |> clampI mn mx
 
-//let slideUp influenceLevel sigma parmDef v = 
-//    let z = zsample()
-//    let z' = z * influenceLevel * sigma |> abs
-//    match parmDef with
-//    | F (_,mn,mx)   -> v + z' |> clamp mn mx
-//    | I (_,mn,mx)   -> v + z' |> clampI mn mx
-
-//let slideDown influenceLevel sigma parmDef v =
-//    let z = zsample()
-//    let z' = z * influenceLevel * sigma |> abs
-//    match parmDef with
-//    | F (_,mn,mx)   -> v - z' |> clamp mn mx
-//    | I (_,mn,mx)   -> v - z' |> clampI mn mx
-
+///Return parameter range from min and max of Parm type
 let range = function
     | F(_,mn,mx)   ->  mn-mx
     | I(_,mn,mx)   ->  mx-mn |> float
 
+///Evolve parameter using Gaussian sampling
+///but taking the parameter range into consideration
 let evolveS' rangeScaler range influenceLevel sigma v = 
     assert (influenceLevel > 0.0 && influenceLevel <= 5.0)
     assert (sigma > 0.0 && sigma <= 1.0)
@@ -42,13 +34,20 @@ let evolveS' rangeScaler range influenceLevel sigma v =
     //printfn "evolveS' infL=%f; s=%f; v=%f - %f" influenceLevel sigma v z'
     v - z'
 
-let RANGE_SCALER = 0.25 //how much of the available parameter range to use for evolving parm
+///How much of the available parameter range to use for evolving parm
+let RANGE_SCALER = 0.25 
 
+///Evolve the ith parameter of the 'influenced' individual where
+///influenceLevel is the aggressiveness of the move (a factor that may change over time),
+///sigma is a constant that is typically tied to a Knowledge source and controls its exploratory factor,
+///parm is the Parm type associated with the parameter at that index,
+///pV is the current parameter value of the 'influenced' individual,
+///iV is the current parameter value of the 'influencer' individual
 let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV =
     //mutation
     match parm,pV,iV with 
     | F(_,_,_),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV
-    | F(_,_,_),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV       //TODO: scaling not symmetrical in both directions
+    | F(_,_,_),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV   
     | F(_,mn,mx),pV,_             -> 
       let r = range parm
       influenced.[i] <- evolveS' RANGE_SCALER  r influenceLevel sigma pV   |> clamp mn mx
@@ -59,6 +58,11 @@ let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV
       let r = range parm
       influenced.[i] <- evolveS' RANGE_SCALER r influenceLevel sigma pV |> clampI mn mx
 
+///Evolve parameter using Gaussian sampling
+///influenceLevel is the aggressiveness of the move (a factor that may change over time),
+///sigma is a constant that is typically tied to a Knowledge source and controls its exploratory factor,
+///parm is the Parm type associated with the parameter at that index,
+///pV is the current parameter value of the individual
 let evolveP rangeScaler influenceLevel sigma (indv:float[]) i parm pV =
     //mutation
     let r = range parm
@@ -66,37 +70,28 @@ let evolveP rangeScaler influenceLevel sigma (indv:float[]) i parm pV =
     | F(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clamp mn mx
     | I(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clampI mn mx
 
+///Update the ith parameter of the indvidual to be between pLo and pHi using uniform sampling
 let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =
     //mutation
     match parm with
     | F(_,mn,mx) -> indv.[i] <- unifrmF influeceLevel pLo pHi 
     | I(_,mn,mx) -> indv.[i] <- unifrmF influeceLevel pLo pHi |> clampI mn mx
 
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
+///Influenced indivual's parameters are modified 
+///to move them towards the influencer's parameters. 
+///caParms is the array of Parm types associated with each of the parameters of the individual
+///influenceLevel is the aggressiveness of the move (a factor that may change over time),
+///sigma is a constant that is typically tied to a Knowledge source and controls its exploratory factor,
 let influenceInd caParms influenceLevel sigma (influenced:Individual<_>) (parmsInfluencer:float[]) = 
     let pId = influenced.Parms
     caParms |> Array.iteri (fun i p -> influenceInd' pId influenceLevel sigma i p pId.[i] parmsInfluencer.[i])
     influenced
 
-///influenced indivual's parameters are modified 
-///to move them towards the influencer's parameters
+///Evolve parameters of an individual using Gaussian sampling
+///caParms is the array of Parm types associated with each of the parameters of the individual
+///influenceLevel is the aggressiveness of the move (a factor that may change over time),
+///sigma is a constant that is typically tied to a Knowledge source and controls its exploratory factor,
 let evolveInd rangeScaler caParms influenceLevel sigma (individual:Individual<_>) =
     let prms = individual.Parms
     caParms |> Array.iteri (fun i p -> evolveP rangeScaler influenceLevel sigma prms i p prms.[i])
     individual
-
-(*
-#load "CA.fs"
-#load "CAUtils.fs"
-#load "CAEvolve.fs"
-open CAEvolve
-let r1 = randI 1.5 -1 -5 -10 0
-let r1 = randI 1.5 -1 10 -10 20
-let r1 = randF 0.8 -1. -5. -10. 0.
-let r1 = randF 1.5 -1. 10. -10. 20.
-let r1 = randF32 0.8 -1.f -5.f -10.f 0.f
-let r1 = randF32 1.5 -1.f 10.f -10.f 20.f
-let r1 = randI64 0.8 -1L -5L -10L 0L
-let r1 = randI64 1.5 -1L 10L -10L 20L
-*)

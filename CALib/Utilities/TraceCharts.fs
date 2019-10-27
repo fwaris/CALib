@@ -1,4 +1,5 @@
-﻿module TraceCharts
+﻿///Vizualiation of CA run with charts (animated in some cases)
+module TraceCharts
 open FSharp.Charting
 open System.Windows.Forms.DataVisualization
 open System.Windows.Forms

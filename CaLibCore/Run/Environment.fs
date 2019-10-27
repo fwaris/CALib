@@ -1,4 +1,5 @@
-﻿module Runs.Environment
+﻿///Cones world environment generation for the grid runs
+module Runs.Environment
 open Config.Types
 open Runs.Types
 open CA
@@ -30,11 +31,6 @@ let inline makeCA fitness envChgSensitivity optKind pop bspace influence network
             Optimization         = optKind
             EnvChngSensitivity   = envChgSensitivity
         }
-
-
-////let bsp fitness parms comparator = Roots [ Leaf (DomainKS2.create comparator fitness 2); Leaf (NormativeKS.create parms comparator)]
-//let createBeliefSpace fitness parms comparator = CARunner.defaultBeliefSpace parms comparator fitness
-//let inline createPop size bsp parms init = CAUtils.createPop (init bsp) parms size true
 
 let inline sqr x = x * x
 

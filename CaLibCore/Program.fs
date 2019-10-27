@@ -1,4 +1,7 @@
-﻿module CaLibCorePgm
+﻿///Entry point to run an experiment especially on the grid.
+///For grid run, looks for the PBS_ARRAY_INDEX environment variable
+///that points to the configuration file to use for the run
+module CaLibCorePgm
 
 
 // Learn more about F# at http://fsharp.org
@@ -8,6 +11,7 @@ open System.IO
 
 type RunCommand = Job of string | Cfg of string | NoArgs | InvalidArgs
 
+///pattern match over supplied command line arguments to determine what is being asked to do
 let (|Job|Cfg|NoArgs|InvalidArgs|) = function
     | [||]          -> NoArgs
     | [|"-j"; job|] -> Job job

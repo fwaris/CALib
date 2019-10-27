@@ -1,4 +1,8 @@
-﻿module Runs.StatDynamicSeq
+﻿///Manages experimental run of 
+///Cones World landscape sequences with
+///mutiple configured KD mechanisms.
+///Also saves stats collected during the runs 
+module Runs.StatDynamicSeq
 open CA
 open CAUtils
 open Runs.Types
@@ -15,15 +19,6 @@ let initWTD envChgSnstvty basePop f =
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     WtdSt (step,Community.basePrimKs)
-
-//SH
-let initSH envChgSnstvty basePop f = 
-    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
-    let pop = basePop |> KDStagHunt.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-    let influence = KDStagHunt.influence defaultOptKind 5 bsp pop
-    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
-    ShSt (step,Community.fstPrimKs)
 
 //SHS
 let initSHS envChgSnstvty basePop f = 
@@ -52,24 +47,12 @@ let initIPD envChgSnstvty basePop f =
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     IpdSt (step,Community.fstPrimKs)
 
-////IPD
-//let initIPD envChgSnstvty basePop f = 
-//    let bsp = CARunner.defaultBeliefSpace parmDefs defaultOptKind f
-//    let pop = basePop |> KDIPDGame.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
-//    let influence = 
-//        let ada = KDIPDGame.Geometric(0.9,0.01)
-//        let vmx = (0.2, 0.9)
-//        KDIPDGame.influence Domain ada vmx defaultOptKind pop
-//    let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-//    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
-//    IpdSt (step,Community.gamePrimKs)
 
 let initSteps rsc sns basePop f =
     [|for kd in rsc.KDs ->
         match kd with
         | WTD -> initWTD sns basePop f
         | IPD -> initIPD sns basePop f
-        | SH  -> initSH  sns basePop f
         | SHS -> initSHS sns basePop f
         | STK -> initSTK sns basePop f
     |]
@@ -82,7 +65,6 @@ let prepStepsForLandscapeRun ws lndscpCfg =
     |> Array.map(function 
     | WtdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; WtdSt(st,f)
     | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
-    | ShSt  (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSt(st,f)
     | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
     | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
     )
@@ -92,7 +74,6 @@ let runSteps envChanged steps =
     |> Array.map (function 
     | WtdSt (st,f) -> async {return WtdSt(CARunner.step envChanged st defaultMaxBest,f) }
     | IpdSt (st,f) -> async {return IpdSt(CARunner.step envChanged st defaultMaxBest,f) }
-    | ShSt  (st,f) -> async {return ShSt(CARunner.step envChanged st defaultMaxBest,f) }
     | ShSSt (st,f) -> async {return ShSSt(CARunner.step envChanged st defaultMaxBest,f) } 
     | StkSt (st,f) -> async {return StkSt(CARunner.step envChanged st defaultMaxBest,f) }
     )
@@ -128,7 +109,6 @@ let runLandscapeSeq (rsc:RunConfig) lndscpCfg =
 let runConfig rsc = 
     asyncSeq {
         for a in rsc.AValues do
-            MetaLrn.Dbg.A <- a
             for n in [Hexagon] do
                 for sn in rsc.EnvChngSensitivity do
                     for i in 1..rsc.Samples do

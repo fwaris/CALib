@@ -1,6 +1,7 @@
-﻿module FPGrowth
-//An implementation of frequent pattern growth algorithm to find frequent itemsets
-//(generates only frequent itemsets; does not mine association rules)
+﻿///An implementation of frequent pattern growth algorithm to find frequent itemsets
+///(generates only frequent itemsets; does not mine association rules)
+//This is used for local community detection in graphs
+module FPGrowth
 
 open System.Collections.Generic
 

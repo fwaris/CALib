@@ -1,6 +1,5 @@
-﻿module KDStackelberg
-
-//knowledge distribution based on Stackelberg game
+﻿///knowledge distribution based on Stackelberg game
+module KDStackelberg
 
 open CA
 open KDContinousStrategyGame

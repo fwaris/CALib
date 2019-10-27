@@ -1,6 +1,8 @@
-﻿module KDContinousStrategyGame
-// abstract definitions of Play, Payoff & Outcome functions
-// for game based Knowledge Distribution
+﻿///Abstract definitions of Play, Payoff & Outcome functions
+///for game based Knowledge Distribution
+module KDContinousStrategyGame
+//these definitions are used by concrete games for knowledge distribution
+
 open CA
 
 type Neighbors<'k> = Individual<'k> array

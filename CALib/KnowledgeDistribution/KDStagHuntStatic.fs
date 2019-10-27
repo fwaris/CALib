@@ -1,5 +1,5 @@
-﻿module KDStagHuntStatic
-//knowledge distribution based on Stag Hunt game
+﻿///knowledge distribution based on Stag Hunt game
+module KDStagHuntStatic
 
 open CA
 open KDContinousStrategyGame
@@ -22,11 +22,12 @@ type ShState =
 
 let fitVal sign (_,_,_,f) = sign*f
 
-//let defaultKSOrder = [|Topgraphical; Normative; Historical; Situational; Domain|]
+///Default KS ordering of Stag-Hunt
+//Domain is both low and high due to its stem cell nature
 let defaultKSOrder = [|Topgraphical; Domain; Topgraphical; Normative; Situational; Historical; Domain|]
 
-//Cooperative update:
-//Each individul is assigned a KS according its fitness rank and in relation to KS ordering (defined at start)
+///Cooperative update:
+///Each individul is assigned a KS according its fitness rank and in relation to KS ordering (defined at start)
 let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>) = 
   let ind_pouts = payouts.[indv.Id]
   let maxFit = ind_pouts |> Seq.maxBy (fitVal sign)
@@ -42,8 +43,8 @@ let updateIndv_CoopGen  st sign (pop:Population<ShKnowledge>) (payouts:Payout[])
   else
       indv
 
-//Evaluation update:
-//if indiviudal improved it retains is KS otherwise takes the dominant KS in the neighborhood
+///Competitive update:
+///if indiviudal improved it retains is KS otherwise takes the dominant KS in the neighborhood
 let updateIndv_EvalGen state sign (pop:Population<ShKnowledge>) (payouts:Payout[]) (indv:Individual<ShKnowledge>)= 
   if indv.Fitness * sign > state.FitnessAtInit.[indv.Id] * sign then
     //let ks,_ = indv.KS

@@ -34,7 +34,7 @@ let rsc =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0]
       Restartable   = true
-      KDs            = [WTD; IPD; SH; STK]
+      KDs            = [WTD; IPD; SHS; STK]
       PopulationSize = 72
       NumCones      = 1000
       RunToMax      = false
@@ -52,7 +52,6 @@ let rsc =
 let runConfig rsc = 
     asyncSeq {
         for a in rsc.AValues do
-            MetaLrn.Dbg.A <- a
             for n in [Hexagon] do
                 for sn in rsc.EnvChngSensitivity do
                     for i in 1..rsc.Samples do
@@ -109,14 +108,12 @@ let makeForms id =
 
 let primarkyKS (x:obj) =
     match x with 
-    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> (fst ks).KS
     | :? Knowledge as k -> k
     | :? (Knowledge * int) as k -> fst k
     | _-> failwithf "not handled"
 
 let secondaryKS (x:obj) =
     match x with 
-    | :? (KDIPDGame.PrimaryKS * Map<Knowledge,float>) as ks -> snd ks |> Some
     | _ -> None
 
 let createForms (rsc:RunConfig) =
@@ -174,7 +171,7 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
     async {
         do! Async.Sleep 200
         match x with 
-        | EnvChange ws -> printfn "ws"; let f = genBg ws.M ws.F in postBg f
+        | EnvChange ws -> printfn "Landscape changed"; let f = genBg ws.M ws.F in postBg f
         | LndscpStats (rs,cfg) -> postSteps rs cfg
         })
 

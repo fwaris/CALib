@@ -1,10 +1,12 @@
-﻿module SituationalKS
+﻿///Situational knowledge source
+module SituationalKS
 open CA
 open CAUtils
 open CAEvolve
 
-let eSigma = 0.05
+let eSigma = 0.05  //exploratory index constant for Situational
 
+///State kept by Situational 
 type State = 
     {
         Exemplars    : Marker array
@@ -19,17 +21,19 @@ let fitweights isBetter (exemplars:Marker array) =
     let wghts = exemplars |> Array.map (fun i-> tx i.MFitness)
     wghts 
 
-let parmDiversity p1 p2 = 
+///distance between two individual parameter arrays
+let parmDist p1 p2 = 
     (p1,p2)
     ||> Array.map2 (fun a b -> a - b |> abs)
     |> Array.sum
 
-let makeBins (mn:float) mx bins = 
+///make numBins number of bins equidistant between mn and mx ranges
+let makeBins (mn:float) mx numBins = 
     if mn > mx then failwith "mn > mx"
     let r = mx - mn
-    let bw = r / bins
+    let bw = r / numBins
     (mn,mn+bw,1) |> Seq.unfold (fun (mn,mx,c) -> 
-        if c > int bins then
+        if c > int numBins then
             None
         else
             Some ((mn,mx), (mx,mx+bw,c+1)))
@@ -53,19 +57,23 @@ let rec clct acc l1 l2 =
 
 let log exmplrs = exmplrs |> Seq.map (fun e -> e.MParms) |> Seq.toList |> Metrics.MetricMsg.SitState |> Metrics.postAll
 
+///Pick exemplars for the next gen given previous exemplars (prevE) and voters
+//Note: This function considers parameter distance between two exemplars so that
+//selected exemplars come from diverse regions and are thus spread out
 let pickExamplars isBetter (prevE:Marker[]) (voters:Individual<_> seq) =
     let tx = if isBetter 2. 1. then -1. else 1.
     let voters = voters |> Seq.map (fun indv -> toMarker indv)
     let ex1 = Seq.append prevE  voters |> Seq.toArray
     let ex2 = Array.sortBy (fun x -> tx * x.MFitness) ex1
     let best = ex2.[0]
-    let within10Pct = best.MFitness * 0.15
-//    let ex = ex.[1..] |> Array.filter(fun i -> i.Fitness - best.Fitness |> abs <= within10Pct) //all others, i.e. not best
     let exRest = ex2.[1..] 
-    let divsM = exRest |> Array.mapi (fun i indv -> i, parmDiversity best.MParms indv.MParms) |> Map.ofArray
+    let divsM = exRest |> Array.mapi (fun i indv -> i, parmDist best.MParms indv.MParms) |> Map.ofArray
     let (_,mxD) = divsM |> Map.toArray |> Seq.maxBy snd
     let (_,mnD) = divsM |> Map.toArray |> Seq.minBy snd
-    let bins = makeBins mnD (mxD + 0.0001) 5.
+
+    let bins = makeBins mnD (mxD + 0.0001) 5. //make bins from distance range in exemplars
+
+    //bin exemplars by distance so that nearby examplars fall into the same bin
     let binned = (Map.empty,exRest |> Array.mapi (fun i exm ->i,exm)) ||> Array.fold (fun acc (i,exm) -> 
         let d = divsM.[i]
         let b = bins |> List.find (fun (mn,mx) -> mn <= d && d < mx)
@@ -74,12 +82,17 @@ let pickExamplars isBetter (prevE:Marker[]) (voters:Individual<_> seq) =
         | None    -> [exm]
         |> fun x -> acc |> Map.add b x
         )
-    let binned = //sort each bin by decreasing order of fitness
+
+    //sort each bin by decreasing order of fitness
+    let binned = 
         binned 
         |> Map.map (fun k v -> v |> List.sortBy (fun exm -> tx * exm.MFitness))
         |> Map.toSeq
         |> Seq.sortBy (fun ((mn,mx),_) -> mx) //sort all bins by decreasing diversity
         |> Seq.toList
+
+    //collect round-robin from bins so that exemplars come from the variety of bins
+    //eventually this list will be truncated so only the top exemplars will be taken
     best::(clct [] binned [])    
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
@@ -89,7 +102,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
-let initialState parmDefs isBetter maxExemplars = 
+let initState parmDefs isBetter maxExemplars = 
     {
         Exemplars   = [||]
         SpinWheel   = [||]
@@ -98,16 +111,17 @@ let initialState parmDefs isBetter maxExemplars =
         MaxExemplars = maxExemplars
     }
 
+///Situational default influence function
 let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
     match state.Exemplars with
     | [||] -> ind
     | x -> 
         let i = Probability.spinWheel state.SpinWheel
         let choosen = x.[i]
-//            printfn "sit i = %d %A" i choosen
         ind.Parms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i state.ParmDefs.[i] p)
         ind
 
+///Situational default acceptance function
 let rec defaultAcceptance 
     fInfluence 
     state
@@ -132,6 +146,7 @@ let rec defaultAcceptance
 
     voters, construct state defaultAcceptance fInfluence
 
+///Create Situational knowledge source
 let create parmDefs optKind maxExemplars =
-    let state = initialState parmDefs (CAUtils.comparator optKind) maxExemplars
+    let state = initState parmDefs (CAUtils.comparator optKind) maxExemplars
     construct state defaultAcceptance defaultInfluence

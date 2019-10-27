@@ -1,14 +1,14 @@
-﻿module TopographicKS
+﻿///Topographic knowledge source
+module TopographicKS
 //this version of TopographicalKS is based on Brainstorm Optimization method (BSO)
 
-//*** note check update of CIndvs in state
 
 open CA
 open CAUtils
 open CAEvolve
 open MachineLearning
 
-let eSigma = 1.0
+let eSigma = 1.0    //exploratory index constant for Domain
 
 type Centroid =
     {
@@ -47,6 +47,9 @@ let toCentroid state (c,members) =
         BestFit = state.Fitness.Value lbest
     }
 
+///BSO is based on clustering the high performing individuals into clusters 
+///so that (hopefully diverse) promising regions in the search space are identified.
+///This function applies KMeans to identify new clusters given a new set of voters
 let updateClusters state voters =
     let voters = voters |> Seq.map (fun indv -> toMarker indv)
     let vns = 
@@ -87,6 +90,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
         Influence   = fInfluence state
     }
 
+///Topographic default acceptance function
 let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> array) =
 
     let state =
@@ -97,6 +101,7 @@ let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> arr
     let state = updateClusters state voters
     voters,construct state defaultAcceptance fInfluence
 
+///Topographic default influence function
 let defaultInfluence state _ s (indv:Individual<_>) =
     //mutation
     let cntrd = Probability.spinWheel state.SpinWheel 
@@ -104,7 +109,8 @@ let defaultInfluence state _ s (indv:Individual<_>) =
     let updateParms = indv.Parms
     p2 |> Array.iteri (fun i p -> evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p)
     indv
-    
+
+///Create Topographic knowledge    
 let create parmDefs optKind (fitness:Fitness) =
     let state = initialState parmDefs (CAUtils.comparator optKind) fitness
     construct state defaultAcceptance defaultInfluence

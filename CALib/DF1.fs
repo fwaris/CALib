@@ -1,13 +1,27 @@
 ﻿///Generate a test function of aribtrary complexity
 ///Paper: "A Test Problem Generator for Non-Stationary Environments" by Morrison & De Jong
 module DF1
-open Probability
 open System.Collections.Generic
 open FSharp.Collections.ParallelSeq
 
 let private sqr x = x * x
-type Cone = {H:float; R:float; L:float[]}
 
+type Cone = {H:float; R:float; L:float[]} //height, radius, location
+
+///cones world is a set of cones and optional logistic enumerations for radius, height and location
+type World = 
+    {
+        Cones : Cone[] 
+        Ar    : IEnumerator<float> option        //if specified will modify radius
+        Ah    : IEnumerator<float> option        //if specified will modify height
+        Ac    : IEnumerator<float> option        //if specified will modify locations
+        }
+
+///Generate cones:
+/// n = number of cones,
+/// dims = number of dimensions,
+/// (hbase,hrange) = height base and range,
+/// (rbase,rrange) = radius base and range
 let genCones n dims (hbase,hrange) (rbase,rrange) = 
     let rnd = Probability.RNG.Value
     let hs = [|for i in 1..n -> hbase + rnd.NextDouble() * hrange|]
@@ -20,15 +34,17 @@ let Hstepscale = 0.33
 let Rstepscale = 0.33
 let cstepscale = 0.2 
 
-//logistic sequence generator
+///logistic sequence generator,
+/// a = A value,
+/// x = starting value
 let lgst a x = seq{yield x; yield! x |> Seq.unfold(fun x -> let n = a*x*(1.0 - x) in Some(n,n))}  
 
-//enumerate a logistic sequence
+///enumerate a logistic sequence
 let lgstEnum a x = let s = lgst a x |> Seq.cache in s.GetEnumerator()
 
 let flip () = Probability.RNG.Value.NextDouble() < 0.5
 
-//copied from java code - still produces out of range values
+//not used (copied from java code - still produces out of range values)
 let changeLocation2 (enum:IEnumerator<float>) cone = 
     let newL = cone.L |> Array.map (fun l ->
         let xpct = (l + 1.0) / 2.0                          //from java code; not sure why
@@ -87,6 +103,7 @@ let changeLocations3 (enum:IEnumerator<float>) cones =
             scaler targetRange sRange  l)
         {c with L = newLs})
 
+///change locations of cones using the sequence generator (from the logistic function)
 let changeLocations (enum:IEnumerator<float>) cones = 
     let locs = cones |> Array.map (fun c ->
         c.L |> Array.map (fun l -> 
@@ -107,6 +124,7 @@ let changeLocations (enum:IEnumerator<float>) cones =
                 | l -> l)
         {c with L = ls'})
        
+///change heights of cones using the sequence generator (from the logistic function)
 let changeHeight (enum:IEnumerator<float>) maxH cone =
     let dh = enum.MoveNext() |> ignore; enum.Current
     let dh = dh * Hstepscale
@@ -117,6 +135,7 @@ let changeHeight (enum:IEnumerator<float>) maxH cone =
     let newH = maxH * hpct
     {cone with H=newH}
 
+///change radii of cones using the sequence generator (from the logistic function)
 let changeRadius (enum:IEnumerator<float>) maxR cone =
     let dr = enum.MoveNext() |> ignore; enum.Current
     let dr = dr * Rstepscale
@@ -127,16 +146,8 @@ let changeRadius (enum:IEnumerator<float>) maxR cone =
     let newR = maxR * rpct
     {cone with R=newR}
 
-//cones world is a set of cones and optional logistic enumerations for radius, height and location
-type World = 
-    {
-        Cones : Cone[] 
-        Ar    : IEnumerator<float> option
-        Ah    : IEnumerator<float> option
-        Ac    : IEnumerator<float> option
-        }
 
-//create world with given parameters 
+///create a cones world with given parameters (see genCones) 
 let createWorld n dims (hbase,hrange) (rbase,rrange) aR aH aC =
     let cones = genCones n dims (hbase,hrange) (rbase,rrange)
     {
@@ -146,7 +157,7 @@ let createWorld n dims (hbase,hrange) (rbase,rrange) aR aH aC =
         Ac    = aC |> Option.map (fun a -> lgstEnum a 0.45)
     }
 
-//update world cone parameters using logictic enumerations specified
+///update Cones World cones using logictic enumerations specified
 let updateWorld world =
     let maxH  = world.Cones |> Array.map (fun c->c.H) |> Array.max
     let maxR  = world.Cones |> Array.map (fun c->c.R) |> Array.max
@@ -164,41 +175,22 @@ let updateWorld world =
         | None -> cones
     {world with Cones = cones}
 
-//find the maximum height of the cones world at a given location
+///find the maximum height of the cones world at a given location
 let maxF ds m c = 
     let dist = (ds,c.L) ||> Array.map2(fun a b-> sqr (a-b)) |> Array.sum |> sqrt
     max m (c.H - c.R * dist)
 
-//get the fitness function and max hight cone for a given world
+///Given a Cones World, return the maximum height cone and the fitness function 
 let landscape world =
     let cones = world.Cones
     let maxCone = cones |> Array.maxBy (fun x -> x.H)
     let fitness ds = (System.Double.MinValue,cones) ||> PSeq.fold(maxF ds)
     maxCone,fitness
 
-(*
-#load "Probability.fs"
-#r @"..\packages\FSharp.Collections.ParallelSeq\lib\net40\FSharp.Collections.ParallelSeq.dll"
-#load "DF1.fs"
-open DF1
-let w = createWorld 500 2 (5.,15.) (20., 10.) None None (Some 3.1) |> ref
-for i in 1 .. 1000000 do
-    w := updateWorld !w
-    let valid = 
-        w.Value.Cones 
-        |> Seq.forall (fun c-> c.L |> Seq.forall (fun l -> 
-            if l >= -1.0 && l <= 1.0 then
-                true
-            else
-                printfn "%A" c
-                false
-            ))
-    if not valid then printfn "not valid"
-
-*)
 
 open System.IO
 
+///create a Cones World from a text file and return its max height cone and fitness function
 let createDf1 file =
     let lines = File.ReadLines file |> Seq.skip 5
     let cones =
@@ -219,7 +211,9 @@ let df1 = createDf1 @"C:\Users\cz8gb9\Documents\Visual Studio 2015\Projects\CALi
     for j in -1. .. 0.1 .. 1. do
         yield df1 i j]
 *)
-        
+
+
+///load a Cones World environment from a file (used for diagnostics only)        
 let loadEnv file =
   let parseLine (s:string) =
     let s = s.Split([|'|'|],System.StringSplitOptions.RemoveEmptyEntries)
@@ -232,6 +226,7 @@ let loadEnv file =
   let w = {Cones=cones;  Ar   = None; Ah=None; Ac=None}
   w
 
+///save the Cones of a Cones world to a file (used for diagnostics only)
 let saveEnv path (cones:Cone[]) =
   use fs = new StreamWriter(File.OpenWrite(path))
   cones |> Array.iter (fun c -> 

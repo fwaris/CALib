@@ -1,4 +1,8 @@
-﻿module Observable 
+﻿///Create observable from an agent.
+//Messages 'mailed' (or posted) to the agent are 
+//broadcasted to all the subscribers of the
+///observable
+module Observable 
 open System
 
 let createObservableAgent<'T> (token:System.Threading.CancellationToken) =

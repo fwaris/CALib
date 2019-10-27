@@ -1,4 +1,6 @@
-﻿module Schelling
+﻿///Demonstration KS used to demonstrate population segregation
+///with Schelling-like rules. Not used for optimization
+module Schelling
 open CA
 open KDContinousStrategyGame
 open CAUtils

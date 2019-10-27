@@ -1,5 +1,5 @@
 ﻿(*
-video generation of landscape sequences (experimental)
+video generation from CA run over a sequence of dynamic landscapes (experimental)
 *)
 #load "TraceDynamic.fsx"
 open CA
@@ -21,7 +21,7 @@ let rsc =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0]
       Restartable   = true
-      KDs            = [WTD; IPD; SH; STK]
+      KDs            = [WTD; IPD; SHS; STK]
       PopulationSize = 72
       NumCones      = 1000
       RunToMax      = false

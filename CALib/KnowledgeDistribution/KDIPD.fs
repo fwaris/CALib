@@ -1,9 +1,10 @@
-﻿module KDIPD
-//knowledge distribution based on Stag Hunt game
+﻿///knowledge distribution based on n-player IPD game
+module KDIPD
 
 open CA
 open KDContinousStrategyGame
-type Decision = Cooperate | Defect
+
+type Decision = Cooperate | Defect                   //an individual makes a decision to cooperate or defect
 
 let ALPHA = 1.5
 
@@ -27,6 +28,7 @@ let fitVal sign (_,_,_,f) = sign*f
 
 let defaultKSOrder = [|Topgraphical,0; Domain,0; Topgraphical,1; Normative,0; Situational,0; Historical,0; Domain,2|]
 
+///Update individual's KS for one that decided to cooperate
 let updateIndv_Cooperation st (pop:Population<IpKnowledge>) (payouts:Payout[]) (indv:Individual<IpKnowledge>) = 
   let sign = st.Sign
   let ind_pouts = payouts.[indv.Id]
@@ -43,6 +45,7 @@ let updateIndv_Cooperation st (pop:Population<IpKnowledge>) (payouts:Payout[]) (
   else
       indv
 
+///Update individual's KS for one that decided to defect
 let updateIndv_Defection state (pop:Population<IpKnowledge>) (payouts:Payout[]) (indv:Individual<IpKnowledge>) = 
   let ks,c = indv.KS
   {indv with KS=ks,c+1}

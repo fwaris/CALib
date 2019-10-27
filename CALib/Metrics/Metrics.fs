@@ -1,4 +1,8 @@
-﻿module Metrics
+﻿//logging and metrics
+//any component in the system can post messages
+//defined here to log or gather metrics
+//only used for diagnostics
+module Metrics
 open CA
 open System.Threading
 open System

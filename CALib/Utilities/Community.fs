@@ -1,16 +1,16 @@
-﻿module Community
+﻿///Community detection in CA population networks
+///along with support for video generation of community formation
+///in population spaces
+module Community
 open TracingGame
 open CAUtils
 open VizUtils
 open System
 open OpenCvSharp
-open KDIPDGame
 open CA
 open System.Collections.Generic
 open System.Text
 open System.IO
-
-let ipdClr ((k,_):KDIPDGame.IpdKS) = Viz.brgColors.[Viz.ks k.KS]
 
 type Cluster = {Members:Set<Id>; Type:int}
 
@@ -153,15 +153,6 @@ let communityColors =
    |> Array.map (fun (b,g,r) -> Scalar(float b,float g,float r, 1.0))
 
 
-let drawFrame (pSize:Size) size ext margin network pop =
-  let mParent = new Mat(pSize, MatType.CV_8UC3)
-  Viz.drawLabel mParent (pSize.Height - ext - margin)
-  let mChild = mParent.SubMat(Rect(0,0,size,size))
-  Viz.visualizePopHex size ipdClr network pop mChild
-  mChild,mParent
-  //mChild.Release()
-  //mParent.Release()
-
 let drawClusters width (network:CA.Network<_>) (pop:CA.Population<_>) (mat:Mat) (clusters:Cluster[])=
     let rowCount = sqrt (float pop.Length)
     let halfRc = rowCount / 2.0 |> ceil
@@ -222,36 +213,9 @@ let drawLegend margin (clusterTypes:Smap<Set<Knowledge*int>> ref) (m:Mat)  =
     Cv2.PutText(!>m, l, Point(x + 15, y + 5), HersheyFonts.HersheyPlain, 1., Scalar.White)
     )
 
-let gamePrimKs = (fun ((k,_):IpdKS) ->k.KS)
 let basePrimKs = (fun (k:Knowledge) -> k)
 let inline fstPrimKs  (k:Knowledge,_) = k
 
-let visCommunity file (obs:IObservable<SG<IpdKS>>) =
-  let ext = 20
-  let margin = 5
-  let size = 512
-  let cLeg = size + 100
-  let pSize = Size(size, size + ext + 2 * margin)
-  let enc = encoder file 30. (pSize.Width,pSize.Height)
-  let cluterTypes = ref Smap.empty 
-  let bg = Scalar(0.,0.,0.)
-  let disp = 
-    obs.Subscribe(fun {Pop=pop;Net=network;Vmin=vmn;Links=links} ->
-      for i in 1 .. 10 do 
-        let clusters = clusterKSMembers  gamePrimKs network pop cluterTypes
-        let mParent = new Mat(pSize, MatType.CV_8UC3, bg)
-        drawLegend margin cluterTypes mParent
-        Viz.drawLabel mParent (pSize.Height - ext - margin)
-        let mChild = mParent.SubMat(Rect(0,0,size,size))
-        //let clusters = cluster pop.Length vmn links
-        drawClusters size network pop mChild clusters 
-        Viz.visualizePopHex size ipdClr network pop mChild
-        enc.Frame mParent
-        mChild.Release()
-        mParent.Release()
-        printfn "."
-    )
-  disp,enc
 
 let logCluster (str:StreamWriter) (id:string) (a:float) (i:int) (lndscp:int) primKs network pop =
   let _,topN = clusterKS primKs network pop

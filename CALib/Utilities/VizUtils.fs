@@ -1,4 +1,6 @@
-﻿module VizUtils
+﻿///A collection of visualization utilities 
+///wrapping OpenCV library
+module VizUtils
 open OpenCvSharp
 
 let uiCtx = System.Threading.SynchronizationContext.Current

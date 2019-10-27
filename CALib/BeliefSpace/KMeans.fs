@@ -1,5 +1,6 @@
 ﻿//modified from
 //https://raw.githubusercontent.com/mathias-brandewinder/Machine-Learning-In-Action/master/MachineLearningInAction/MachineLearningInAction/KMeansClustering.fs
+//used by Topographic knowledge which is based on Brainstorm optimization method
 namespace MachineLearning
 
 module KMeansClustering =

@@ -1,4 +1,7 @@
-﻿module DiffEvolutionKS
+﻿///Alternate Domain knowledge source implementation
+///based on differential evolution method
+//Standard Domain KS may be slow in high-dimensional problem spaces so this can be used instead.
+module DiffEvolutionKS
 open CA
 open CAUtils
 open CAEvolve
@@ -31,7 +34,7 @@ let applyDE state (pop:_[]) (targetInv:Individual<_>) =
                 y.[i] + F * (a.[i] - b.[i])
             else
                 y.[i]
-        iParms.[i] <- clampP' pVal pd
+        iParms.[i] <- clampP pVal pd
     )
     iParms
 
@@ -53,7 +56,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
 let defaultInfluence state pop influenceLevel (ind:Individual<_>) =
-    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to multiple KS influences therefore reevaluate
+    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
     let newParms = applyDE state pop ind
     let newFit = state.Fitness.Value newParms
     if state.IsBetter newFit oldFit then

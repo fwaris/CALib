@@ -1,14 +1,14 @@
-﻿module Community
+﻿///A version of the community detection code without video
+///generation. Its meant to run on the grid
+module Community
 open TracingGame
 open CAUtils
 open System
-open KDIPDGame
 open CA
 open System.Collections.Generic
 open System.Text
 open System.IO
 
-let gamePrimKs = (fun ((k,_):IpdKS) ->k.KS)
 let basePrimKs = (fun (k:Knowledge) -> k)
 let inline fstPrimKs  (k:Knowledge,_) = k
 

@@ -1,4 +1,5 @@
-﻿module Runs.Stat
+﻿///Create and record statistics from runs performed on the grid
+module Runs.Stat
 open CA
 open FSharp.Collections.ParallelSeq
 open Runs.Environment
@@ -29,7 +30,6 @@ let socMetrics st f =
 let kdId = function 
     | WtdSt _ -> "WTD"
     | IpdSt _ -> "IPD"
-    | ShSt  _ -> "SH"
     | ShSSt _ -> "SHS"
     | StkSt _ -> "STK"
 
@@ -37,28 +37,24 @@ let genCount lndscpCfg =
     match Array.head lndscpCfg.Steps with 
     | WtdSt (st,_) -> st.Count
     | IpdSt (st,_) -> st.Count
-    | ShSt  (st,_) -> st.Count
     | ShSSt (st,_) -> st.Count
     | StkSt (st,_) -> st.Count
 
 let stepSocialMetrics = function
     | WtdSt (st,f) -> socMetrics st f
     | IpdSt (st,f) -> socMetrics st f
-    | ShSt  (st,f) -> socMetrics st f
     | ShSSt (st,f) -> socMetrics st f
     | StkSt (st,f) -> socMetrics st f
 
 let stepKSAssigns = function
     | WtdSt (st,f) -> popKS st f
     | IpdSt (st,f) -> popKS st f
-    | ShSt  (st,f) -> popKS st f
     | ShSSt (st,f) -> popKS st f
     | StkSt (st,f) -> popKS st f
 
 let stepBestFitness = function
     | WtdSt (st,_) -> st.Best.[0].MFitness
     | IpdSt (st,_) -> st.Best.[0].MFitness
-    | ShSt  (st,_) -> st.Best.[0].MFitness
     | ShSSt (st,_) -> st.Best.[0].MFitness
     | StkSt (st,_) -> st.Best.[0].MFitness
 

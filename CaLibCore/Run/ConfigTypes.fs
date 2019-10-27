@@ -1,6 +1,10 @@
-﻿module Config.Types
+﻿///Configuration to support experimental runs with
+///Cones World landscapes
+//Note: the goal here to run different KD mechanisms on the exact same landscape sequences
+//so that the KD performances can be compared more directly with each other
+module Config.Types
 
-type KD = WTD | IPD | SH | SHS | STK
+type KD = WTD | IPD | SHS | STK
 
 type RunConfig = 
   {

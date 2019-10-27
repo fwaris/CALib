@@ -1,4 +1,7 @@
-﻿module RunConfigs
+﻿///Utility code to generate 
+///configuration files for jobs 
+///that run on the grid
+module RunConfigs
 open MBrace.FsPickler
 open Config.Types
 open System.IO
@@ -8,7 +11,7 @@ let configToSave =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0; 1; 5; 10]
       Restartable   = true
-      KDs            = [WTD; IPD; SH; STK]
+      KDs            = [WTD; IPD; SHS; STK]
       PopulationSize = 360
       NumCones      = 1000
       RunToMax      = false

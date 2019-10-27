@@ -1,4 +1,5 @@
-﻿module Tracing
+﻿///diagnostic code for 'peering' into a CA run
+module Tracing
 
 let cts = new System.Threading.CancellationTokenSource()
 
