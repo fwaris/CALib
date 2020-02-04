@@ -5,6 +5,7 @@ open CAUtils
 open CAEvolve
 
 let eSigma = 0.05  //exploratory index constant for Situational
+let ex_prob = 0.1
 
 ///State kept by Situational 
 type State = 
@@ -118,7 +119,13 @@ let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
     | x -> 
         let i = Probability.spinWheel state.SpinWheel
         let choosen = x.[i]
-        ind.Parms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i state.ParmDefs.[i] p)
+
+        let infParms = 
+            if Probability.RNG.Value.NextDouble() < ex_prob then 
+                choosen.MParms 
+            else 
+                ind.Parms
+        infParms |> Array.iteri (fun i p -> evolveP CAEvolve.RANGE_SCALER influenceLevel eSigma ind.Parms i state.ParmDefs.[i] p)
         ind
 
 ///Situational default acceptance function

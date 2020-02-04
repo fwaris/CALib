@@ -42,16 +42,22 @@ let flatten tree =
     loop [] tree
         
 ///clamp float value to be within min and max range supplied
-let clamp mn mx x = max (min x mx) mn                   
+//let clamp mn mx x = max (min x mx) mn                   
+let clamp mn mx x = x |> min mx |> max mn
 
 ///clamp int value to be within min and max range supplied
-let clampI mn mx x = max (min (int x) mx) mn |> float  
+//let clampI mn mx x = max (min (int x) mx) mn |> float  
+let clampI mn mx x = (int x) |> min mx |> max mn |> float
 
 ///clamp value to be within min and max range as specified by 
 ///the corresponding Parm
 let clampP v = function
     | F(_,mn,mx) -> clamp mn mx v 
     | I(_,mn,mx) -> clampI mn mx v
+
+let fixParam = function
+    | F(v,mn,mx) -> F(clamp mn mx v,mn,mx)
+    | I(v,mn,mx) -> I(clampI mn mx (float v) |> int, mn,mx)
 
 ///Sample from uniform distribution (float)    
 let unifrmF scale frmV toV = 
@@ -101,7 +107,7 @@ let createPop ksInitializer parms size randomizeAll =
             yield
                 {
                     Id      = i-1
-                    Parms   = parms |> Array.map randomize |> Array.map parmToFloat
+                    Parms   = parms |> Array.map parmToFloat
                     Fitness = System.Double.MinValue
                     KS      = ksInitializer i
                 }

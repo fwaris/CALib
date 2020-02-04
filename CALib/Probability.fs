@@ -89,7 +89,8 @@ let createWheel (weights:('a*float)[]) = //key * weight  key must be unique
     //normalize weights
     let nrmlzdWts = 
         weights 
-        |> Array.filter (fun (_,w) -> w > 0. && (Double.IsNaN w || Double.IsInfinity w) |> not) 
+        //|> Array.filter (fun (_,w) -> w > 0. && (Double.IsNaN w || Double.IsInfinity w) |> not) 
+        |> Array.filter (fun (_,w) ->  (Double.IsNaN w || Double.IsInfinity w) |> not) 
         |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
         |> Array.sortBy snd                         //arrange ascending
 
