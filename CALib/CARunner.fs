@@ -144,5 +144,4 @@ let ``terminate if no improvement in 5 generations`` (step:TimeStep<_>) =
     match step.Progress with
     | f1::f2::f3::f4::f5::_ when f1=f2 && f2=f3 && f3=f4 && f4=f5 -> true
     | _ -> false
-        
-        
+

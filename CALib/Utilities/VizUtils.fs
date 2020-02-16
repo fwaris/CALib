@@ -20,17 +20,16 @@ type IEncoder =
     abstract member Release : unit -> unit
 
 let private captureTo v_out frameRate sz =
-    let clipOut = new VideoWriter()
-    //let c4 = FourCCCalcurator.Run("avc1")
-    clipOut.Open(v_out,FourCC.H264,frameRate,sz)
-    if not(clipOut.IsOpened()) then failwith "file not opened"
+    let c4v = FourCCValues.DIVX
+    let c4 = FourCC.FromFourCCValues(c4v)
+    let clipOut = new VideoWriter(v_out,c4,frameRate,sz)
     clipOut
 
 let encoder file frameRate (w:int,h:int) =
     let sz = Size(w,h)
     let clipOut = captureTo file frameRate sz
     {new IEncoder with 
-        member x.Frame mat = clipOut.Write mat
+        member x.Frame mat = clipOut.Write(!> mat)
         member x.Release() = clipOut.Release()
         }
 

@@ -11,7 +11,7 @@ if packages are updated or new code is added
 
 #r @"..\..\packages\FSharp.Collections.ParallelSeq.1.1.2\lib\net45\FSharp.Collections.ParallelSeq.dll"
 #r @"..\..\packages\FSharp.Charting.2.1.0\lib\net45\FSharp.Charting.dll"
-#r @"..\..\packages\FSharp.Control.AsyncSeq.2.0.22\lib\net45\FSharp.Control.AsyncSeq.dll"
+#r @"..\..\packages\FSharp.Control.AsyncSeq.2.0.23\lib\net45\FSharp.Control.AsyncSeq.dll"
 #r "System.Windows.Forms.DataVisualization"
 #r "System.IO.Compression"
 #r "System.IO.Compression.FileSystem"
@@ -52,6 +52,7 @@ if packages are updated or new code is added
 #load @"../../CaLibCore/Run/Stats.fs"
 #load @"../Utilities/FPGrowth.fs"
 #load @"../../CaLibCore/Utilities/Community.fs"
+#load @"../API.fs"
 //#load @"../../CaLibCore/Run/RunDynamicSeq.fs"
 
 
