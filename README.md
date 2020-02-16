@@ -22,9 +22,9 @@ The Visual Studio setup utility has 'Workloads' that bundle commonly used featur
 - After the package load is complete, compile solution to check configuration validity
 
 ## Simple sample
-A sample for Rastrigin function is given [Sample.fsx](CALib/testing/Samples.fsx).
+A sample for Rastrigin function is given [Sample.fsx](CALib/Testing/Sample.fsx).
 
-'''fsharp
+```fsharp
 #load "SetupEnv.fsx"
 open CA
 
@@ -48,7 +48,7 @@ step.Best.[0].MParms     //best solution parameter values
 step.Best.[0].MFitness   //best solution fitness value
 
 //rastrigin [|for _ in 1 .. int n -> 0.0|]      //true solution
-'''
+```
 
 ## Cones World Visualization
 Open "ConesWorldVisualization.fsx" script in editor and select all text and hit Alt-Enter to run script
