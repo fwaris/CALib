@@ -44,6 +44,7 @@ if packages are updated or new code is added
 #load "../KnowledgeDistribution/Schelling.fs"
 #load "../KnowledgeDistribution/KDStagHuntStatic.fs"
 #load "../KnowledgeDistribution/KDStackelberg.fs"
+#load "../KnowledgeDistribution/KDDiffEvolution.fs"
 #load "../CARunner.fs"
 #load "../DF1.fs"
 #load @"../../CaLibCore/Run/ConfigTypes.fs"

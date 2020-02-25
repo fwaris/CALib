@@ -32,6 +32,7 @@ let kdId = function
     | IpdSt _ -> "IPD"
     | ShSSt _ -> "SHS"
     | StkSt _ -> "STK"
+    | DeSt _ -> "DE"
 
 let genCount lndscpCfg = 
     match Array.head lndscpCfg.Steps with 
@@ -39,24 +40,28 @@ let genCount lndscpCfg =
     | IpdSt (st,_) -> st.Count
     | ShSSt (st,_) -> st.Count
     | StkSt (st,_) -> st.Count
+    | DeSt  (st,_) -> st.Count
 
 let stepSocialMetrics = function
     | WtdSt (st,f) -> socMetrics st f
     | IpdSt (st,f) -> socMetrics st f
     | ShSSt (st,f) -> socMetrics st f
     | StkSt (st,f) -> socMetrics st f
+    | DeSt (st,f) -> socMetrics st f
 
 let stepKSAssigns = function
     | WtdSt (st,f) -> popKS st f
     | IpdSt (st,f) -> popKS st f
     | ShSSt (st,f) -> popKS st f
     | StkSt (st,f) -> popKS st f
+    | DeSt (st,f) -> popKS st f
 
 let stepBestFitness = function
     | WtdSt (st,_) -> st.Best.[0].MFitness
     | IpdSt (st,_) -> st.Best.[0].MFitness
     | ShSSt (st,_) -> st.Best.[0].MFitness
     | StkSt (st,_) -> st.Best.[0].MFitness
+    | DeSt (st,_) -> st.Best.[0].MFitness
 
 let statRec rsc lndscpCfg step =
     let iSeg,iDffsn = 

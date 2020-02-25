@@ -34,7 +34,8 @@ let rsc =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0]
       Restartable   = true
-      KDs            = [WTD; IPD; SHS; STK]
+      //KDs            = [SHS; DE]
+      KDs            = [SHS; WTD]
       PopulationSize = 72
       NumCones      = 1000
       RunToMax      = false
@@ -79,13 +80,13 @@ let runConfig rsc =
 
 let forms = ref Map.empty
 
-let makeForms id =
+let makeFormsLarge id =
     let o = Tracing.createObservables id 
     let oBg = Some o.obsBkground
     async {
         do! Async.SwitchToContext utc
         let c =
-            TraceCharts.container
+            TraceCharts.container2Col
                 [ 
                     chPointsObs "All" oBg o.obsAll
                     chPointsObs "Domain" oBg  o.obsDomain
@@ -105,6 +106,28 @@ let makeForms id =
     let value = o
     forms := forms.Value |> Map.add id value
     value
+
+let makeFormsSmall id =
+    let o = Tracing.createObservables id 
+    let oBg = Some o.obsBkground
+    async {
+        do! Async.SwitchToContext utc
+        let c =
+            TraceCharts.container2Row
+                [ 
+                    chPointsNObs "All" oBg ["Topographic",o.obsTopo; "Normative", o.obsNorm; "History", o.obsHist; "Situational",o.obsSituational; "Domain",o.obsDomain]
+                    chCounts o.obsKSCounts
+                ]
+        c.Text <- id
+        //c.Show()
+
+        } |> Async.Start
+    let value = o
+    forms := forms.Value |> Map.add id value
+    value
+
+//set to makeFormsLarge to show each KS separately
+let makeForms = makeFormsSmall     
 
 let primarkyKS (x:obj) =
     match x with 
@@ -177,3 +200,11 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
 
 (*
 *)
+createForms rsc
+async {
+    let! r = Async.Catch runner
+    match r with
+    | Choice1Of2 _ -> ()
+    | Choice2Of2 err -> printfn "%A" err
+} |> Async.Start
+

@@ -1013,6 +1013,7 @@
     <Compile Include="KnowledgeDistribution\KDStackelberg.fs" />
     <Compile Include="KnowledgeDistribution\KDStagHuntStatic.fs" />
     <Compile Include="KnowledgeDistribution\KDIPD.fs" />
+    <Compile Include="KnowledgeDistribution\KDDiffEvolution.fs" />
     <Compile Include="CARunner.fs" />
     <Compile Include="Utilities\FPGrowth.fs" />
     <Compile Include="Utilities\VizUtils.fs" />

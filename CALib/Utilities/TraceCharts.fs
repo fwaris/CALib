@@ -224,6 +224,48 @@ let container chlist =
     form.Show()
     form
 
+let container2Row chlist =
+    let form = new Form()
+    form.Width  <- 400
+    form.Height <- 600
+    form.Visible <- true 
+    form.Text <- "CA Charts"
+    let grid = new TableLayoutPanel()
+    grid.AutoSize <- true
+    grid.ColumnCount <- 1
+    grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100.f)) |> ignore
+    grid.RowCount <- 2
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,75.f)) |> ignore
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,25.f)) |> ignore
+    grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
+    grid.Dock <- DockStyle.Fill
+    let containers = chlist |> List.map containerizeWithBg 
+    containers |> List.iter grid.Controls.Add
+    form.Controls.Add(grid)
+    form.Show()
+    form
+
+let container2Col chlist =
+    let form = new Form()
+    form.Width  <- 600
+    form.Height <- 300
+    form.Visible <- true 
+    form.Text <- "CA Charts"
+    let grid = new TableLayoutPanel()
+    grid.AutoSize <- true
+    grid.ColumnCount <- 2
+    grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50.f)) |> ignore
+    grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50.f)) |> ignore
+    grid.RowCount <- 1
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,100.f)) |> ignore
+    grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
+    grid.Dock <- DockStyle.Fill
+    let containers = chlist |> List.map containerizeWithBg 
+    containers |> List.iter grid.Controls.Add
+    form.Controls.Add(grid)
+    form.Show()
+    form
+
     //formList.zip chlist containers
 
 let rec updateBg chlist newImage =

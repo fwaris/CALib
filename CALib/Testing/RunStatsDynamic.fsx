@@ -53,6 +53,18 @@ let initIPD envChgSnstvty basePop f =
     let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
     IpdSt (step,Community.fstPrimKs)
 
+//DE
+let initDE envChgSnstvty basePop  f = 
+    let deKS parmDefs optKind fitness =
+        Roots [ Leaf (DiffEvolutionKS.create parmDefs optKind fitness) ]
+    let bsp = deKS parmDefs defaultOptKind f
+    let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with KS=Domain; Parms=Array.copy i.Parms }) //diff evolution is a type of domain knowledge
+    let influence = KDDiffEvolution.influence()
+    let ca = makeCA f EnvChngSensitivity.Insensintive defaultOptKind pop bsp influence defaultNetwork
+    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    DeSt(step,Community.basePrimKs)
+
+
 let initSteps rsc sns basePop f =
     [|for kd in rsc.KDs ->
         match kd with
@@ -60,6 +72,7 @@ let initSteps rsc sns basePop f =
         | IPD -> initIPD sns basePop f
         | SHS -> initSHS sns basePop f
         | STK -> initSTK sns basePop f
+        | DE  -> initDE sns basePop f
     |]
 
 //set new fitness function for changed landscape
@@ -72,6 +85,7 @@ let prepStepsForLandscapeRun ws lndscpCfg =
     | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
     | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
     | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
+    | DeSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; DeSt(st,f) 
     )
 
 let runSteps envChanged steps =
@@ -81,6 +95,7 @@ let runSteps envChanged steps =
     | IpdSt (st,f) -> async {return IpdSt(CARunner.step envChanged st defaultMaxBest,f) }
     | ShSSt (st,f) -> async {return ShSSt(CARunner.step envChanged st defaultMaxBest,f) } 
     | StkSt (st,f) -> async {return StkSt(CARunner.step envChanged st defaultMaxBest,f) }
+    | DeSt (st,f) -> async {return DeSt(CARunner.step envChanged st defaultMaxBest,f) }
     )
     |> Async.Parallel
 
@@ -96,12 +111,14 @@ let ksParms ks = function
     | IpdSt (st,f) -> match ks with Some ks ->  st.CA.Population |> Array.filter (fun x->f x.KS = ks) |> parms | None -> parms st.CA.Population
     | ShSSt (st,f) -> match ks with Some ks ->  st.CA.Population |> Array.filter (fun x->f x.KS = ks) |> parms | None -> parms st.CA.Population
     | StkSt (st,f) -> match ks with Some ks ->  st.CA.Population |> Array.filter (fun x->f x.KS = ks) |> parms | None -> parms st.CA.Population
+    | DeSt (st,f) -> match ks with Some ks ->  st.CA.Population |> Array.filter (fun x->f x.KS = ks) |> parms | None -> parms st.CA.Population
 
 let stepBest = function
     | WtdSt (st,f) -> st.Best
     | IpdSt (st,f) -> st.Best
     | ShSSt (st,f) -> st.Best
     | StkSt (st,f) -> st.Best
+    | DeSt (st,f) -> st.Best
 
 let colors = 
         [
@@ -148,6 +165,7 @@ let stepKsCounts = function
     | IpdSt (st,f) -> ksCounts st.CA.Population 
     | ShSSt (st,f) -> ksCounts st.CA.Population 
     | StkSt (st,f) -> ksCounts st.CA.Population 
+    | DeSt (st,f) -> ksCounts st.CA.Population 
 
 
 let runLandscapeGens rsc lndscpCfg = 

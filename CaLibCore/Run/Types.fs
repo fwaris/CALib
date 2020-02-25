@@ -15,6 +15,7 @@ type Step =
     | IpdSt of TimeStep<KDIPD.IpKnowledge> * (KDIPD.IpKnowledge->Knowledge)
     | ShSSt  of TimeStep<KDStagHuntStatic.ShKnowledge> *  (KDStagHuntStatic.ShKnowledge->Knowledge)
     | StkSt of TimeStep<KDStackelberg.StkKnowledge> * (KDStackelberg.StkKnowledge->Knowledge)
+    | DeSt of TimeStep<Knowledge> * (Knowledge->Knowledge)
 
 type LandscapeConfig =
   {
