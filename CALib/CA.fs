@@ -38,6 +38,9 @@ type OptimizationKind = Minimize | Maximize  //minimization or maximization prob
 ///tree structure of the belief space knowledge source
 type BeliefSpace<'k> = KnowledgeSource<'k> Tree
 
+
+type IncidentalBest = Marker option ref
+
 ///knowledge source type
 type KnowledgeSource<'k> = 
     {
@@ -48,7 +51,7 @@ type KnowledgeSource<'k> =
         Accept      : EnvChngeType -> Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
 
         ///Influence function type of a knowledge source
-        Influence   : Population<'k> -> Temperature -> Individual<'k> -> Individual<'k>
+        Influence   :  IncidentalBest -> Population<'k> -> Temperature -> Individual<'k> -> Individual<'k>
     }
 
 type Tree<'a>        = Leaf of 'a | Node of 'a * Tree<'a> list | Roots of Tree<'a> list
@@ -63,7 +66,8 @@ type Update<'k>      = EnvChngeType -> BeliefSpace<'k> -> Individual<'k> array -
 
 ///CA influence function type
 type Influence<'k>   = Influence of (
-                            EnvChngeType                                                //environment change signal
+                            IncidentalBest
+                                -> EnvChngeType                                                //environment change signal
                                 -> Population<'k> 
                                 -> BeliefSpace<'k> 
                                 -> Network<'k> 
@@ -93,7 +97,7 @@ type Temperature = float
 type Marker = {MParms:float[]; MFitness:float}
 
 ///Structure to hold single step in a CA run
-type TimeStep<'k> = {CA:CA<'k> ; Best:Marker list; Progress:float list; Count:int; EnvChngCount:int}
+type TimeStep<'k> = {CA:CA<'k> ; Best:Marker list; Progress:float list; Count:int; EnvChngCount:int; IBest:Marker option ref}
 
 ///function type to specify the termination of a CA run
 type TerminationCondition<'k> = TimeStep<'k> -> bool

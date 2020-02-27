@@ -22,7 +22,8 @@ type Play<'action,'payout,'k> =
         -> 'action
 
 type Outcome<'action,'payout,'k> = 
-    EnvChngeType
+    IncidentalBest
+        -> EnvChngeType
         -> OptimizationKind
         -> Population<'k> * BeliefSpace<'k> * Network<'k>
         -> 'payout array 
@@ -42,6 +43,7 @@ let playGame cmprtr play payoff (network:Network<_>) pop indv =
 
 let rec private csStrategy 
     game 
+    iBest
     envCh
     pop
     beliefSpace
@@ -64,7 +66,7 @@ let rec private csStrategy
                 |> Seq.ofArray
             game.Payoff cmprtr indv indvActn  nhbrActns)
 
-    let pop,beliefSpace,game = game.Outcome envCh cmprtr (pop,beliefSpace,network) payoffs
+    let pop,beliefSpace,game = game.Outcome iBest envCh cmprtr (pop,beliefSpace,network) payoffs
     pop,beliefSpace,Influence(csStrategy game)
 
 let influence gameConfig =

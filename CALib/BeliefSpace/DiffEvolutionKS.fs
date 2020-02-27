@@ -55,8 +55,8 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
-let defaultInfluence state pop influenceLevel (ind:Individual<_>) =
-    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
+let defaultInfluence state _ pop influenceLevel (ind:Individual<_>) =
+    let oldFit = ind.Fitness
     let newParms = applyDE state pop ind
     let newFit = state.Fitness.Value newParms
     if state.IsBetter newFit oldFit then

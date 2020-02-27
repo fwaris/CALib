@@ -34,8 +34,8 @@ let rsc =
       SaveFolder    = @"d:\calib\dsst_stats"
       EnvChngSensitivity = [0]
       Restartable   = true
-      //KDs            = [SHS; DE]
-      KDs            = [SHS; WTD]
+      KDs            = [SHS; DE]
+      //KDs            = [SHS; WTD]
       PopulationSize = 72
       NumCones      = 1000
       RunToMax      = false
@@ -199,7 +199,6 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
         })
 
 (*
-*)
 createForms rsc
 async {
     let! r = Async.Catch runner
@@ -207,4 +206,5 @@ async {
     | Choice1Of2 _ -> ()
     | Choice2Of2 err -> printfn "%A" err
 } |> Async.Start
+*)
 

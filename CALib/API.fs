@@ -29,7 +29,7 @@ type API() =
         let pop = pop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
         let influence = KDStagHuntStatic.influence None 5  bsp pop
         let ca = API.makeCA fitness envChgSnstvty optKind pop bsp influence network
-        let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+        let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0; IBest=ref None}
         step
 
     static member Step step = CARunner.step false step  2

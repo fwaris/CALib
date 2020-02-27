@@ -124,7 +124,7 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let private stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
+let private stkInfluence ib beliefSpace (pop:Population<StkKnowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
@@ -139,7 +139,7 @@ let private stkInfluence beliefSpace (pop:Population<StkKnowledge>) =
                 //    printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
-            let p = ksMap.[ks].Influence pop lvl  p
+            let p = ksMap.[ks].Influence ib pop lvl  p
             p)
     pop 
 
@@ -164,7 +164,7 @@ let reset state pop =
     let pop = pop |> Array.map(fun indv -> {indv with KS=fst indv.KS,0})
     state,pop
 
-let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state ib envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
 
     let state,pop = 
         match envCh with
@@ -180,7 +180,7 @@ let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
             incrementRetainCount pop,
             state
 
-    let pop = stkInfluence beliefSpace pop
+    let pop = stkInfluence ib beliefSpace pop
 
     pop,
     beliefSpace,

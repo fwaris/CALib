@@ -49,20 +49,20 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let private schlInfluecne beliefSpace (pop:Population<SchKs>) =
+let private schlInfluecne beliefSpace b (pop:Population<SchKs>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
             let lvl = il p.KS
-            let p = ksMap.[p.KS].Influence pop lvl p
+            let p = ksMap.[p.KS].Influence b pop lvl p
             p)
     pop 
 
-let rec outcome state rule envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state rule b envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = CAUtils.comparator optKind
     let pop = updatePop state rule cmp pop payouts
-    let pop = schlInfluecne beliefSpace pop
+    let pop = schlInfluecne beliefSpace b pop
     pop,
     beliefSpace,
     {

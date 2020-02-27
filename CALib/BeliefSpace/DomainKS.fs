@@ -20,7 +20,7 @@ let rateOfImprovement oldFitness newFitness isBetter denominator =
     else
         Down,(abs (newFitness-oldFitness)) / denominator
 
-let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
+let slopes ibest isBetter fitness oldFit (parmDefs:Parm[]) parms =
     parms
     |> Array.mapi (fun i p -> 
         let pDef = parmDefs.[i]
@@ -28,6 +28,7 @@ let slopes isBetter fitness oldFit (parmDefs:Parm[]) parms =
         let p' =  p + e
         parms.[i] <- p'
         let newFit = fitness parms
+        CAUtils.Incidental.update ibest isBetter newFit parms
         let partialSlope = rateOfImprovement oldFit newFit isBetter e
         parms.[i] <- p
         partialSlope)
@@ -46,10 +47,10 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
 ///Domain default influence function
-let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
+let defaultInfluence state iBest _ influenceLevel (ind:Individual<_>) =
     //mutation
-    let oldFit = state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
-    let slopes = slopes state.IsBetter state.Fitness.Value oldFit state.ParmDefs ind.Parms
+    let oldFit = ind.Fitness //state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
+    let slopes = slopes iBest state.IsBetter state.Fitness.Value oldFit state.ParmDefs ind.Parms
     let parms = ind.Parms
     let z = zsample() |> abs
     let stepSize = z * influenceLevel * eSigma

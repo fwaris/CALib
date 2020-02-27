@@ -85,7 +85,7 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let private shInfluence _ beliefSpace (pop:Population<IpKnowledge>) =
+let private shInfluence _ ib beliefSpace (pop:Population<IpKnowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
@@ -99,14 +99,14 @@ let private shInfluence _ beliefSpace (pop:Population<IpKnowledge>) =
                 //printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
-            let p = ksMap.[ks].Influence pop lvl  p
+            let p = ksMap.[ks].Influence ib pop lvl  p
             p)
     pop 
 
-let rec outcome state envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
+let rec outcome state ib envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =
     let cmp = CAUtils.mult optKind
     let pop = updatePop state pop payouts
-    let pop = shInfluence state beliefSpace pop
+    let pop = shInfluence state ib beliefSpace pop
     let state = updateState state pop
     pop,
     beliefSpace,

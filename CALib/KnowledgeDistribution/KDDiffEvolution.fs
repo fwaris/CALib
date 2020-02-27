@@ -21,18 +21,18 @@ let influenceLevels =
 
 let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
-let private deInfluence beliefSpace (pop:Population<Knowledge>) =
+let private deInfluence beliefSpace b (pop:Population<Knowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
             let lvl = il p.KS
-            let p = ksMap.[p.KS].Influence pop lvl p
+            let p = ksMap.[p.KS].Influence b pop lvl p
             p)
     pop 
 
-let rec outcome envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =   
-    let pop = deInfluence beliefSpace pop                                      //update popluation with de influence
+let rec outcome b envCh optKind (pop,beliefSpace,_) (payouts:Payout array) =   
+    let pop = deInfluence beliefSpace b pop                                      //update popluation with de influence
     pop,                                                                       
     beliefSpace,                                                               //no knowledge distribution step 
     {                                                                          //is required - all ks are DiffEvolutionKS 

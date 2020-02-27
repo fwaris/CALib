@@ -81,7 +81,7 @@ let parmToFloat = function
     | F(v,_,_)   -> v
     | I(v,_,_)   -> float v
 
-///Denominator use to find the rate of change in a parameter given its type
+///Denominator used to find the rate of change in a parameter given its type
 let denominatorM = function
     | F(_,mn,mx)    -> 0.0001
     | I(_,mn,mx)    -> 1.0
@@ -199,9 +199,38 @@ let normalizePopFitness target mult (pop:Individual<_>[]) =
     currentFit |> Array.Parallel.map scaler  //scale fitness to target range
 
 ///Default CA influence function
-let defaultInfluence beliefSpace pop =
+let defaultInfluence beliefSpace pop ib =
     let ksMap = flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence pop 1.0 p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence ib pop 1.0 p)
     pop
+
+
+let initStep ca = {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0; IBest= ref None}
+
+
+// track incidentally found best
+module Incidental =
+    let createMarker parms fit = {MParms=Array.copy parms; MFitness=fit}
+
+    let update incidentalBest isBetter fit parms =
+        match !incidentalBest with
+        | Some l -> if isBetter fit l.MFitness then incidentalBest := Some (createMarker parms fit)
+        | None   -> ()
+
+    let compare incidentalBest isBetter marker =
+        let betterIncidental =
+            !incidentalBest
+            |> Option.bind(fun l -> if isBetter l.MFitness marker.MFitness then Some l else None)
+
+        match betterIncidental with 
+        | None -> incidentalBest := Some marker
+        | Some _ -> ()
+
+        betterIncidental
+
+    
+
+
+

@@ -63,8 +63,14 @@ let update envChanged beliefSpace bestInds  =
 
 
 ///single step CA
-let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} maxBest =
+let step envChanged (st:TimeStep<_>)  maxBest =
+    let ca = st.CA
+    let c  = st.Count
+    let p  = st.Progress
+    let ec = st.EnvChngCount
+    let best = st.Best
     let mult = CAUtils.mult ca.Optimization
+    let isBetter = CAUtils.comparator ca.Optimization
     let pop             = evaluate ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
     let oldBest = 
@@ -93,9 +99,14 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} max
         | b::_,is when (mult*is.[0].Fitness) > (mult*b.MFitness) -> (CAUtils.toMarker is.[0]::oldBest) |> List.truncate maxBest
         | _         -> oldBest
 
+    let newBest = 
+        CAUtils.Incidental.compare st.IBest isBetter newBest.[0]
+        |> Option.map (fun m -> (m::newBest) |> List.truncate maxBest)
+        |>Option.defaultValue newBest
+
     let blSpc           = ca.Update reactToEnvChange ca.BeliefSpace topInds
     let fInfluence      = match ca.Influence with Influence(k) -> k
-    let pop,blSpc,finf = fInfluence reactToEnvChange pop blSpc ca.Network ca.Fitness ca.Optimization 
+    let pop,blSpc,finf = fInfluence st.IBest reactToEnvChange pop blSpc ca.Network ca.Fitness ca.Optimization 
     //let pop             = ca.Influence blSpc pop
     {
         CA =
@@ -108,6 +119,7 @@ let step envChanged {CA=ca; Best=best; Count=c; Progress=p; EnvChngCount=ec} max
         Progress = newBest.[0].MFitness::p |> List.truncate 100
         Count = c + 1
         EnvChngCount = ec
+        IBest = st.IBest
     }
 
 let DEFAULT_ENV_CHANGE_EPSILON = 0.000001
@@ -137,7 +149,7 @@ let run desc termination maxBest ca =
             stp
         else
             loop stp
-    loop {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    loop (CAUtils.initStep ca)
 
 
 let ``terminate if no improvement in 5 generations`` (step:TimeStep<_>) =

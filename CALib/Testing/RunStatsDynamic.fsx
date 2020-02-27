@@ -23,7 +23,7 @@ let initWTD envChgSnstvty basePop f =
     let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with Parms=Array.copy i.Parms })
     let influence = KDWeightedMajority.influence bsp 3
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    let step =  initStep ca
     WtdSt (step,Community.basePrimKs)
 
 //SHS
@@ -32,7 +32,7 @@ let initSHS envChgSnstvty basePop f =
     let pop = basePop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStagHuntStatic.influence None 5 bsp pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    let step =  initStep ca
     ShSSt (step,Community.fstPrimKs)
 
 //STK
@@ -41,7 +41,7 @@ let initSTK envChgSnstvty basePop f =
     let pop = basePop |> KDStackelberg.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDStackelberg.influence defaultOptKind pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    let step =  initStep ca
     StkSt (step,Community.fstPrimKs)
 
 //IPD
@@ -50,7 +50,7 @@ let initIPD envChgSnstvty basePop f =
     let pop = basePop |> KDIPD.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })
     let influence = KDIPD.influence defaultOptKind None bsp pop
     let ca = makeCA f envChgSnstvty defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    let step = initStep ca
     IpdSt (step,Community.fstPrimKs)
 
 //DE
@@ -61,7 +61,7 @@ let initDE envChgSnstvty basePop  f =
     let pop = basePop |> Array.map (fun (i:Individual<Knowledge>)-> {i with KS=Domain; Parms=Array.copy i.Parms }) //diff evolution is a type of domain knowledge
     let influence = KDDiffEvolution.influence()
     let ca = makeCA f EnvChngSensitivity.Insensintive defaultOptKind pop bsp influence defaultNetwork
-    let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0}
+    let step =  initStep ca
     DeSt(step,Community.basePrimKs)
 
 

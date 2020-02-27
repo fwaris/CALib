@@ -113,7 +113,7 @@ let initState parmDefs isBetter maxExemplars =
     }
 
 ///Situational default influence function
-let defaultInfluence state _ influenceLevel (ind:Individual<_>) =
+let defaultInfluence state _ _ influenceLevel (ind:Individual<_>) =
     match state.Exemplars with
     | [||] -> ind
     | x -> 

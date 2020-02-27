@@ -41,17 +41,18 @@ let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
 
 ///WTD influence function 
-let private wtdMajorityInfluence beliefSpace pop =
+let private wtdMajorityInfluence ib beliefSpace pop =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence pop (il p.KS) p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence ib pop (il p.KS) p)
     pop
 
 let rec kdLoop 
     allKSSet
     every 
     gen 
+    ib
     envCh
     pop
     beliefSpace
@@ -77,7 +78,7 @@ let rec kdLoop
             pop
         else
             pop
-    let pop = wtdMajorityInfluence beliefSpace pop
+    let pop = wtdMajorityInfluence ib beliefSpace pop
     pop,beliefSpace,Influence(kdLoop allKSSet every (gen + 1))
 
 ///Create WTD influence given
