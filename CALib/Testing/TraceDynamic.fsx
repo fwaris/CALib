@@ -190,12 +190,22 @@ let postBg f = forms.Value |> Map.iter(fun k (o) ->
     }
     |> Async.Start)
 
+
+let e1 = new System.Threading.ManualResetEvent(false)
+
 let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
     async {
         do! Async.Sleep 200
         match x with 
         | EnvChange ws -> printfn "Landscape changed"; let f = genBg ws.M ws.F in postBg f
         | LndscpStats (rs,cfg) -> postSteps rs cfg
+        match x with
+        | EnvChange _ -> ()
+        | LndscpStats _ -> 
+            async{ 
+                let! _ = Async.AwaitWaitHandle e1
+                return()
+            } |> Async.RunSynchronously 
         })
 
 (*
@@ -206,5 +216,8 @@ async {
     | Choice1Of2 _ -> ()
     | Choice2Of2 err -> printfn "%A" err
 } |> Async.Start
+
+
+e1.Set()
 *)
 
