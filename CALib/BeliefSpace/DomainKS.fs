@@ -25,7 +25,7 @@ let slopes ibest isBetter fitness oldFit (parmDefs:Parm[]) parms =
     |> Array.mapi (fun i p -> 
         let pDef = parmDefs.[i]
         let e = denominatorM pDef
-        let p' =  p + e
+        let p' =  clampP (p + e) pDef        
         parms.[i] <- p'
         let newFit = fitness parms
         CAUtils.Incidental.update ibest isBetter newFit parms
