@@ -1,14 +1,6 @@
 ﻿(*
-Supporting script for visualization of CA run
-with different knowledge distribution mechanisms
-on a sequence of dynamic 'Cones World'
-landscapes.
-
-The animation runs with 250ms delay per generation
-
-A-Value can adjusted in the 'rsc' config below
-
-Note: To run this script select all the text in the script and hit Alt-Enter
+Comparison of stag-hunt and differential evolution
+with cones world generator
 *)
 
 #load "RunStatsDynamic.fsx"
@@ -94,6 +86,7 @@ let makeFormsLarge id =
                     chPointsObs "Normative" oBg  o.obsNorm
                     chPointsObs "Historical" oBg o.obsHist
                     chPointsObs "Topographical M" oBg   o.obsTopo
+                    
                     chCounts o.obsKSCounts
                     //chDisp "Distance" o.obsDist
                     //chDisp "Segregation" obsSeg
@@ -113,10 +106,50 @@ let makeFormsSmall id =
     async {
         do! Async.SwitchToContext utc
         let c =
-            TraceCharts.container2Row
+            TraceCharts.container1Row
+            //TraceCharts.container3Row
                 [ 
-                    chPointsNObs "All" oBg ["Topographic",o.obsTopo; "Normative", o.obsNorm; "History", o.obsHist; "Situational",o.obsSituational; "Domain",o.obsDomain]
-                    chCounts o.obsKSCounts
+                    chPointsNwBestObs "All" oBg [
+                                                    "Topographic"   , o.obsTopo
+                                                    "Normative"     , o.obsNorm
+                                                    "History"       , o.obsHist
+                                                    "Situational"   , o.obsSituational
+                                                    "Domain"        , o.obsDomain]
+                                      ("Curr. Best"    , o.obsCurrBest)
+                    //chCounts o.obsKSCounts
+
+                   // chLines (0., 1.)  "Dist to Max" [o.obsDist]
+
+                ]
+        c.Text <- id
+        //c.Show()
+
+        } |> Async.Start
+    let value = o
+    forms := forms.Value |> Map.add id value
+    value
+
+let makeFormsDE id =
+    let o = Tracing.createObservables id 
+    let oBg = Some o.obsBkground
+    async {
+        do! Async.SwitchToContext utc
+        let c =
+            TraceCharts.container1Row
+
+            //TraceCharts.container3Row
+                [ 
+                    chPointsNwBestObs "DE" oBg [
+                                                    //"Topographic"   , o.obsTopo
+                                                    //"Normative"     , o.obsNorm
+                                                    //"History"       , o.obsHist
+                                                    //"Situational"   , o.obsSituational
+                                                    "DE"        , o.obsDomain]
+                                      ("Curr. Best"    , o.obsCurrBest)
+                    //chCounts o.obsKSCounts
+
+                   // chLines (0., 1.)  "Dist to Max" [o.obsDist]
+
                 ]
         c.Text <- id
         //c.Show()
@@ -145,6 +178,15 @@ let createForms (rsc:RunConfig) =
         if forms.Value.ContainsKey id |> not then makeForms id |> ignore
     )
 
+let createFormSHS() = 
+    let id = string SHS
+    if forms.Value.ContainsKey id |> not then makeForms id |> ignore
+
+let createFormsDE() = 
+    let id = string DE
+    if forms.Value.ContainsKey id |> not then makeFormsDE id |> ignore
+
+
 let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) = 
     cfg.Steps
     |> Array.zip gs
@@ -154,10 +196,11 @@ let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) =
         let o = if forms.Value.ContainsKey id |> not then makeForms id else forms.Value.[id] 
         let dAll =  ksParms None st
         let dDomain = ksParms (Some Domain) st
-        let dNorm = ksParms (Some Normative) st
+        let dNorm = ksParms (Some Normative) st                 
         let dHist = ksParms (Some Historical) st
         let dTopo = ksParms (Some Topgraphical) st
         let dSituational = ksParms (Some Situational) st
+        let cbest = stepBest st |> List.tryHead |> Option.map (fun m -> m.MParms.[0], m.MParms.[1]) |> Option.defaultValue (0.0,0.0)
         let ksCounts = stepKsCounts st
         let dSeg = gs.Seg
         let minDist =ksParms None st |> Array.map (fun (p1,p2) -> Array.zip [|p1;p2|] cfg.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt) |> Array.min
@@ -168,6 +211,7 @@ let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) =
         do o.fpKSCounts ksCounts
         do o.fpDomain dDomain
         do o.fpSituational dSituational
+        do o.fpCurrBest [|cbest|]
         
         do o.fpNorm dNorm
         do o.fpHist dHist
@@ -190,7 +234,6 @@ let postBg f = forms.Value |> Map.iter(fun k (o) ->
     }
     |> Async.Start)
 
-
 let e1 = new System.Threading.ManualResetEvent(false)
 
 let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
@@ -209,7 +252,8 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
         })
 
 (*
-createForms rsc
+createFormSHS()
+createFormsDE()
 async {
     let! r = Async.Catch runner
     match r with

@@ -110,7 +110,8 @@ let makeFormsSmall id =
     async {
         do! Async.SwitchToContext utc
         let c =
-            TraceCharts.container3Row
+            TraceCharts.container2Row
+            //TraceCharts.container3Row
                 [ 
                     chPointsNwBestObs "All" oBg [
                                                     "Topographic"   , o.obsTopo
@@ -121,7 +122,7 @@ let makeFormsSmall id =
                                       ("Curr. Best"    , o.obsCurrBest)
                     chCounts o.obsKSCounts
 
-                    chLines (0., 1.)  "Dist to Max" [o.obsDist]
+                   // chLines (0., 1.)  "Dist to Max" [o.obsDist]
 
                 ]
         c.Text <- id

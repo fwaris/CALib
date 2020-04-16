@@ -1022,8 +1022,8 @@
     <Compile Include="Utilities\VizLandscape.fs" />
     <Compile Include="Utilities\Community.fs" />
     <None Include="Testing\ConesWorldVisualization.fsx" />
+    <None Include="Testing\SHS_DE_comparison.fsx" />
     <None Include="Testing\SetupEnv.fsx" />
-    <None Include="Testing\TraceDynamic.fsx" />
     <None Include="Testing\RunStatsDynamic.fsx" />
     <None Include="Testing\Tail.fsx" />
     <None Include="Testing\SetupVideo.fsx" />

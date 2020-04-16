@@ -75,13 +75,12 @@ let step envChanged (st:TimeStep<_>)  maxBest =
     let topInds         = ca.Acceptance ca.BeliefSpace pop
     let oldBest = 
         if envChanged then 
-            st.IBest := None
-            []
-            //match best with 
-            //| []   -> [] 
-            //| x::_ -> 
-            //    let f = ca.Fitness.Value x.MParms //re-evaluate old best under new fitness landscape
-            //    [{x with MFitness=f}]
+            st.IBest := None                     //reset incidental best due to regime change
+            match best with 
+            | []   -> [] 
+            | x::_ -> 
+                let f = ca.Fitness.Value x.MParms //re-evaluate old best under new fitness landscape
+                [{x with MFitness=f}]
         else 
             best
     let ec = if envChanged then ec + 1 else ec

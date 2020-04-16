@@ -140,7 +140,7 @@ let chPointsNwBestObs title bgObs obss (tbst,obBst) =
         yield
             LiveChart.FastPoint(obBst)
             |> Chart.WithStyling(Name=tbst)
-            |> Chart.WithSeries.Marker(Size=20,Color=Color.Transparent, BorderColor=Color.IndianRed, BorderWidth=3)
+            |> Chart.WithSeries.Marker(Size=20,Color=Color.Transparent, BorderColor=Color.IndianRed, BorderWidth=3, Style=Charting.MarkerStyle.Star4)
       } 
       |> Chart.Combine 
       |> Chart.WithTitle title
@@ -258,6 +258,26 @@ let container2Row chlist =
     grid.RowCount <- 2
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,75.f)) |> ignore
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,25.f)) |> ignore
+    grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
+    grid.Dock <- DockStyle.Fill
+    let containers = chlist |> List.map containerizeWithBg 
+    containers |> List.iter grid.Controls.Add
+    form.Controls.Add(grid)
+    form.Show()
+    form
+
+let container1Row chlist =
+    let form = new Form()
+    form.Width  <- 400
+    form.Height <- 600
+    form.Visible <- true 
+    form.Text <- "CA Charts"
+    let grid = new TableLayoutPanel()
+    grid.AutoSize <- true
+    grid.ColumnCount <- 1
+    grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100.f)) |> ignore
+    grid.RowCount <- 1
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,100.f)) |> ignore
     grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
     grid.Dock <- DockStyle.Fill
     let containers = chlist |> List.map containerizeWithBg 
