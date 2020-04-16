@@ -90,6 +90,7 @@ let makeFormsLarge id =
                     chPointsObs "Normative" oBg  o.obsNorm
                     chPointsObs "Historical" oBg o.obsHist
                     chPointsObs "Topographical M" oBg   o.obsTopo
+                    
                     chCounts o.obsKSCounts
                     //chDisp "Distance" o.obsDist
                     //chDisp "Segregation" obsSeg
@@ -109,10 +110,19 @@ let makeFormsSmall id =
     async {
         do! Async.SwitchToContext utc
         let c =
-            TraceCharts.container2Row
+            TraceCharts.container3Row
                 [ 
-                    chPointsNObs "All" oBg ["Topographic",o.obsTopo; "Normative", o.obsNorm; "History", o.obsHist; "Situational",o.obsSituational; "Domain",o.obsDomain]
+                    chPointsNwBestObs "All" oBg [
+                                                    "Topographic"   , o.obsTopo
+                                                    "Normative"     , o.obsNorm
+                                                    "History"       , o.obsHist
+                                                    "Situational"   , o.obsSituational
+                                                    "Domain"        , o.obsDomain]
+                                      ("Curr. Best"    , o.obsCurrBest)
                     chCounts o.obsKSCounts
+
+                    chLines (0., 1.)  "Dist to Max" [o.obsDist]
+
                 ]
         c.Text <- id
         //c.Show()
@@ -150,10 +160,11 @@ let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) =
         let o = if forms.Value.ContainsKey id |> not then makeForms id else forms.Value.[id] 
         let dAll =  ksParms None st
         let dDomain = ksParms (Some Domain) st
-        let dNorm = ksParms (Some Normative) st
+        let dNorm = ksParms (Some Normative) st                 
         let dHist = ksParms (Some Historical) st
         let dTopo = ksParms (Some Topgraphical) st
         let dSituational = ksParms (Some Situational) st
+        let cbest = stepBest st |> List.tryHead |> Option.map (fun m -> m.MParms.[0], m.MParms.[1]) |> Option.defaultValue (0.0,0.0)
         let ksCounts = stepKsCounts st
         let dSeg = gs.Seg
         let minDist =ksParms None st |> Array.map (fun (p1,p2) -> Array.zip [|p1;p2|] cfg.Ws.M.L |> Seq.sumBy (fun (a,b) -> sqr (a - b)) |> sqrt) |> Array.min
@@ -164,6 +175,7 @@ let postSteps (gs:GenStats[]) (cfg:LandscapeConfig) =
         do o.fpKSCounts ksCounts
         do o.fpDomain dDomain
         do o.fpSituational dSituational
+        do o.fpCurrBest [|cbest|]
         
         do o.fpNorm dNorm
         do o.fpHist dHist
@@ -199,6 +211,7 @@ let runner = runConfig rsc |> AsyncSeq.iterAsync(fun x ->
 (*
 *)
 createForms rsc
+
 async {
     let! r = Async.Catch runner
     match r with

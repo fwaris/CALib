@@ -81,11 +81,11 @@ let initSteps rsc sns basePop f =
 let prepStepsForLandscapeRun ws lndscpCfg =
     lndscpCfg.Steps
     |> Array.map(function 
-    | WtdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; WtdSt(st,f)
-    | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
-    | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
-    | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
-    | DeSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; DeSt(st,f) 
+    | WtdSt (st,f) -> let st = {st with Count=0; Progress=[]} in st.CA.Fitness := ws.F ; WtdSt(st,f)
+    | IpdSt (st,f) -> let st = {st with Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
+    | ShSSt (st,f) -> let st = {st with Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
+    | StkSt (st,f) -> let st = {st with Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
+    | DeSt (st,f)  -> let st = {st with Count=0; Progress=[]} in st.CA.Fitness := ws.F ; DeSt(st,f) 
     )
 
 let runSteps envChanged steps =

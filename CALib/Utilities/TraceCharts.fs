@@ -129,6 +129,27 @@ let chPointsNObs title bgObs obss =
       |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
     ch,bgObs
 
+let chPointsNwBestObs title bgObs obss (tbst,obBst) =
+    let ch =
+      seq {
+        for (t,obs) in obss do
+            yield 
+                LiveChart.FastPoint(obs)
+                |> Chart.WithStyling(Name=t)
+                |> Chart.WithSeries.Marker(Size=10)
+        yield
+            LiveChart.FastPoint(obBst)
+            |> Chart.WithStyling(Name=tbst)
+            |> Chart.WithSeries.Marker(Size=20,Color=Color.Transparent, BorderColor=Color.IndianRed, BorderWidth=3)
+      } 
+      |> Chart.Combine 
+      |> Chart.WithTitle title
+      |> Chart.WithLegend(Enabled=true)
+      |> Chart.WithTitle(Color=System.Drawing.Color.DarkBlue)
+      |> Chart.WithXAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid, LabelStyle=ls)
+      |> Chart.WithYAxis(Max=1.0, Min = -1.0, MajorGrid=chGrid)
+    ch,bgObs
+
 let chPtsLine bg title obs =
     let obs1,obs2 = obs |> Observable.separate
     let obsB = obs2 |> Observable.map box
@@ -236,6 +257,28 @@ let container2Row chlist =
     grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100.f)) |> ignore
     grid.RowCount <- 2
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,75.f)) |> ignore
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,25.f)) |> ignore
+    grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
+    grid.Dock <- DockStyle.Fill
+    let containers = chlist |> List.map containerizeWithBg 
+    containers |> List.iter grid.Controls.Add
+    form.Controls.Add(grid)
+    form.Show()
+    form
+
+let container3Row chlist =
+    let form = new Form()
+    form.Width  <- 400
+    form.Height <- 600
+    form.Visible <- true 
+    form.Text <- "CA Charts"
+    let grid = new TableLayoutPanel()
+    grid.AutoSize <- true
+    grid.ColumnCount <- 1
+    grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100.f)) |> ignore
+    grid.RowCount <- 3
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,50.f)) |> ignore
+    grid.RowStyles.Add(new RowStyle(SizeType.Percent,25.f)) |> ignore
     grid.RowStyles.Add(new RowStyle(SizeType.Percent,25.f)) |> ignore
     grid.GrowStyle <-  TableLayoutPanelGrowStyle.AddRows
     grid.Dock <- DockStyle.Fill

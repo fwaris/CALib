@@ -55,6 +55,9 @@ type ObsBucket =
         obsMax : O3
         fpMax : F3
 
+        obsCurrBest : O1s
+        fpCurrBest  : F1s
+
         obsMaxCone : O3
         fpMaxCone : F3
 
@@ -83,7 +86,7 @@ let createObservables id =
     let obsMax,fpMax = Observable.createObservableAgent<float>(cts.Token) 
     let obsMaxCone,fpMaxCone= Observable.createObservableAgent<float>(cts.Token)
     let obsBkground, fpBkground = Observable.createObservableAgent<string option>(cts.Token)
-
+    let obsCurrBest,fpCurrBest = Observable.createObservableAgent<(float*float) seq> cts.Token
     {
         obsAll = obsAll
         fpAll = fpAll
@@ -123,6 +126,9 @@ let createObservables id =
 
         obsMax = obsMax
         fpMax = fpMax
+
+        obsCurrBest = obsCurrBest
+        fpCurrBest = fpCurrBest
 
         obsMaxCone = obsMaxCone
         fpMaxCone = fpMaxCone
