@@ -83,10 +83,13 @@ let createNorms parmDefs isBetter = parmDefs |> Array.map (fun p ->
         ParmHi    = maxP p
     })
 
+#if CA_RUNTIME 
+#else
 let log (norms:Norm[]) =
   let low = norms |> Array.map (fun n -> n.ParmLo)
   let hi = norms |> Array.map (fun n -> n.ParmHi)
   [low;hi] |> Metrics.NormState |> Metrics.postAll
+#endif
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
     {

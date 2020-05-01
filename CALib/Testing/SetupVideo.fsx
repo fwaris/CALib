@@ -3,7 +3,7 @@ Supporting script to pull in OpenCV references
 for video generation
 *)
 
-#I @"..\..\packages\OpenCvSharp4.4.2.0.20200208\lib\net461"
+#I @"..\..\packages\OpenCvSharp4.4.3.0.20200421\lib\net461"
 #r @"OpenCvSharp.dll"
 #r @"OpenCvSharp.Blob.dll"
 #r @"OpenCvSharp.Extensions.dll" 
@@ -12,7 +12,7 @@ open System.IO
 open System
 open OpenCvSharp
 
-let path = Path.Combine(__SOURCE_DIRECTORY__,@"..\..\packages\OpenCvSharp4.runtime.win.4.2.0.20200208\runtimes\win-x64\native")
+let path = Path.Combine(__SOURCE_DIRECTORY__,@"..\..\packages\OpenCvSharp4.runtime.win.4.3.0.20200421\runtimes\win-x64\native")
 System.Environment.CurrentDirectory <- path
 
 let fullPath paths = Path.GetFullPath(Path.Combine(paths))

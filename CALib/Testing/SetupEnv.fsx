@@ -9,7 +9,7 @@ It only needs to be modified
 if packages are updated or new code is added
 *)
 
-#r @"..\..\packages\FSharp.Collections.ParallelSeq.1.1.2\lib\net45\FSharp.Collections.ParallelSeq.dll"
+#r @"..\..\packages\FSharp.Collections.ParallelSeq.1.1.3\lib\net45\FSharp.Collections.ParallelSeq.dll"
 #r @"..\..\packages\FSharp.Charting.2.1.0\lib\net45\FSharp.Charting.dll"
 #r @"..\..\packages\FSharp.Control.AsyncSeq.2.0.23\lib\net45\FSharp.Control.AsyncSeq.dll"
 #r "System.Windows.Forms.DataVisualization"

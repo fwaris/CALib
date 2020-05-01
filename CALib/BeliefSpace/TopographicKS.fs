@@ -36,7 +36,10 @@ let cfact xs k =  KMeansClustering.randomCentroids Probability.RNG.Value xs k |>
 let cdist (x,_) y = KMeansClustering.euclidean x y
 let cavg (c,_) xs = (KMeansClustering.avgCentroid c xs),xs
 
+#if CA_RUNTIME 
+#else
 let log cntrds = cntrds |> Seq.map (fun c -> c.Center) |> Seq.toList |> Metrics.MetricMsg.TopoState |> Metrics.postAll
+#endif
 
 let toCentroid state (c,members) =
     let lbest = members |> Seq.maxBy (fun ps -> (state.Fitness.Value ps) * state.FitScaler)

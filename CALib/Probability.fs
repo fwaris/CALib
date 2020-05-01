@@ -83,15 +83,21 @@ let GAUSS mean sigma =
 
 ///construct a sampling wheel from given key and weight combinations
 let createWheel (weights:('a*float)[]) = //key * weight  key must be unique
-    let s = Array.sumBy snd weights
-    let weights = if s = 0. then weights |> Array.map(fun (a,_)->a,1.0) else weights
+    let weights = weights |> Array.map (fun (k,w) ->k,if (Double.IsNaN w || Double.IsInfinity w) then 0. else w)
+    let sumW = Array.sumBy snd weights
+
+    let sumW,weights = 
+        if sumW = 0. then 
+            let wts = weights |> Array.map(fun (a,_)->a,1.0)   //give equal prob.
+            let s = Array.sumBy snd weights
+            s,wts
+        else 
+            sumW,weights
 
     //normalize weights
     let nrmlzdWts = 
         weights 
-        //|> Array.filter (fun (_,w) -> w > 0. && (Double.IsNaN w || Double.IsInfinity w) |> not) 
-        |> Array.filter (fun (_,w) ->  (Double.IsNaN w || Double.IsInfinity w) |> not) 
-        |> Array.map (fun (k,w) -> k, w / s)        //total sums to 1 now
+        |> Array.map (fun (k,w) -> k, w / sumW)     //total sums to 1 now
         |> Array.sortBy snd                         //arrange ascending
 
     //construct cumulative distribution for sampling

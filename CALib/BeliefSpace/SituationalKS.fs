@@ -56,7 +56,10 @@ let rec clct acc l1 l2 =
 
 // clct [] ['a',[1;2]; 'b',[3;4]; 'c',[5;6]] []
 
+#if CA_RUNTIME 
+#else
 let log exmplrs = exmplrs |> Seq.map (fun e -> e.MParms) |> Seq.toList |> Metrics.MetricMsg.SitState |> Metrics.postAll
+#endif
 
 ///Pick exemplars for the next gen given previous exemplars (prevE) and voters
 //Note: This function considers parameter distance between two exemplars so that

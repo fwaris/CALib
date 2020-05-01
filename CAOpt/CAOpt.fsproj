@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.9.0</Version>
+    <Authors>Faisal Waris</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/fwaris/CALib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fwaris/CALib</RepositoryUrl>
+    <PackageIcon>CAIcon.PNG</PackageIcon>
+    <Copyright>Copyright Faisal Waris ©  2020</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageTags>optimization,</PackageTags>
+    <Description>Cultural Algorithms optimization framework for mixed integer, dynamic optimization problems. This method uses an ensmble of search strategies. The dynamic balance between the strategies is maintained by a game-theoretic heuristic.
+</Description>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>initial version</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;CA_RUNTIME</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;CA_RUNTIME</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="..\CALib\Probability.fs" Link="Probability.fs" />
+    <Compile Include="..\CALib\CA.fs" Link="CA.fs" />
+    <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
+    <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
+    <Folder Include="BeliefSpace\" />
+    <Compile Include="..\CALib\BeliefSpace\DiffEvolutionKS.fs" Link="BeliefSpace\DiffEvolutionKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\KMeans.fs" Link="BeliefSpace\KMeans.fs" />
+    <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\TopographicKS.fs" Link="BeliefSpace\TopographicKS.fs" />
+    <Folder Include="KnowledgeDistribution\" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDContinousStrategyGame.fs" Link="KnowledgeDistribution\KDContinousStrategyGame.fs" />
+    <Compile Include="..\CALib\KnowledgeDistribution\KDStagHuntStatic.fs" Link="KnowledgeDistribution\KDStagHuntStatic.fs" />
+    <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
+    <Compile Include="..\CALib\API.fs" Link="API.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\CAIcon.PNG">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

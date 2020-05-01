@@ -35,7 +35,10 @@ type HistoryState =
         ParmDefs    : Parm[]
     }
 
+#if CA_RUNTIME 
+#else
 let log events = events |> List.map (fun {MParms=p} -> p) |> Metrics.MetricMsg.HistState |> Metrics.postAll
+#endif
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
     {
