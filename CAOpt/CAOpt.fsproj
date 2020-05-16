@@ -35,6 +35,7 @@
     <Folder Include="BeliefSpace\" />
     <Compile Include="..\CALib\BeliefSpace\DiffEvolutionKS.fs" Link="BeliefSpace\DiffEvolutionKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DomainHybridKS.fs" Link="BeliefSpace\DomainHybridKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\KMeans.fs" Link="BeliefSpace\KMeans.fs" />
     <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />

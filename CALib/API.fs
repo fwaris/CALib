@@ -23,7 +23,7 @@ type API() =
         let envChgSnstvty = Insensintive 
         let fitness:Fitness = ref fitness
         let network = CAUtils.hexagonNetworkViz
-        let createBsp = if useDE then CARunner.deBeliefSpace else CARunner.defaultBeliefSpace
+        let createBsp = if useDE then CARunner.deHybridBeliefSpace else CARunner.defaultBeliefSpace
         let bsp = createBsp parms optKind fitness
         let pop = CAUtils.createPop (CAUtils.baseKsInit bsp) parms popSize true
         let pop = pop |> KDStagHuntStatic.initKS |> Array.map (fun i -> {i with Parms=Array.copy i.Parms })

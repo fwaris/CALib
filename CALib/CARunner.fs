@@ -30,6 +30,20 @@ let deBeliefSpace parmDefs optKind fitness =
         Leaf (TopographicKS.create parmDefs optKind fitness)
         ]
 
+//create belief space with Differential Evolution based 
+//Domain KS. Useful for high dimensional search space where
+//determining gradients across individual dimensions could be expensive
+let deHybridBeliefSpace parmDefs optKind fitness =
+    Roots [ 
+        Node (SituationalKS.create parmDefs optKind 15,
+            [
+                Leaf (HistoricalKS.create parmDefs optKind 100)
+                Leaf (DomainHybridKS.create parmDefs optKind fitness)
+            ])
+        Leaf (NormativeKS.create parmDefs optKind)
+        Leaf (TopographicKS.create parmDefs optKind fitness)
+        ]
+
 ///evaluate the finess of the population
 let evaluate fitness pop = 
     let pop =

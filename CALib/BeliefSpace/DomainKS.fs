@@ -3,14 +3,11 @@ module DomainKS
 open CA
 open CAUtils
 open CAEvolve
-
+open DiffEvolutionKS
 let eSigma = 0.003  //exploratory index constant for Domain
 
 ///Slope information
 type Slope = {Index:int; Magnitude:float; Direction:Dir}
-
-///State kept by domain
-type DomainState = {ParmDefs:Parm[]; IsBetter:Comparator; Fitness:Fitness}
 
 let rateOfImprovement oldFitness newFitness isBetter denominator =
     if oldFitness = newFitness then 
@@ -32,9 +29,6 @@ let slopes ibest isBetter fitness oldFit (parmDefs:Parm[]) parms =
         let partialSlope = rateOfImprovement oldFit newFit isBetter e
         parms.[i] <- p
         partialSlope)
-
-
-let initState parmDefs isBetter fitness = {ParmDefs=parmDefs; IsBetter=isBetter; Fitness=fitness}
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
     {
@@ -66,6 +60,6 @@ let defaultInfluence state iBest _ influenceLevel (ind:Individual<_>) =
 ///Create Domain knowledge source
 let create parmDefs optKind (fitness:Fitness) =
 
-    let state = initState parmDefs (CAUtils.comparator optKind) fitness
+    let state = DiffEvolutionKS.initState parmDefs (CAUtils.comparator optKind) fitness
 
     construct state defaultAcceptance defaultInfluence

@@ -16,8 +16,9 @@
     <Compile Include="..\CALib\Metrics\Tracing.fs" Link="Metrics\Tracing.fs" />
     <Compile Include="..\CALib\Metrics\TracingGame.fs" Link="Metrics\TracingGame.fs" />
     <Compile Include="..\CALib\Metrics\Social.fs" Link="Metrics\Social.fs" />
-    <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\DiffEvolutionKS.fs" Link="BeliefSpace\DiffEvolutionKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
+    <Compile Include="..\CALib\BeliefSpace\DomainHybridKS.fs" Link="BeliefSpace\DomainHybridKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\HistoricalKS.fs" Link="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />

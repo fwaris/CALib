@@ -110,7 +110,11 @@ let defaultInfluence state _ _ s (indv:Individual<_>) =
     let cntrd = Probability.spinWheel state.SpinWheel 
     let p2 = cntrd.Best
     let updateParms = indv.Parms
-    p2 |> Array.iteri (fun i p -> evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p)
+    p2 |> Array.iteri (fun i p -> 
+        //printf "%d pre: %f" i p2.[i]
+        evolveP TOPOGRAPHICAL_RANGE_SCALER s eSigma updateParms i state.ParmDefs.[i] p
+        //printfn " post: %f" updateParms.[i]
+        )
     indv
 
 ///Create Topographic knowledge    

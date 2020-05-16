@@ -7,7 +7,7 @@ open CAUtils
 open CAEvolve
 open Probability
 
-type DEState<'a> = {ParmDefs:Parm[]; IsBetter:Comparator; Fitness:Fitness}
+type DEState = {ParmDefs:Parm[]; IsBetter:Comparator; Fitness:Fitness; Best:float; Count:int; GensSinceLastBest:int; UseDE:bool}
 
 let CR = 0.9
 let F = 0.8
@@ -39,11 +39,15 @@ let applyDE state (pop:_[]) (targetInv:Individual<_>) =
     iParms
 
 
-let initialState parmDefs isBetter fitness = 
+let initState parmDefs isBetter fitness = 
     {
         ParmDefs=parmDefs
         IsBetter=isBetter
         Fitness=fitness
+        Count=0
+        Best = 0.
+        GensSinceLastBest = 0
+        UseDE=true
     }
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
@@ -65,6 +69,6 @@ let defaultInfluence state _ pop influenceLevel (ind:Individual<_>) =
 
 let create parmDefs optKind (fitness:Fitness) =
 
-    let state = initialState parmDefs (CAUtils.comparator optKind) fitness
+    let state = initState parmDefs (CAUtils.comparator optKind) fitness
 
     construct state defaultAcceptance defaultInfluence

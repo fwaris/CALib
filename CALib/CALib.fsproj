@@ -1000,11 +1000,12 @@
     <Compile Include="Metrics\Tracing.fs" />
     <Compile Include="Metrics\TracingGame.fs" />
     <Compile Include="Metrics\Social.fs" />
+    <Compile Include="BeliefSpace\DiffEvolutionKS.fs" />
+    <Compile Include="BeliefSpace\DomainKS.fs" />
+    <Compile Include="BeliefSpace\DomainHybridKS.fs" />
     <Compile Include="BeliefSpace\HistoricalKS.fs" />
     <Compile Include="BeliefSpace\NormativeKS.fs" />
     <Compile Include="BeliefSpace\SituationalKS.fs" />
-    <Compile Include="BeliefSpace\DomainKS.fs" />
-    <Compile Include="BeliefSpace\DiffEvolutionKS.fs" />
     <Compile Include="BeliefSpace\KMeans.fs" />
     <Compile Include="BeliefSpace\TopographicKS.fs" />
     <Compile Include="KnowledgeDistribution\KDWeightedMajority.fs" />
