@@ -2,14 +2,10 @@
 module VizLandscape
 
 open System.Threading.Tasks
-
-open System.IO
 open System.Drawing
-open System.Drawing.Drawing2D
 open System.Windows.Forms
 open VizUtils
 open System.Drawing.Imaging
-open System
 open Microsoft.FSharp.NativeInterop
 
 let private scaler (sMin,sMax) (vMin,vMax) (v:float) =
@@ -126,7 +122,8 @@ let gen (cone,ftnss) = genImage ((cone.L.[0],cone.L.[1],cone.H),ftnss)
 let createVid ouput n world = 
     let enc = encoder ouput 1. (1024,1024)
     let gen = landscape >> gen
-    let drawFrame m =
+    let drawFrame (m:Bitmap) =
+        
         let matA = OpenCvSharp.Extensions.BitmapConverter.ToMat(m)
         let mat = new Mat(matA.Size(), MatType.CV_8UC3)
         Cv2.CvtColor(!>matA,!>mat, ColorConversionCodes.BGRA2BGR)

@@ -7,10 +7,10 @@ let uiCtx = System.Threading.SynchronizationContext.Current
 
 let inline (!>) (x:^a) : ^b = ((^a or ^b) : (static member op_Implicit : ^a -> ^b) x)
 
-let winAsync t i =
+let winAsync t image =
     async{
         do! Async.SwitchToContext uiCtx
-        new Window((t:string), WindowMode.AutoSize,i) |> ignore 
+        new Window((t:string), (image:Mat), flags=WindowFlags.AutoSize) |> ignore 
         } 
 
 let win t i = winAsync t i |> Async.Start
@@ -20,9 +20,9 @@ type IEncoder =
     abstract member Release : unit -> unit
 
 let private captureTo v_out frameRate sz =
-    let c4v = FourCCValues.DIVX
-    let c4 = FourCC.FromFourCCValues(c4v)
-    let clipOut = new VideoWriter(v_out,c4,frameRate,sz)
+    let c4v = FourCC.DIVX
+    //let c4 = FourCC.FromFourChars(c4v)
+    let clipOut = new VideoWriter(v_out,c4v,frameRate,sz)
     clipOut
 
 let encoder file frameRate (w:int,h:int) =
