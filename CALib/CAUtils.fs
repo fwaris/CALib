@@ -18,8 +18,8 @@ let isValidNum n = (System.Double.IsInfinity n || System.Double.IsNaN n) |> not
 let mult = function Minimize -> -1.0 | Maximize -> 1.0
 
 ///older method of comparing fitness (still used but should move to mult)
-let comparator = function Maximize -> (fun a b -> a > b) | Minimize  -> (fun a b -> a < b)
 type Comparator = float -> float -> bool
+let comparator : (OptimizationKind -> Comparator) = function Maximize -> (fun a b -> a >= b) | Minimize  -> (fun a b -> a <= b)
 
 ///Linearly scale a value (which falls within vMin and vMax) to be within sMin and sMax
 let scaler (sMin,sMax) (vMin,vMax) (v:float) =
