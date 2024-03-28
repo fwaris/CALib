@@ -72,10 +72,10 @@ let prepStepsForLandscapeRun ws lndscpCfg =
 let runSteps envChanged steps =
     steps
     |> Array.map (function 
-    | WtdSt (st,f) -> async {return WtdSt(CARunner.step envChanged st defaultMaxBest,f) }
-    | IpdSt (st,f) -> async {return IpdSt(CARunner.step envChanged st defaultMaxBest,f) }
-    | ShSSt (st,f) -> async {return ShSSt(CARunner.step envChanged st defaultMaxBest,f) } 
-    | StkSt (st,f) -> async {return StkSt(CARunner.step envChanged st defaultMaxBest,f) }
+    | WtdSt (st,f) -> async {return WtdSt(CARunner.step None envChanged st defaultMaxBest,f) }
+    | IpdSt (st,f) -> async {return IpdSt(CARunner.step None envChanged st defaultMaxBest,f) }
+    | ShSSt (st,f) -> async {return ShSSt(CARunner.step None envChanged st defaultMaxBest,f) } 
+    | StkSt (st,f) -> async {return StkSt(CARunner.step None envChanged st defaultMaxBest,f) }
     )
     |> Async.Parallel
 

@@ -34,7 +34,7 @@ let inline makeCA fitness envChgSensitivity optKind pop bspace influence network
 
 let inline sqr x = x * x
 
-let step envChanged st = CARunner.step envChanged st 2
+let step maxParallelism envChanged st = CARunner.step maxParallelism envChanged st 2
 
 let vmx = (0.2, 0.9)
 

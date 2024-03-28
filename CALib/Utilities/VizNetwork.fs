@@ -142,7 +142,7 @@ let createVid ouput size maxGen (ca:CA<_>) clrF =
     let runCA maxBest (ca:CA<_>) =    
         for i in 1 .. 10 do drawFrame ca
         let loop stp = 
-            let stp = CARunner.step false stp maxBest
+            let stp = CARunner.step None false stp maxBest
             drawFrame stp.CA
             stp
         let step = CAUtils.initStep ca
@@ -167,7 +167,7 @@ let createVidHeat ouput size maxGen ca clrF =
     let runCA maxBest (ca:CA<_>) =    
         for i in 1 .. 10 do drawFrame ca
         let loop stp = 
-            let stp = CARunner.step false stp maxBest
+            let stp = CARunner.step None false stp maxBest
             drawFrame stp.CA
             stp
         let step = CAUtils.initStep ca

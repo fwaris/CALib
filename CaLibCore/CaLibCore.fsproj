@@ -2,10 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CALib\AssemblyInfo.fs" Link="AssemblyInfo.fs" />
+    <Compile Include="..\CALib\AsyncExts.fs" Link="AsyncExts.fs" />
     <Compile Include="..\CALib\Probability.fs" Link="Probability.fs" />
     <Compile Include="..\CALib\DF1.fs" Link="DF1.fs" />
     <Compile Include="..\CALib\CA.fs" Link="CA.fs" />
@@ -41,7 +42,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="7.0.200" />
+    <PackageReference Update="FSharp.Core" Version="8.0.200" />
     <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.2.0" />
     <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
     <PackageReference Include="FsPickler" Version="5.3.2" />

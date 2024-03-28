@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>1.0.1</Version>
+    <Version>2.0.0</Version>
     <Authors>Faisal Waris</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fwaris/CALib</PackageProjectUrl>
@@ -15,7 +15,7 @@
     <Description>Cultural Algorithms optimization framework for mixed integer, dynamic optimization problems. This method uses an ensmble of search strategies. The dynamic balance between the strategies is maintained by a game-theoretic heuristic.
 </Description>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>rev packages</PackageReleaseNotes>
+	<PackageReleaseNotes>Breaking. Added maxParallelism option to step call. Can be used to reduce resource consumption if fitness function is resource intensive </PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -28,11 +28,11 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="..\CALib\AsyncExts.fs" Link="AsyncExts.fs" />
     <Compile Include="..\CALib\Probability.fs" Link="Probability.fs" />
     <Compile Include="..\CALib\CA.fs" Link="CA.fs" />
     <Compile Include="..\CALib\CAUtils.fs" Link="CAUtils.fs" />
     <Compile Include="..\CALib\CAEvolve.fs" Link="CAEvolve.fs" />
-    <Folder Include="BeliefSpace\" />
     <Compile Include="..\CALib\BeliefSpace\DiffEvolutionKS.fs" Link="BeliefSpace\DiffEvolutionKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\DomainKS.fs" Link="BeliefSpace\DomainKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\DomainHybridKS.fs" Link="BeliefSpace\DomainHybridKS.fs" />
@@ -41,7 +41,6 @@
     <Compile Include="..\CALib\BeliefSpace\NormativeKS.fs" Link="BeliefSpace\NormativeKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\SituationalKS.fs" Link="BeliefSpace\SituationalKS.fs" />
     <Compile Include="..\CALib\BeliefSpace\TopographicKS.fs" Link="BeliefSpace\TopographicKS.fs" />
-    <Folder Include="KnowledgeDistribution\" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDContinousStrategyGame.fs" Link="KnowledgeDistribution\KDContinousStrategyGame.fs" />
     <Compile Include="..\CALib\KnowledgeDistribution\KDStagHuntStatic.fs" Link="KnowledgeDistribution\KDStagHuntStatic.fs" />
     <Compile Include="..\CALib\CARunner.fs" Link="CARunner.fs" />
@@ -50,10 +49,11 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.2.0" />
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="7.0.200" />
+    <PackageReference Update="FSharp.Core" Version="8.0.200" />
   </ItemGroup>
 
   <ItemGroup>

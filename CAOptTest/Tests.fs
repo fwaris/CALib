@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.TestTools.UnitTesting
 
 module TestsCommon =
 
-    let rastrigin useDE =
+    let rastrigin maxParallelism useDE =
         let n = 5.
         let A = 10.
         let twoPi = 2. * System.Math.PI
@@ -20,7 +20,7 @@ module TestsCommon =
         let mutable step = CALib.API.initCA(parms, rastrigin, Minimize, useDE=useDE)
 
         for i in 0 .. 15000 do 
-            step <- CALib.API.Step step
+            step <- CALib.API.Step(step,?maxParallelism=maxParallelism)
 
         step.Best.[0].MParms
 
@@ -29,13 +29,18 @@ type CAOptTests () =
 
     [<TestMethod>]
     member this.Rastrigin () =
-        let parms = TestsCommon.rastrigin false
+        let parms = TestsCommon.rastrigin None false
         let nearZero = parms |> Array.forall (fun x-> abs x < 1e-3)
         Assert.IsTrue(nearZero);
 
     [<TestMethod>]
     member this.RastriginDE () =
-        let parms = TestsCommon.rastrigin true
+        let parms = TestsCommon.rastrigin None true
         let nearZero = parms |> Array.forall (fun x-> abs x < 1e-2)
         Assert.IsTrue(nearZero);
 
+    [<TestMethod>]
+    member this.RastriginDELimitParallelism () =
+        let parms = TestsCommon.rastrigin (Some 10) true
+        let nearZero = parms |> Array.forall (fun x-> abs x < 1e-2)
+        Assert.IsTrue(nearZero);

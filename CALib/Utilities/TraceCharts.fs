@@ -28,7 +28,7 @@ let withBgSubscription obs (c:FSharp.Charting.ChartTypes.GenericChart)  =
         printfn "refCh changed %A" !refCh
         match !refCh with
         | Some c -> applyBgChart imgFile c 
-        | None _ ->())
+        | None  ->())
     c.ApplyToChart(fun c -> 
         printfn "refCH"
         refCh := Some c) |> ignore
@@ -71,7 +71,8 @@ let chPoints2Obs title bgObs obs =
         [
           LiveChart.FastPoint(obs1); 
           LiveChart.FastPoint(obs2) 
-          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+          |> Chart.WithMarkers(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+
         ]
         |> Chart.Combine 
         |> Chart.WithTitle title
@@ -86,7 +87,7 @@ let chPoints2 bg title obs =
         [
           LiveChart.FastPoint(obs1); 
           LiveChart.FastPoint(obs2) 
-          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+          |> Chart.WithMarkers(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 
         |> Chart.WithTitle title
@@ -102,7 +103,7 @@ let chPointsN bg title obss =
       |> List.map (fun (t,obs) -> 
             LiveChart.FastPoint(obs)
             |> Chart.WithStyling(Name=t)
-            |> Chart.WithSeries.Marker(Size=10)
+            |> Chart.WithMarkers(Size=10)
         )
       |> Chart.Combine 
       |> Chart.WithTitle title
@@ -119,7 +120,7 @@ let chPointsNObs title bgObs obss =
       |> List.map (fun (t,obs) -> 
             LiveChart.FastPoint(obs)
             |> Chart.WithStyling(Name=t)
-            |> Chart.WithSeries.Marker(Size=10)
+            |> Chart.WithMarkers(Size=10)
         )
       |> Chart.Combine 
       |> Chart.WithTitle title
@@ -136,11 +137,11 @@ let chPointsNwBestObs title bgObs obss (tbst,obBst) =
             yield 
                 LiveChart.FastPoint(obs)
                 |> Chart.WithStyling(Name=t)
-                |> Chart.WithSeries.Marker(Size=10)
+                |> Chart.WithMarkers(Size=10)
         yield
             LiveChart.FastPoint(obBst)
             |> Chart.WithStyling(Name=tbst)
-            |> Chart.WithSeries.Marker(Size=20,Color=Color.Transparent, BorderColor=Color.IndianRed, BorderWidth=3, Style=Charting.MarkerStyle.Star4)
+            |> Chart.WithMarkers(Size=20,Color=Color.Transparent, BorderColor=Color.IndianRed, BorderWidth=3, Style=ChartTypes.MarkerStyle.Star4)
       } 
       |> Chart.Combine 
       |> Chart.WithTitle title
@@ -157,7 +158,7 @@ let chPtsLine bg title obs =
         [
           LiveChart.FastPoint(obs1); 
           LiveChart.FastLine(obsB) 
-          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+          |> Chart.WithMarkers(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 
         |> Chart.WithTitle title
@@ -174,7 +175,7 @@ let chPtsLineObs title bgObs obs =
         [
           LiveChart.FastPoint(obs1); 
           LiveChart.FastLine(obsB) 
-          |> Chart.WithSeries.Marker(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
+          |> Chart.WithMarkers(Size=10, Color=Color.Transparent, BorderColor=Color.DarkBlue, BorderWidth=2)
         ]
         |> Chart.Combine 
         |> Chart.WithTitle title

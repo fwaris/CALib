@@ -32,4 +32,4 @@ type API() =
         let step =  {CA=ca; Best=[]; Count=0; Progress=[]; EnvChngCount=0; IBest=ref None}
         step
 
-    static member Step step = CARunner.step false step  2
+    static member Step(step, ?maxParallelism:int) = CARunner.step maxParallelism false step  2

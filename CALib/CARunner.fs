@@ -3,6 +3,8 @@
 module CARunner
 open CA
 open FSharp.Collections.ParallelSeq
+open FSharp.Control
+open AsyncExts
 
 ///create the belief space structure that is normally used in CAs
 let defaultBeliefSpace parmDefs optKind fitness =
@@ -45,12 +47,23 @@ let deHybridBeliefSpace parmDefs optKind fitness =
         ]
 
 ///evaluate the finess of the population
-let evaluate fitness pop = 
-    let pop =
+let evaluate maxParallelism fitness pop = 
+    match maxParallelism with
+    | None -> 
         pop
         |> Array.Parallel.map (fun (ind:Individual<_>) -> 
             {ind with Fitness=fitness ind.Parms})
-    pop
+    | Some i -> 
+        pop
+        |> AsyncSeq.ofSeq
+        |> AsyncSeq.mapAsyncParallelThrottled i (fun (ind:Individual<_>) -> 
+            async{
+                let fv = fitness ind.Parms
+                return {ind with Fitness=fv}
+            })
+        |> AsyncSeq.toBlockingSeq
+        |> Seq.toArray
+            
 
 ///default acceptance function used in most CAs
 let acceptance topProportion mult beliefSpace (pop:Population<_>) =
@@ -77,7 +90,7 @@ let update envChanged beliefSpace bestInds  =
 
 
 ///single step CA
-let step envChanged (st:TimeStep<_>)  maxBest =
+let step maxParallelism envChanged (st:TimeStep<_>)  maxBest =
     let ca = st.CA
     let c  = st.Count
     let p  = st.Progress
@@ -85,7 +98,7 @@ let step envChanged (st:TimeStep<_>)  maxBest =
     let best = st.Best
     let mult = CAUtils.mult ca.Optimization
     let isBetter = CAUtils.comparator ca.Optimization
-    let pop             = evaluate ca.Fitness.Value ca.Population
+    let pop             = evaluate  maxParallelism ca.Fitness.Value ca.Population
     let topInds         = ca.Acceptance ca.BeliefSpace pop
     let oldBest = 
         if envChanged then 
@@ -142,17 +155,17 @@ let DEFAULT_ENV_CHANGE_EPSILON = 0.000001
 //step function for dynamic environments
 let dynStep envChangeEpsilon timeStep maxBest = 
     match timeStep.Best with
-    | [] -> step false timeStep maxBest
+    | [] -> step None false timeStep maxBest
     | x::_->
         let prevFit = x.MFitness
         let newFit = timeStep.CA.Fitness.Value x.MParms
         let envCh =  abs(newFit - prevFit) > envChangeEpsilon
-        step envCh timeStep maxBest
+        step None envCh timeStep maxBest
 
 ///run till termination
-let run desc termination maxBest ca =
+let run desc maxParallelism termination maxBest ca =
     let rec loop stp = 
-        let stp = step false stp maxBest
+        let stp = step maxParallelism false stp maxBest
         let best = if stp.Best.Length > 0 then stp.Best.[0].MFitness else 0.0
         match stp.Progress.Length with
         | 0 -> printfn "starting '%s'" desc
