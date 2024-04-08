@@ -48,7 +48,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
     }
 
 ///History default influence function
-let defaultInfluence state _ _ s (ind:Individual<_>) =
+let defaultInfluence state _ _ _ s (ind:Individual<_>) =
     let ev = state.Events.[rnd.Value.Next(0,state.Events.Length)]
     let ind' = 
         if state.IsBetter ev.MFitness ind.Fitness then

@@ -19,15 +19,15 @@ let rateOfImprovement oldFitness newFitness isBetter denominator =
 
 let slopes ibest isBetter fitness oldFit (parmDefs:Parm[]) parms =
     parms
-    |> Array.mapi (fun i p -> 
+    |> Array.Parallel.mapi (fun i p -> 
         let pDef = parmDefs.[i]
         let e = denominatorM pDef
         let p' =  clampP (p + e) pDef        
-        parms.[i] <- p'
-        let newFit = fitness parms
+        parms.[i] <- p'                                 //temporarily assign new value to parm to re-evaluate fitness
+        let newFit = fitness parms                      //re-evaluate fitness
         CAUtils.Incidental.update ibest isBetter newFit parms
         let partialSlope = rateOfImprovement oldFit newFit isBetter e
-        parms.[i] <- p
+        parms.[i] <- p                                  //restore original value
         partialSlope)
 
 let construct state fAccept fInfluence : KnowledgeSource<_> =
@@ -41,7 +41,7 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
 ///Domain default influence function
-let defaultInfluence state iBest _ influenceLevel (ind:Individual<_>) =
+let defaultInfluence state iBest _ _ influenceLevel (ind:Individual<_>) =
     //mutation
     let oldFit = ind.Fitness //state.Fitness.Value ind.Parms //cannot rely on existing fitness due to allowance for multiple KS influences therefore reevaluate
     let slopes = slopes iBest state.IsBetter state.Fitness.Value oldFit state.ParmDefs ind.Parms
@@ -60,6 +60,7 @@ let defaultInfluence state iBest _ influenceLevel (ind:Individual<_>) =
 ///Create Domain knowledge source
 let create parmDefs optKind (fitness:Fitness) =
 
+    //domain and DE share the same internal state structure
     let state = DiffEvolutionKS.initState parmDefs (CAUtils.comparator optKind) fitness
 
     construct state defaultAcceptance defaultInfluence

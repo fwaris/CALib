@@ -110,6 +110,7 @@ let createPop ksInitializer parms size randomizeAll =
                     Parms   = parms |> Array.map parmToFloat
                     Fitness = System.Double.MinValue
                     KS      = ksInitializer i
+                    IsStale = true
                 }
     |]
 
@@ -201,9 +202,10 @@ let normalizePopFitness target mult (pop:Individual<_>[]) =
 ///Default CA influence function
 let defaultInfluence beliefSpace pop ib =
     let ksMap = flatten beliefSpace |> List.map (fun k -> k.Type, k) |> Map.ofList
+    let prvGenParms = pop |> Array.map(fun ind -> Array.copy ind.Parms)
     let pop =
         pop
-        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence ib pop 1.0 p)
+        |> Array.Parallel.map (fun p -> ksMap.[p.KS].Influence ib prvGenParms pop 1.0 p)
     pop
 
 

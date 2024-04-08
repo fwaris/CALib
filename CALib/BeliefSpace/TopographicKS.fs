@@ -105,7 +105,7 @@ let rec defaultAcceptance fInfluence state envChanged  (voters:Individual<_> arr
     voters,construct state defaultAcceptance fInfluence
 
 ///Topographic default influence function
-let defaultInfluence state _ _ s (indv:Individual<_>) =
+let defaultInfluence state _ _ _ s (indv:Individual<_>) =
     //mutation
     let cntrd = Probability.spinWheel state.SpinWheel 
     let p2 = cntrd.Best

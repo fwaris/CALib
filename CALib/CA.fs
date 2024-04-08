@@ -41,6 +41,8 @@ type BeliefSpace<'k> = KnowledgeSource<'k> Tree
 
 type IncidentalBest = Marker option ref
 
+type PrevGenParms = float[][]
+
 ///knowledge source type
 type KnowledgeSource<'k> = 
     {
@@ -51,7 +53,7 @@ type KnowledgeSource<'k> =
         Accept      : EnvChngeType -> Individual<'k> array -> Individual<'k> array * KnowledgeSource<'k>
 
         ///Influence function type of a knowledge source
-        Influence   :  IncidentalBest -> Population<'k> -> Temperature -> Individual<'k> -> Individual<'k>
+        Influence   :  IncidentalBest -> PrevGenParms -> Population<'k> -> Temperature -> Individual<'k> -> Individual<'k>
     }
 
 type Tree<'a>        = Leaf of 'a | Node of 'a * Tree<'a> list | Roots of Tree<'a> list
@@ -76,7 +78,7 @@ type Influence<'k>   = Influence of (
                                 -> (Population<'k>*BeliefSpace<'k>*Influence<'k>))      //returns updated population, beliefSpace and influence function
 
 ///Population individual (parameterized by KS type)
-type Individual<'k>  = {Id:Id; Parms:float array; Fitness:float; KS:'k}
+type Individual<'k>  = {Id:Id; Parms:float array; Fitness:float; IsStale:bool; KS:'k}
 
 ///Population is an array of indviduals
 type Population<'k>  = Individual<'k> array

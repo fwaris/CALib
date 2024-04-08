@@ -21,11 +21,11 @@ let rec rand3 tgtIndx m =
     let rndVec,_ = (([],set[tgtIndx]),[0;1;2]) ||> List.fold(fun (rs,oldRnds) _ -> let r = newRnd m oldRnds in (r::rs,Set.add r oldRnds))
     rndVec |> Seq.toArray
 
-let applyDE state (pop:_[]) (targetInv:Individual<_>) =
+let applyDE state (prvGenParms:PrevGenParms) (pop:_[]) (targetInv:Individual<_>) =
     let yab = rand3 targetInv.Id pop.Length
-    let y = pop.[yab.[0]].Parms
-    let a = pop.[yab.[1]].Parms
-    let b = pop.[yab.[2]].Parms
+    let y = prvGenParms.[yab.[0]]
+    let a = prvGenParms.[yab.[1]]
+    let b = prvGenParms.[yab.[2]]
     let iParms = targetInv.Parms |> Array.copy
     state.ParmDefs |> Array.iteri (fun i pd ->
         let r = RNG.Value.Next(0.,1.)
@@ -59,13 +59,16 @@ let construct state fAccept fInfluence : KnowledgeSource<_> =
 
 let rec defaultAcceptance fInfluence state envChanged voters = voters, construct state defaultAcceptance fInfluence
 
-let defaultInfluence state _ pop influenceLevel (ind:Individual<_>) =
+let defaultInfluence state iBest prvGenParms pop influenceLevel (ind:Individual<_>) =
     let oldFit = ind.Fitness
-    let newParms = applyDE state pop ind
+    let newParms = applyDE state prvGenParms pop ind
     let newFit = state.Fitness.Value newParms
     if state.IsBetter newFit oldFit then
+        CAUtils.Incidental.update iBest state.IsBetter newFit newParms
         newParms |> Array.iteri (fun i p -> ind.Parms.[i] <- p) //mutation
-    ind
+        {ind with Fitness = newFit; IsStale=false} //since indvidual was re-evaluated in this intermediate step 
+    else                                           //no need to re-evaluate it in the next round so mark as not stale
+        ind
 
 let create parmDefs optKind (fitness:Fitness) =
 

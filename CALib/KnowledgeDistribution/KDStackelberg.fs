@@ -126,6 +126,7 @@ let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
 let private stkInfluence ib beliefSpace (pop:Population<StkKnowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
+    let prvGenParms = pop |> Array.map(fun ind -> Array.copy ind.Parms)
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
@@ -139,7 +140,7 @@ let private stkInfluence ib beliefSpace (pop:Population<StkKnowledge>) =
                 //    printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
-            let p = ksMap.[ks].Influence ib pop lvl  p
+            let p = ksMap.[ks].Influence ib prvGenParms pop lvl  p
             p)
     pop 
 
@@ -205,6 +206,7 @@ let initKS (pop:Population<Knowledge>) : Population<StkKnowledge> =
             Fitness = indv.Fitness
             Parms = indv.Parms
             KS=indv.KS,0
+            IsStale = true
         })
 
 

@@ -52,14 +52,19 @@ let evaluate maxParallelism fitness pop =
     | None -> 
         pop
         |> Array.Parallel.map (fun (ind:Individual<_>) -> 
-            {ind with Fitness=fitness ind.Parms})
+            if ind.IsStale 
+            then {ind with Fitness=fitness ind.Parms; IsStale=true} //only evaluate fitness for stale indvs
+            else {ind with IsStale=true})                           //regardless mark individual as stale after this step
     | Some i -> 
         pop
         |> AsyncSeq.ofSeq
         |> AsyncSeq.mapAsyncParallelThrottled i (fun (ind:Individual<_>) -> 
             async{
-                let fv = fitness ind.Parms
-                return {ind with Fitness=fv}
+                let ind =
+                    if ind.IsStale 
+                    then {ind with Fitness=fitness ind.Parms; IsStale=true} //only evaluate fitness for stale indvs
+                    else {ind with IsStale=true}                            //regardless mark individual as stale after this step
+                return ind
             })
         |> AsyncSeq.toBlockingSeq
         |> Seq.toArray
@@ -98,8 +103,8 @@ let step maxParallelism envChanged (st:TimeStep<_>)  maxBest =
     let best = st.Best
     let mult = CAUtils.mult ca.Optimization
     let isBetter = CAUtils.comparator ca.Optimization
-    let pop             = evaluate  maxParallelism ca.Fitness.Value ca.Population
-    let topInds         = ca.Acceptance ca.BeliefSpace pop
+    let pop      = evaluate maxParallelism ca.Fitness.Value ca.Population
+    let topInds  = ca.Acceptance ca.BeliefSpace pop
     let oldBest = 
         if envChanged then 
             st.IBest := None                     //reset incidental best due to regime change

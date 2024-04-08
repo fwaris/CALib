@@ -97,6 +97,7 @@ let il ks = match influenceLevels.TryGetValue ks with true,v -> v | _ -> 1.0
 
 let private shInfluence _ ib beliefSpace (pop:Population<ShKnowledge>) =
     let ksMap = CAUtils.flatten beliefSpace |> List.map (fun k -> k.Type, k) |> dict
+    let prvGenParms = pop |> Array.map (fun i -> Array.copy i.Parms) //need to keep a copy of prev indv 
     let pop =
         pop
         |> Array.Parallel.map (fun p -> 
@@ -109,7 +110,7 @@ let private shInfluence _ ib beliefSpace (pop:Population<ShKnowledge>) =
                 //printfn "dm lvl: %d %f" i l
                 l
               | _ -> lvl
-            let p = ksMap.[ks].Influence ib pop lvl  p
+            let p = ksMap.[ks].Influence ib prvGenParms pop lvl  p
             p)
     pop 
 
@@ -150,6 +151,7 @@ let initKS (pop:Population<Knowledge>) : Population<ShKnowledge> =
             Fitness = indv.Fitness
             Parms = indv.Parms
             KS=indv.KS,0
+            IsStale = true
         })
 
 let influence ksOrder coopGens beliefSpace pop =

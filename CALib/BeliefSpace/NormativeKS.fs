@@ -107,7 +107,7 @@ let initState parmDefs isBetter =
 
 
 ///Normative default influence function
-let defaultInfluence {Norms=norms; ParmDefs=parmDefs} _ _ s (ind:Individual<_>) =
+let defaultInfluence {Norms=norms; ParmDefs=parmDefs} _ _ _ s (ind:Individual<_>) =
     (norms,ind.Parms) ||> Array.iteri2 (fun i n p -> updateParm parmDefs ind.Parms s i n p)
     ind
 
