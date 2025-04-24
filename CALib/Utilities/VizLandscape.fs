@@ -105,10 +105,10 @@ let showLandscape (bmp:Bitmap) =
     let form = new Form()
     form.Width  <- 400
     form.Height <- 400
-    form.Visible <- true 
+    form.Visible <- true    
     form.Text <- "Image"
     let p = new PictureBox(
-                    Image=bmp,
+                    Image= bmp,
                     Dock = DockStyle.Fill,
                     SizeMode=PictureBoxSizeMode.StretchImage)
     form.Controls.Add(p)

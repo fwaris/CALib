@@ -1050,16 +1050,14 @@
     </Reference>
     <Reference Include="FSharp.Control.AsyncSeq" />
     <Reference Include="FSharp.Core">
-      <HintPath>..\packages\FSharp.Core.9.0.300-beta.25181.1\lib\netstandard2.0\FSharp.Core.dll</HintPath>
+      <HintPath>..\packages\FSharp.Core.9.0.202\lib\netstandard2.0\FSharp.Core.dll</HintPath>
     </Reference>
-    <Reference Include="FSharp.Core" />
     <Reference Include="FsPickler">
       <HintPath>..\packages\FsPickler.5.3.2\lib\net45\FsPickler.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces">
-      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.10.0.0-preview.3.25171.5\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.4\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
     <Reference Include="mscorlib" />
     <Reference Include="mscorlib" />
     <Reference Include="OpenCvSharp">
@@ -1088,9 +1086,8 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Drawing.Common">
-      <HintPath>..\packages\System.Drawing.Common.10.0.0-preview.3.25173.2\lib\net462\System.Drawing.Common.dll</HintPath>
+      <HintPath>..\packages\System.Drawing.Common.9.0.4\lib\net462\System.Drawing.Common.dll</HintPath>
     </Reference>
-    <Reference Include="System.Drawing.Common" />
     <Reference Include="System.Memory">
       <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
     </Reference>
