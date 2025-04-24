@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <Version>3.0.6</Version>
+    <Version>3.0.7</Version>
     <Authors>Faisal Waris</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fwaris/CALib</PackageProjectUrl>
