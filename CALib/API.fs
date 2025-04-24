@@ -30,7 +30,7 @@ type API() =
         let popSize = defaultArg popSize 36
         let beliefSpace =  defaultArg beliefSpace Default
         let envChgSnstvty = Insensintive 
-        let maybeInvalid = parms |> Array.tryFind(function F(v,l,h) -> not( h>=1 && v >= l && v <= h) | I(v,l,h) -> not(h>=1 && v >= l && v <= h))
+        let maybeInvalid = parms |> Array.tryFind(function F(v,l,h) -> not( h>=l && v >= l && v <= h) | I(v,l,h) -> not(h>=l && v >= l && v <= h))
         match maybeInvalid with Some p -> failwith $"Invalid parameter range or value {p}" | _ -> ()
         let fitness:Fitness = ref fitness
         let network = CAUtils.hexagonNetworkViz
