@@ -25,7 +25,7 @@ The Visual Studio setup utility has 'Workloads' that bundle commonly used featur
 A sample for Rastrigin function is given [Sample.fsx](CALib/Testing/Sample.fsx).
 
 ```fsharp
-#load "SetupEnv.fsx"
+#r "nuget: CAOpt"
 open CA
 
 let n = 5.

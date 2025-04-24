@@ -9,7 +9,7 @@
     <RepositoryUrl>https://github.com/fwaris/CALib</RepositoryUrl>
     <PackageIcon>CAIcon.PNG</PackageIcon>
     <Copyright>Copyright Faisal Waris ©  2020</Copyright>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageTags>optimization</PackageTags>
 	<IncludeSymbols>true</IncludeSymbols>
@@ -17,6 +17,7 @@
 </Description>
     <RepositoryType>git</RepositoryType>
 	<PackageReleaseNotes>Breaking. Added maxParallelism option to step call. Can be used to reduce resource consumption if fitness function is resource intensive </PackageReleaseNotes>
+	<PackageReadmeFile>packreadme.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -51,9 +52,6 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Collections.ParallelSeq" Version="1.2.0" />
     <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.8.3" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.8.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -65,10 +63,14 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+    <None Include="..\packreadme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
-  <ItemGroup>
+  <!--<ItemGroup>
     <ProjectReference Include="..\CaLibCore\CaLibCore.fsproj" />
-  </ItemGroup>
+  </ItemGroup>-->
 
 </Project>
