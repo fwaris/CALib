@@ -111,4 +111,5 @@ type Parm =
     ///integer parameter type (stepped through as whole integers by optimiztion engine)
     | I of      v:int       * min:int       * max:int
             
-
+    ///integer parameter type with density for thompson sampling. Bandwith can be [(max-min) / #number of desired divisions]
+    | Id of     v:int       * min:int       * max:int       * bandwith:float 

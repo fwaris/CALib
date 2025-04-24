@@ -63,10 +63,11 @@ let initSteps rsc sns basePop f =
 let prepStepsForLandscapeRun ws lndscpCfg =
     lndscpCfg.Steps
     |> Array.map(function 
-    | WtdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; WtdSt(st,f)
-    | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; IpdSt(st,f)
-    | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; ShSSt(st,f)
-    | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness := ws.F ; StkSt(st,f) 
+    | WtdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness.Value <- ws.F ; WtdSt(st,f)
+    | IpdSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness.Value <- ws.F ; IpdSt(st,f)
+    | ShSSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness.Value <- ws.F ; ShSSt(st,f)
+    | StkSt (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness.Value <- ws.F ; StkSt(st,f) 
+    | DeSt  (st,f) -> let st = {st with Best=[]; Count=0; Progress=[]} in st.CA.Fitness.Value <- ws.F ; DeSt(st,f) 
     )
 
 let runSteps envChanged steps =
@@ -76,6 +77,7 @@ let runSteps envChanged steps =
     | IpdSt (st,f) -> async {return IpdSt(CARunner.step envChanged st defaultMaxBest,f) }
     | ShSSt (st,f) -> async {return ShSSt(CARunner.step envChanged st defaultMaxBest,f) } 
     | StkSt (st,f) -> async {return StkSt(CARunner.step envChanged st defaultMaxBest,f) }
+    | DeSt (st,f)  -> async {return DeSt(CARunner.step envChanged st defaultMaxBest,f) }
     )
     |> Async.Parallel
 

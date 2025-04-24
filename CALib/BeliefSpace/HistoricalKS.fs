@@ -16,11 +16,16 @@ let dir (parmDefs:Parm[]) i prevVal newVal  =
 
     | I(_,mn,mx),pV,iV when pV > iV -> Up
     | I(_,mn,mx),pV,iV when pV < iV -> Down
+
+    | Id(_,mn,mx,d),pV,iV when pV > iV -> Up
+    | Id(_,mn,mx,d),pV,iV when pV < iV -> Down
+
     | _                             -> Flat
 
 let parmAvg count = function
     | F(v,_,_)      -> float v / float count
     | I(v,_,_)      -> float v / float count
+    | Id(v,_,_,_)   -> float v / float count
 
 let isSignificantlyDifferent i1 i2 =
     (i1,i2) 

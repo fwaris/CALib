@@ -8,21 +8,24 @@ let stepUp stepSize slope parmDef v =
     let z' = stepSize * slope
     //printfn "Up: %f * %f = %f + %f" stepSize slope z' v
     match parmDef with
-    | F (_,mn,mx)   -> v + z' |> clamp mn mx
-    | I (_,mn,mx)   -> v + z' |> clampI mn mx
+    | F (_,mn,mx)    -> v + z' |> clamp mn mx
+    | I (_,mn,mx)    -> v + z' |> clampI mn mx
+    | Id (_,mn,mx,_) -> v + z' |> clampI mn mx
 
 ///Decrease parameter value given slope and step size
 let stepDown stepSize slope parmDef v =
     let z' = stepSize * slope
     //printfn "Dn: %f * %f = %f - %f" stepSize slope z' v
     match parmDef with
-    | F (_,mn,mx)   -> v - z' |> clamp mn mx
-    | I (_,mn,mx)   -> v - z' |> clampI mn mx
+    | F (_,mn,mx)    -> v - z' |> clamp mn mx
+    | I (_,mn,mx)    -> v - z' |> clampI mn mx
+    | Id (_,mn,mx,_) -> v - z' |> clampI mn mx
 
 ///Return parameter range from min and max of Parm type
 let range = function
-    | F(_,mn,mx)   ->  mn-mx
-    | I(_,mn,mx)   ->  mx-mn |> float
+    | F(_,mn,mx)    ->  mn-mx
+    | I(_,mn,mx)    ->  mx-mn |> float
+    | Id(_,mn,mx,_) ->  mx-mn |> float
 
 ///Evolve parameter using Gaussian sampling
 ///but taking the parameter range into consideration
@@ -36,6 +39,9 @@ let evolveS' rangeScaler range influenceLevel sigma v =
 
 ///How much of the available parameter range to use for evolving parm
 let RANGE_SCALER = 0.25 
+
+
+
 
 ///Evolve the ith parameter of the 'influenced' individual where
 ///influenceLevel is the aggressiveness of the move (a factor that may change over time),
@@ -58,6 +64,12 @@ let private influenceInd' (influenced:float[]) influenceLevel sigma i parm pV iV
       let r = range parm
       influenced.[i] <- evolveS' RANGE_SCALER r influenceLevel sigma pV |> clampI mn mx
 
+    | Id(_,mn,mx,bw),pV,iV when pV > iV -> influenced.[i] <- unifrmF influenceLevel iV pV     |> clampI mn mx
+    | Id(_,mn,mx,bw),pV,iV when pV < iV -> influenced.[i] <- unifrmF influenceLevel pV iV     |> clampI mn mx
+    | Id(_,mn,mx,bw),pV,_               -> 
+      let r = range parm
+      influenced.[i] <- evolveS' RANGE_SCALER r influenceLevel sigma pV |> clampI mn mx
+
 ///Evolve parameter using Gaussian sampling
 ///influenceLevel is the aggressiveness of the move (a factor that may change over time),
 ///sigma is a constant that is typically tied to a Knowledge source and controls its exploratory factor,
@@ -67,8 +79,9 @@ let evolveP rangeScaler influenceLevel sigma (indv:float[]) i parm pV =
     //mutation
     let r = range parm
     match parm with
-    | F(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clamp mn mx
-    | I(_,mn,mx)   -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clampI mn mx
+    | F(_,mn,mx)     -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clamp mn mx
+    | I(_,mn,mx)     -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clampI mn mx
+    | Id(_,mn,mx,bw) -> indv.[i] <- evolveS' rangeScaler r influenceLevel sigma pV |> clampI mn mx
 
 ///Update the ith parameter of the indvidual to be between pLo and pHi using uniform sampling
 let distributParm influeceLevel (indv:float[]) i  parm pLo pHi =

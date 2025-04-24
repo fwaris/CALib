@@ -66,8 +66,8 @@ let updateNorms isBetter norms highPerfInd =
             }
     )
 
-let minP = function F(_,mn,_) -> mn | I(_,mn,_) -> float mn
-let maxP = function F(_,_,mx) -> mx | I(_,_,mx) -> float mx
+let minP = function F(_,mn,_) -> mn | I(_,mn,_) -> float mn | Id(_,mn,_,_) -> float mn
+let maxP = function F(_,_,mx) -> mx | I(_,_,mx) -> float mx | Id(_,_,mx,_) -> float mx
 
 let updateParm (parmDefs:Parm[]) indv s i  {ParmLo=pLo; ParmHi=pHi} parm = 
     if pLo < parm &&  pHi > parm  then 

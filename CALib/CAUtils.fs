@@ -85,7 +85,13 @@ let parmToFloat = function
 let denominatorM = function
     | F(_,mn,mx)    -> 0.0001
     | I(_,mn,mx)    -> 1.0
-
+        
+///sample from kernel density estimate
+//https://stats.stackexchange.com/questions/321542/how-can-i-draw-a-value-randomly-from-a-kernel-density-estimate
+let sampleDensity bandwidth (mass:float[]) =  
+    let n = mass.[rnd.Value.Next(mass.Length)]
+    let k = gaussian 0.0 bandwidth
+    n + k
 
 ///Round robbin initializer for individual Knowledge type 
 ///given the Knowledge types used in the given BeliefSpace

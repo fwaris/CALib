@@ -4,7 +4,7 @@
 //so that the KD performances can be compared more directly with each other
 module Config.Types
 
-type KD = WTD | IPD | SHS | STK  | DE
+type KD = WTD | IPD | SHS | STK 
 
 type RunConfig = 
   {
